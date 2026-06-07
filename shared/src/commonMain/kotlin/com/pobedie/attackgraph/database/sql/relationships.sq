@@ -1,0 +1,74 @@
+import com.atlas.db.StringListAdapter;
+
+CREATE TABLE relationship (
+    step_id TEXT NOT NULL,
+    source_id TEXT NOT NULL,
+    target_id TEXT NOT NULL,
+    relationship_type TEXT NOT NULL,
+    description TEXT NOT NULL,
+    tactic_id TEXT NOT NULL,
+    leads_to TEXT AS List<String> NOT NULL,
+    PRIMARY KEY (source_id, step_id),
+    FOREIGN KEY (source_id) REFERENCES case_study(id) ON DELETE CASCADE,
+    FOREIGN KEY (target_id) REFERENCES technique(id) ON DELETE CASCADE,
+    FOREIGN KEY (tactic_id) REFERENCES tactic(id) ON DELETE CASCADE
+);
+
+insertRelationship:
+INSERT OR REPLACE INTO relationship(
+    step_id, source_id, target_id, relationship_type,
+    description, tactic_id, leads_to
+) VALUES(?, ?, ?, ?, ?, ?, ?);
+
+selectRelationshipByKey:
+SELECT (
+    step_id,
+    source_id,
+    target_id,
+    relationship_type,
+    description,
+    tactic_id,
+    leads_to,
+)
+FROM relationship
+WHERE source_id = ? AND step_id = ?;
+
+selectRelationshipsByCaseStudy:
+SELECT (
+    step_id,
+    source_id,
+    target_id,
+    relationship_type,
+    description,
+    tactic_id,
+    leads_to,
+)
+FROM relationship
+WHERE source_id = ?
+ORDER BY step_id;
+
+selectRelationshipsByTargetTechnique:
+SELECT (
+    step_id,
+    source_id,
+    target_id,
+    relationship_type,
+    description,
+    tactic_id,
+    leads_to,
+)
+FROM relationship
+WHERE target_id = ?;
+
+updateRelationship:
+UPDATE relationship
+SET target_id = ?, relationship_type = ?, description = ?,
+    tactic_id = ?, leads_to = ?
+WHERE source_id = ? AND step_id = ?;
+
+deleteRelationship:
+DELETE FROM relationship
+WHERE source_id = ? AND step_id = ?;
+
+deleteRelationshipsByCaseStudy:
+DELETE FROM relationship WHERE source_id = ?;

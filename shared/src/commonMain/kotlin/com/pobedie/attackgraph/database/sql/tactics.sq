@@ -1,0 +1,43 @@
+CREATE TABLE tactic (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    description TEXT NOT NULL,
+    created_date TEXT NOT NULL,
+    modified_date TEXT NOT NULL
+);
+
+insertTactic:
+INSERT OR REPLACE INTO tactic(id, name, description, created_date, modified_date)
+VALUES(?, ?, ?, ?, ?);
+
+selectTacticById:
+SELECT(
+    id,
+    name,
+    description,
+    created_date,
+    modified_date,
+)
+FROM tactic WHERE id = ?;
+
+selectAllTactics:
+SELECT(
+    id,
+    name,
+    description,
+    created_date,
+    modified_date,
+)
+FROM tactic;
+
+updateTactic:
+UPDATE tactic
+SET name = ?, description = ?, created_date = ?, modified_date = ?
+WHERE id = ?;
+
+deleteTactic:
+DELETE FROM tactic WHERE id = ?;
+
+-- Count how many techniques belong to this tactic (useful for UI)
+countTechniquesByTactic:
+SELECT COUNT(*) FROM technique WHERE tactic_id = ?;

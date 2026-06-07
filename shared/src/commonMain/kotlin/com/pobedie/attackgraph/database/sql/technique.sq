@@ -1,0 +1,67 @@
+import com.atlas.db.StringListAdapter;
+
+CREATE TABLE technique (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    description TEXT NOT NULL,
+    created_date TEXT NOT NULL,
+    modified_date TEXT NOT NULL,
+    platforms TEXT AS List<String> NOT NULL,
+    maturity TEXT NOT NULL,
+    tactic_id TEXT NOT NULL,
+    FOREIGN KEY (tactic_id) REFERENCES tactic(id) ON DELETE CASCADE
+);
+
+insertTechnique:
+INSERT OR REPLACE INTO technique(
+    id, name, description, created_date, modified_date,
+    platforms, maturity, tactic_id
+) VALUES(?, ?, ?, ?, ?, ?, ?, ?);
+
+selectTechniqueById:
+SELECT(
+    id,
+    name,
+    description,
+    created_date,
+    modified_date,
+    platforms,
+    maturity,
+    tactic_id,
+)
+FROM technique WHERE id = ?;
+
+selectAllTechniques:
+SELECT(
+    id,
+    name,
+    description,
+    created_date,
+    modified_date,
+    platforms,
+    maturity,
+    tactic_id,
+)
+FROM technique;
+
+selectTechniquesByTactic:
+SELECT(
+    id,
+    name,
+    description,
+    created_date,
+    modified_date,
+    platforms,
+    maturity,
+    tactic_id,
+)
+FROM technique WHERE tactic_id = ?;
+
+updateTechnique:
+UPDATE technique
+SET name = ?, description = ?, created_date = ?, modified_date = ?,
+    platforms = ?, maturity = ?, tactic_id = ?
+WHERE id = ?;
+
+deleteTechnique:
+DELETE FROM technique WHERE id = ?;

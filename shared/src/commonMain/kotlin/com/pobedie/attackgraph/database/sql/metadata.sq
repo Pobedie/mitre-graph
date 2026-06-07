@@ -1,0 +1,41 @@
+import com.pobedie.attackgraph.database.kotlin.StringListAdapter;
+
+CREATE TABLE metadata (
+    id TEXT PRIMARY KEY,
+    formatVersion TEXT NOT NULL,
+    dataVersion TEXT NOT NULL,
+    name TEXT NOT NULL,
+    description TEXT NOT NULL
+);
+
+insertOrReplaceMetadata:
+INSERT OR REPLACE INTO metadata(id, formatVersion, dataVersion, name, description)
+VALUES(?, ?, ?, ?, ?);
+
+selectMetadata:
+SELECT(
+    id,
+    formatVersion,
+    dataVersion,
+    name,
+    description,
+)
+FROM metadata WHERE id = ?;
+
+selectAllMetadata:
+SELECT(
+    id,
+    formatVersion,
+    dataVersion,
+    name,
+    description,
+)
+FROM metadata;
+
+updateMetadata:
+UPDATE metadata
+SET formatVersion = ?, dataVersion = ?, name = ?, description = ?
+WHERE id = ?;
+
+deleteMetadata:
+DELETE FROM metadata WHERE id = ?;

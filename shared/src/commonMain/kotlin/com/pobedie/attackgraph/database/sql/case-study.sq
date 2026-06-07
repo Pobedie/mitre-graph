@@ -1,0 +1,30 @@
+CREATE TABLE case_study (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    description TEXT NOT NULL,
+    created_date TEXT NOT NULL,
+    modified_date TEXT NOT NULL,
+    type TEXT NOT NULL,
+    date TEXT NOT NULL
+);
+
+insertCaseStudy:
+INSERT OR REPLACE INTO case_study(
+    id, name, description, created_date, modified_date, type, date
+) VALUES(?, ?, ?, ?, ?, ?, ?);
+
+selectCaseStudyById:
+SELECT ( id, name, description, created_date, modified_date, type, date )
+FROM case_study WHERE id = ?;
+
+selectAllCaseStudies:
+SELECT ( id, name, description, created_date, modified_date, type, date )
+FROM case_study;
+
+updateCaseStudy:
+UPDATE case_study
+SET name = ?, description = ?, created_date = ?, modified_date = ?, type = ?, date = ?
+WHERE id = ?;
+
+deleteCaseStudy:
+DELETE FROM case_study WHERE id = ?;
