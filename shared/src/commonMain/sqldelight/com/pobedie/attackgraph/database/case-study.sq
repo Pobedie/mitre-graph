@@ -14,11 +14,11 @@ INSERT OR REPLACE INTO case_study(
 ) VALUES(?, ?, ?, ?, ?, ?, ?);
 
 selectCaseStudyById:
-SELECT ( id, name, description, created_date, modified_date, type, date )
+SELECT  id, name, description, created_date, modified_date, type, date  
 FROM case_study WHERE id = ?;
 
 selectAllCaseStudies:
-SELECT ( id, name, description, created_date, modified_date, type, date )
+SELECT  id, name, description, created_date, modified_date, type, date  
 FROM case_study;
 
 updateCaseStudy:

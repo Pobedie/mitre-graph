@@ -1,4 +1,4 @@
-import com.atlas.db.StringListAdapter;
+import com.pobedie.attackgraph.database.kotlin.StringListAdapter;
 
 CREATE TABLE relationship (
     step_id TEXT NOT NULL,
@@ -7,7 +7,7 @@ CREATE TABLE relationship (
     relationship_type TEXT NOT NULL,
     description TEXT NOT NULL,
     tactic_id TEXT NOT NULL,
-    leads_to TEXT AS List<String> NOT NULL,
+    leads_to TEXT AS kotlin.collections.List<kotlin.String> NOT NULL,
     PRIMARY KEY (source_id, step_id),
     FOREIGN KEY (source_id) REFERENCES case_study(id) ON DELETE CASCADE,
     FOREIGN KEY (target_id) REFERENCES technique(id) ON DELETE CASCADE,
@@ -21,42 +21,40 @@ INSERT OR REPLACE INTO relationship(
 ) VALUES(?, ?, ?, ?, ?, ?, ?);
 
 selectRelationshipByKey:
-SELECT (
+SELECT 
     step_id,
     source_id,
     target_id,
     relationship_type,
     description,
     tactic_id,
-    leads_to,
-)
+    leads_to
 FROM relationship
 WHERE source_id = ? AND step_id = ?;
 
 selectRelationshipsByCaseStudy:
-SELECT (
+SELECT 
     step_id,
     source_id,
     target_id,
     relationship_type,
     description,
     tactic_id,
-    leads_to,
-)
+    leads_to
 FROM relationship
 WHERE source_id = ?
 ORDER BY step_id;
 
 selectRelationshipsByTargetTechnique:
-SELECT (
+SELECT 
     step_id,
     source_id,
     target_id,
     relationship_type,
     description,
     tactic_id,
-    leads_to,
-)
+    leads_to
+ 
 FROM relationship
 WHERE target_id = ?;
 

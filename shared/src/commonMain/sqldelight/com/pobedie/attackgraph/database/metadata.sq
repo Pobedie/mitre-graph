@@ -13,23 +13,21 @@ INSERT OR REPLACE INTO metadata(id, formatVersion, dataVersion, name, descriptio
 VALUES(?, ?, ?, ?, ?);
 
 selectMetadata:
-SELECT(
+SELECT 
     id,
     formatVersion,
     dataVersion,
     name,
-    description,
-)
+    description
 FROM metadata WHERE id = ?;
 
 selectAllMetadata:
-SELECT(
+SELECT 
     id,
     formatVersion,
     dataVersion,
     name,
-    description,
-)
+    description
 FROM metadata;
 
 updateMetadata:

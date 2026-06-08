@@ -34,13 +34,8 @@ kotlin {
 sqldelight {
     databases {
         register("Atlas") {
-            packageName = "com.pobedie.attackgraph.database"
-//            srcDirs("src/commonMain/kotlin/database/sqldelight")
-//            srcDirs("sqldelight/com/pobedie/attackgraph.database")
-            srcDirs("sql")
-            verifyMigrations = false
-            version = 10
-
+            packageName.set("com.pobedie.attackgraph.database")
+            verifyMigrations.set(false)
         }
     }
 }

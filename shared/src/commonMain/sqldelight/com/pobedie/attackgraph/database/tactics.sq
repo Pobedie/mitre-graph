@@ -11,23 +11,21 @@ INSERT OR REPLACE INTO tactic(id, name, description, created_date, modified_date
 VALUES(?, ?, ?, ?, ?);
 
 selectTacticById:
-SELECT(
+SELECT 
     id,
     name,
     description,
     created_date,
-    modified_date,
-)
+    modified_date
 FROM tactic WHERE id = ?;
 
 selectAllTactics:
-SELECT(
+SELECT 
     id,
     name,
     description,
     created_date,
-    modified_date,
-)
+    modified_date
 FROM tactic;
 
 updateTactic:

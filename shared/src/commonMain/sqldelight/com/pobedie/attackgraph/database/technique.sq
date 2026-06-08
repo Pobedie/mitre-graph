@@ -1,4 +1,4 @@
-import com.atlas.db.StringListAdapter;
+import com.pobedie.attackgraph.database.kotlin.StringListAdapter;
 
 CREATE TABLE technique (
     id TEXT PRIMARY KEY,
@@ -6,7 +6,7 @@ CREATE TABLE technique (
     description TEXT NOT NULL,
     created_date TEXT NOT NULL,
     modified_date TEXT NOT NULL,
-    platforms TEXT AS List<String> NOT NULL,
+    platforms TEXT AS kotlin.collections.List<kotlin.String> NOT NULL,
     maturity TEXT NOT NULL,
     tactic_id TEXT NOT NULL,
     FOREIGN KEY (tactic_id) REFERENCES tactic(id) ON DELETE CASCADE
@@ -19,7 +19,7 @@ INSERT OR REPLACE INTO technique(
 ) VALUES(?, ?, ?, ?, ?, ?, ?, ?);
 
 selectTechniqueById:
-SELECT(
+SELECT 
     id,
     name,
     description,
@@ -27,12 +27,11 @@ SELECT(
     modified_date,
     platforms,
     maturity,
-    tactic_id,
-)
+    tactic_id
 FROM technique WHERE id = ?;
 
 selectAllTechniques:
-SELECT(
+SELECT 
     id,
     name,
     description,
@@ -40,12 +39,11 @@ SELECT(
     modified_date,
     platforms,
     maturity,
-    tactic_id,
-)
+    tactic_id
 FROM technique;
 
 selectTechniquesByTactic:
-SELECT(
+SELECT 
     id,
     name,
     description,
@@ -53,8 +51,7 @@ SELECT(
     modified_date,
     platforms,
     maturity,
-    tactic_id,
-)
+    tactic_id
 FROM technique WHERE tactic_id = ?;
 
 updateTechnique:

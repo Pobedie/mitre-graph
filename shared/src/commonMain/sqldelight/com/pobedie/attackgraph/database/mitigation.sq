@@ -1,4 +1,4 @@
-import com.atlas.db.StringListAdapter;
+import com.pobedie.attackgraph.database.kotlin.StringListAdapter;
 
 CREATE TABLE mitigation (
     id TEXT PRIMARY KEY,
@@ -6,8 +6,8 @@ CREATE TABLE mitigation (
     description TEXT NOT NULL,
     created_date TEXT NOT NULL,
     modified_date TEXT NOT NULL,
-    lifecycle_phases TEXT AS List<String> NOT NULL,
-    categories TEXT AS List<String> NOT NULL
+    lifecycle_phases TEXT AS kotlin.collections.List<kotlin.String> NOT NULL,
+    categories TEXT AS kotlin.collections.List<kotlin.String> NOT NULL
 );
 
 insertMitigation:
@@ -17,27 +17,25 @@ INSERT OR REPLACE INTO mitigation(
 ) VALUES(?, ?, ?, ?, ?, ?, ?);
 
 selectMitigationById:
-SELECT(
+SELECT 
     id,
     name,
     description,
     created_date,
     modified_date,
     lifecycle_phases,
-    categories,
-)
+    categories
 FROM mitigation WHERE id = ?;
 
 selectAllMitigations:
-SELECT(
+SELECT 
     id,
     name,
     description,
     created_date,
     modified_date,
     lifecycle_phases,
-    categories,
-)
+    categories
 FROM mitigation;
 
 updateMitigation:
@@ -50,8 +48,8 @@ deleteMitigation:
 DELETE FROM mitigation WHERE id = ?;
 
 -- Get all mitigations that apply to a specific technique (via join table)
-selectMitigationsForTechnique:
-SELECT m.*
-FROM mitigation m
-JOIN mitigation_technique mt ON m.id = mt.mitigation_id
-WHERE mt.technique_id = ?;
+-- selectMitigationsForTechnique:
+-- SELECT m.*
+-- FROM mitigation m
+-- JOIN mitigation_technique mt ON m.id = mt.mitigation_id
+-- WHERE mt.technique_id = ?;
