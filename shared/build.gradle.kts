@@ -22,6 +22,7 @@ kotlin {
             implementation(libs.kuiver)
             implementation(libs.sqldelight.sqlite.driver)
             implementation(libs.sqldelight.coroutines)
+            implementation(libs.kaml)
             implementation(libs.kotlinx.serialization.core)
             implementation(libs.kotlinx.serialization.json)
         }

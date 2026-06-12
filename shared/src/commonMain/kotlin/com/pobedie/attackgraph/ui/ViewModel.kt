@@ -1,16 +1,27 @@
 package com.pobedie.attackgraph.ui
 
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.graphics.Color
+import attackgraph.shared.generated.resources.Res
+import com.pobedie.attackgraph.core.MainRepository
 import com.pobedie.attackgraph.core.entity.Node
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
+import java.io.File
 
 
-class ViewModel() {
+class ViewModel(
+    val scope: CoroutineScope,
+    val mainRepository: MainRepository
+) {
 
     private val _state = MutableStateFlow<ViewState>(ViewState())
     val state = _state.asStateFlow()
+
+//    val testFile = this::class.java.classLoader.getResourceAsStream("ATLAS-2026.05.yaml")
 
     init {
         val mockNodes = listOf(
@@ -46,6 +57,7 @@ class ViewModel() {
             )
         )
         addNodes(mockNodes)
+        importAtlasData()
     }
 
     fun addNodes(newNodes: List<Node>) {
@@ -59,7 +71,15 @@ class ViewModel() {
     }
 
     fun importAtlasData(){
-
+        scope.launch {
+            val testFile = Res.readBytes("files/ATLAS-2026.05.yaml")
+            val testContent = testFile.decodeToString()
+            if (testContent.isNotBlank()) {
+                mainRepository.importMitreAtlasData(testContent)
+            }
+        }
     }
+
+
 
 }
