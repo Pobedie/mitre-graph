@@ -4,12 +4,23 @@ import com.pobedie.attackgraph.database.Atlas
 import com.charleskorn.kaml.Yaml
 import com.charleskorn.kaml.YamlConfiguration
 import com.pobedie.attackgraph.core.entity.AtlasYaml
+import com.pobedie.attackgraph.core.entity.Tactic
+import com.pobedie.attackgraph.core.mappers.toDomainModel
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.withContext
 
 class MainRepository(
     val database: Atlas
 ) {
+
+    private data class State(
+        val isImportSuccessful: Boolean = false
+    )
+    private val _state = MutableStateFlow(State())
 
     suspend fun importMitreAtlasData(yamlContent: String) = withContext(Dispatchers.IO) {
         val yaml = Yaml(
@@ -105,5 +116,23 @@ class MainRepository(
                 }
             }
         }
+
+        // todo: add error handling
+        _state.update { it.copy(isImportSuccessful = true) }
     }
+
+    suspend fun getTactics(): List<Tactic> = withContext(Dispatchers.IO) {
+        val tactics = database.tacticsQueries.selectAllTactics().executeAsList().map { tactic ->
+            val techniques = database.techniqueQueries.selectTechniquesByTactic(tactic.id).executeAsList()
+            tactic.toDomainModel(
+                techniques = techniques.map { it.toDomainModel(tacticId = tactic.id) }
+            )
+        }
+            .sortedBy { it.id }
+
+        println("Tactics fetched from db:\n  ${tactics.map { it.id + " " + it.name }}")
+        return@withContext tactics
+    }
+
+    val importState: Flow<Boolean> = _state.map { it.isImportSuccessful }
 }

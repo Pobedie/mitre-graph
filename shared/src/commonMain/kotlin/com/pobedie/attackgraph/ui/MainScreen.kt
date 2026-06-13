@@ -1,22 +1,39 @@
 package com.pobedie.attackgraph.ui
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.scrollBy
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Button
-import androidx.compose.material3.Text
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.PointerEventType
+import androidx.compose.ui.input.pointer.onPointerEvent
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.pobedie.attackgraph.ui.components.MyGraphViewer
+import com.pobedie.attackgraph.ui.Stages.ImportStage
+import com.pobedie.attackgraph.ui.Stages.TechniqueSelection
+import com.pobedie.attackgraph.ui.components.AtlasGraphViewer
+import com.pobedie.attackgraph.ui.components.StageButton
+import kotlinx.coroutines.launch
 
 
+@OptIn(ExperimentalComposeUiApi::class)
 @Composable
 fun MainScreen(
     viewModel: ViewModel
@@ -26,31 +43,81 @@ fun MainScreen(
 
     println("DEBUGG state.nodes :  ${state.nodes}")
 
-
-    Row(
+    Column(
         modifier = Modifier
-            .background(Color(100, 100, 100))
-            .padding(8.dp)
             .background(Color(20, 20, 20))
-            .fillMaxSize()
+            .fillMaxSize(),
     ) {
-        Column(
+        val scrollState = rememberLazyListState()
+        val coroutineScope = rememberCoroutineScope()
+        LazyRow(
+            state = scrollState,
             modifier = Modifier
-                .fillMaxHeight()
+                .fillMaxWidth()
+                .heightIn(min = 80.dp)
                 .background(Color.DarkGray)
+                // by default to scroll horizontaly you need to use Shift+MouseWheel which is a bad UX in this case
+                .onPointerEvent(PointerEventType.Scroll) {
+                    val delta = it.changes.first().scrollDelta
+                    coroutineScope.launch {
+                        scrollState.scrollBy(delta.y * 40f)
+                    }
+                },
+
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Button(
-                onClick = { viewModel.importAtlasData() }
-            ) {
-                Text("Import MITRE ATLAS data")
+            item {
+                StageButton(
+                    onClick = {
+                        viewModel.switchToImportStage()
+                        viewModel.importAtlasData()
+                              },
+                    buttonText = "Import",
+                    hintText = "Import a YAML file with MITRE ATLAS data.\n\n" +
+                            "You can find this file at https://github.com/mitre-atlas/atlas-data/blob/main/dist/ or" +
+                            " use the included one (it might be not relevant)",
+                    isHighlighted = state.stage == Stage.Import,
+                    isEnabled = true
+                )
+            }
+            item {
+                Icon(
+                    modifier = Modifier.size(48.dp),
+                    imageVector = Icons.AutoMirrored.Filled.ArrowForward,
+                    tint = MaterialTheme.colorScheme.onBackground,
+                    contentDescription = "next step"
+                )
+            }
+            item {
+                StageButton(
+                    onClick = {
+                        viewModel.switchToTechniqueSelectionStage()
+                    },
+                    buttonText = "Select techniques",
+                    hintText = "Select techniques for each tactic",
+                    isHighlighted = state.stage == Stage.TechniqueSelection,
+                    isEnabled = state.isTechniqueSelectionStageAvailable
+                )
             }
 
         }
 
-            MyGraphViewer(
-                nodes = state.nodes
-            )
+        Row(
+            modifier = Modifier
+                .fillMaxSize(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center
+        ) {
+            when (state.stage) {
+                Stage.Import -> ImportStage(viewModel, state)
+                Stage.TechniqueSelection -> TechniqueSelection(viewModel, state)
+                Stage.RelationshipMapping,
+                Stage.MitigationsAndAttacks,
+                Stage.BestPath ->
+                    AtlasGraphViewer(
+                        nodes = state.nodes
+                    )
+            }
         }
-
-
+    }
 }

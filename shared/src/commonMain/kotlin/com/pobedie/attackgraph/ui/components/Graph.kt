@@ -1,5 +1,6 @@
 package com.pobedie.attackgraph.ui.components
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -24,13 +25,14 @@ import com.dk.kuiver.renderer.KuiverViewer
 import com.dk.kuiver.ui.ArrowDrawer
 import com.dk.kuiver.ui.EdgeContent
 import com.pobedie.attackgraph.core.entity.Node
+import com.pobedie.attackgraph.ui.Stage
 import kotlin.math.atan2
 import kotlin.math.cos
 import kotlin.math.sin
 
 
 @Composable
-fun MyGraphViewer(
+fun AtlasGraphViewer(
     nodes: List<Node>
 ) {
     val edges = nodes.flatMap { _node ->
@@ -66,40 +68,40 @@ fun MyGraphViewer(
         layoutConfig = layoutConfig
     )
 
-    // Render the graph
-    KuiverViewer(
-        state = viewerState,
-        nodeContent = { libNode ->
-            // Customize node appearance
-            val title = nodes.findLast { it.id == libNode.id } ?: return@KuiverViewer
-            Box(
-                modifier = Modifier
-//                    .size(40.dp)
-                    .background(
-                        Color(50,100,80),
-                        RoundedCornerShape(4.dp)
-                    ),
-                contentAlignment = Alignment.Center
-            ) {
-                Column(
+        // Render the graph
+        KuiverViewer(
+            state = viewerState,
+            nodeContent = { libNode ->
+                // Customize node appearance
+                val title = nodes.findLast { it.id == libNode.id } ?: return@KuiverViewer
+                Box(
                     modifier = Modifier
-                        .padding(vertical = 2.dp, horizontal = 8.dp)
+//                    .size(40.dp)
+                        .background(
+                            Color(50,100,80),
+                            RoundedCornerShape(4.dp)
+                        ),
+                    contentAlignment = Alignment.Center
                 ) {
-                    Text( title.name, color = Color.White)
+                    Column(
+                        modifier = Modifier
+                            .padding(vertical = 2.dp, horizontal = 8.dp)
+                    ) {
+                        Text( title.name, color = Color.White)
+                    }
                 }
+            },
+            edgeContent = { edge, from, to ->
+                // Customize edge appearance
+                EdgeContent(
+                    from,
+                    to,
+                    color = Color.Gray,
+                    strokeWidth = 2f,
+                    arrowDrawer = ArrowStyle
+                )
             }
-        },
-        edgeContent = { edge, from, to ->
-            // Customize edge appearance
-            EdgeContent(
-                from,
-                to,
-                color = Color.Gray,
-                strokeWidth = 2f,
-                arrowDrawer = ArrowStyle
-            )
-        }
-    )
+        )
 }
 
 

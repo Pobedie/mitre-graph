@@ -1,0 +1,177 @@
+package com.pobedie.attackgraph.ui.Stages
+
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Button
+import androidx.compose.material3.Checkbox
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.dp
+import attackgraph.shared.generated.resources.Res
+import attackgraph.shared.generated.resources.ic_floder
+import com.pobedie.attackgraph.ui.ViewModel
+import com.pobedie.attackgraph.ui.ViewState
+import org.jetbrains.compose.resources.painterResource
+import java.awt.FileDialog
+import java.awt.Frame
+import java.io.File
+
+
+@Composable
+fun ImportStage(
+    viewModel: ViewModel,
+    state: ViewState
+){
+        Column(
+            modifier = Modifier
+                .clip(RoundedCornerShape(8.dp))
+                .background(Color.LightGray)
+                .widthIn(max = 600.dp)
+                .heightIn(max = 800.dp)
+            ,
+            horizontalAlignment = Alignment.Start
+        ) {
+
+            Text(
+                modifier = Modifier.padding(vertical = 8.dp, horizontal = 16.dp),
+                text = "Import from file",
+                style = MaterialTheme.typography.titleLarge
+            )
+            FileSelectionField(
+                modifier = Modifier.padding(horizontal = 22.dp),
+                filePath = state.filePath,
+                onClick = {
+                    viewModel.selectFile(
+                        path = openFilePicker(),
+                        useDefault = false
+                    )
+                },
+                isFileError = state.fileError != null,
+                isEnabled = !state.isProvidedAtlasDateSelected
+            )
+
+            AnimatedVisibility(
+                visible = state.fileError != null
+            ) {
+                Text(
+                    text = state.fileError.orEmpty(),
+                    color = MaterialTheme.colorScheme.error
+                )
+            }
+
+            Text(
+                modifier = Modifier
+                    .padding(top = 16.dp)
+                    .padding( horizontal = 16.dp),
+                text = "or use included data",
+                style = MaterialTheme.typography.titleLarge
+            )
+            Row(
+                modifier = Modifier.padding(horizontal = 8.dp,),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Checkbox(
+                    checked = state.isProvidedAtlasDateSelected,
+                    onCheckedChange = { viewModel.selectFile(useDefault = !state.isProvidedAtlasDateSelected) },
+                )
+                Text(
+                    text = "Use included MITRE ATLAS data (might not be relevant)",
+                )
+            }
+            val isImportAvailable = (state.filePath.isNotBlank() || state.isProvidedAtlasDateSelected)
+            Button(
+                modifier = Modifier
+                    .padding(horizontal = 22.dp, vertical = 16.dp)
+                    .align(Alignment.End),
+                onClick = { viewModel.importAtlasData() },
+                enabled = isImportAvailable
+            ) {
+                Text("Import")
+            }
+
+        }
+}
+
+@Composable
+private fun FileSelectionField(
+    filePath: String,
+    onClick: () -> Unit,
+    isFileError: Boolean,
+    isEnabled: Boolean,
+    modifier: Modifier = Modifier
+){
+    val contentColor = when {
+        isFileError -> MaterialTheme.colorScheme.onError
+        !isEnabled -> MaterialTheme.colorScheme.background.copy(alpha =  0.4f)
+        else -> MaterialTheme.colorScheme.background
+    }
+
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .heightIn(min = 40.dp, max = 80.dp)
+            .clip(RoundedCornerShape(4.dp))
+            .background(Color.DarkGray)
+            .clickable(
+                enabled = true,
+                onClick = onClick
+            ),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            modifier = Modifier.padding(horizontal = 8.dp),
+            text = filePath.takeUnless{it.isBlank()} ?: "Select yaml file from MITRE ATLAS",
+            color = contentColor
+        )
+        Icon(
+            modifier = Modifier
+                .padding(horizontal = 8.dp)
+                .size(24.dp),
+            painter = painterResource(Res.drawable.ic_floder),
+            tint = contentColor,
+            contentDescription = "Select yaml file"
+        )
+
+    }
+}
+
+fun openFilePicker(
+    title: String = "Select MITRE ATLAS yaml file"
+): String? {
+    val window = Frame(title)
+    val dialog = FileDialog(window, title, FileDialog.LOAD)
+    window.setSize(800, 600)
+    window.setLocationRelativeTo(null)
+    val allowedExtensions = listOf(".yaml")
+
+    if (allowedExtensions.isNotEmpty()) {
+        dialog.setFilenameFilter { _, name ->
+            allowedExtensions.any { name.lowercase().endsWith(it) }
+        }
+    }
+
+    dialog.isVisible = true
+
+    return if (dialog.file != null) {
+        File(dialog.directory, dialog.file).absolutePath
+    } else {
+        null // User cancelled
+    }
+}

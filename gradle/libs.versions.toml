@@ -1,6 +1,7 @@
 [versions]
 androidx-lifecycle = "2.11.0-beta01"
 composeMultiplatform = "1.11.0"
+composeIcons = "1.7.3"
 junit = "4.13.2"
 kotlin = "2.3.21"
 kotlinx-coroutines = "1.11.0"
@@ -23,6 +24,7 @@ compose-ui = { module = "org.jetbrains.compose.ui:ui", version.ref = "composeMul
 compose-components-resources = { module = "org.jetbrains.compose.components:components-resources", version.ref = "composeMultiplatform" }
 compose-uiToolingPreview = { module = "org.jetbrains.compose.ui:ui-tooling-preview", version.ref = "composeMultiplatform" }
 kotlinx-coroutinesSwing = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-swing", version.ref = "kotlinx-coroutines" }
+compose-icons-core = { module = "org.jetbrains.compose.material:material-icons-core", version.ref = "composeIcons" }
 
 sqldelight-sqlite-driver = { module = "app.cash.sqldelight:sqlite-driver", version.ref = "sqldelight" }
 sqldelight-coroutines = { module = "app.cash.sqldelight:coroutines-extensions", version.ref = "sqldelight" }

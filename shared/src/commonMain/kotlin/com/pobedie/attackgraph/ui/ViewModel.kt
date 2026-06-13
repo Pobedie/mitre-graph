@@ -1,15 +1,18 @@
 package com.pobedie.attackgraph.ui
 
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.graphics.Color
 import attackgraph.shared.generated.resources.Res
 import com.pobedie.attackgraph.core.MainRepository
 import com.pobedie.attackgraph.core.entity.Node
+import com.pobedie.attackgraph.core.entity.Tactic
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.io.File
 
 
@@ -20,8 +23,6 @@ class ViewModel(
 
     private val _state = MutableStateFlow<ViewState>(ViewState())
     val state = _state.asStateFlow()
-
-//    val testFile = this::class.java.classLoader.getResourceAsStream("ATLAS-2026.05.yaml")
 
     init {
         val mockNodes = listOf(
@@ -57,7 +58,18 @@ class ViewModel(
             )
         )
         addNodes(mockNodes)
-        importAtlasData()
+
+        // todo: maybe make it a function
+        scope.launch {
+            mainRepository.importState.collectLatest { isImportSuccessful ->
+                if (isImportSuccessful) {
+                    _state.update {
+                        it.copy( isTechniqueSelectionStageAvailable = true )
+                    }
+                    switchToTechniqueSelectionStage()
+                }
+            }
+        }
     }
 
     fun addNodes(newNodes: List<Node>) {
@@ -70,16 +82,85 @@ class ViewModel(
         }
     }
 
-    fun importAtlasData(){
+    fun switchToImportStage() {
+        _state.update { it.copy(stage = Stage.Import) }
+    }
+
+    fun switchToTechniqueSelectionStage() {
+        var tactics: List<Tactic> = emptyList()
         scope.launch {
-            val testFile = Res.readBytes("files/ATLAS-2026.05.yaml")
-            val testContent = testFile.decodeToString()
-            if (testContent.isNotBlank()) {
-                mainRepository.importMitreAtlasData(testContent)
+            tactics = mainRepository.getTactics()
+            _state.update {
+                it.copy(
+                    stage = Stage.TechniqueSelection,
+                    tactics = tactics
+                )
             }
         }
     }
 
+    fun importAtlasData(){
+        _state.update { it.copy(fileError = null) }
+        scope.launch {
+            try {
+                var fileBinary: ByteArray? = null
+                if (state.value.isProvidedAtlasDateSelected) {
+                    fileBinary = Res.readBytes("files/ATLAS-2026.05.yaml")
+                } else if (state.value.filePath.isNotBlank()) {
+                    val file = File(state.value.filePath)
+                    if (file.exists()) {
+                        fileBinary = withContext(Dispatchers.IO) {
+                            file.readBytes()
+                        }
+                    } else {
+                        _state.update { it.copy(fileError = "File not found at ${state.value.filePath}") }
+                        println("Error: File not found at ${state.value.filePath}")
+                    }
+                }
 
+                if (fileBinary != null) {
+                    val fileContent = fileBinary.decodeToString()
+                    if (fileContent.isNotBlank()) {
+                        mainRepository.importMitreAtlasData(fileContent)
+                    } else {
+                        _state.update { it.copy(fileError = "File ${state.value.filePath} seems to be blank") }
+                        println("Error: File ${state.value.filePath} seems to be blank")
+                    }
+                }
+            } catch (e: Exception) {
+                _state.update { it.copy(fileError = "Unexpected error: ${e.localizedMessage}") }
+                e.printStackTrace()
+            }
+        }
+    }
+
+    fun selectFile(
+        path: String? = null,
+        useDefault: Boolean = false
+    ) {
+        _state.update {
+            it.copy(
+                filePath = path ?: it.filePath,
+                isProvidedAtlasDateSelected = useDefault
+            )
+        }
+    }
+
+    fun selectTechnique(techniqueId: String) {
+        _state.update {
+            val techniqueAlreadySelected = it.selectedTechniquesId.contains(techniqueId)
+            val newSelections = it.selectedTechniquesId.toMutableList()
+            if (techniqueAlreadySelected) {
+                newSelections.remove(techniqueId)
+            } else {
+                newSelections.add(techniqueId)
+            }
+            it.copy(
+                selectedTechniquesId = newSelections
+            )
+        }
+    }
 
 }
+
+private const val PROVIDED_ATLAS_DATA_PATH = "files/ATLAS-2026.05.yaml"

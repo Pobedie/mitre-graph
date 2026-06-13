@@ -7,7 +7,10 @@ import java.util.Properties
 
 actual class DriverFactory {
     actual fun createDriver(): SqlDriver {
-        val driver: SqlDriver = JdbcSqliteDriver("jdbc:sqlite:atlas.db", Properties(), Atlas.Schema)
+        val driver: SqlDriver = JdbcSqliteDriver(
+            url = "jdbc:sqlite:atlas.db",
+            properties = Properties(),
+            schema = Atlas.Schema)
         return driver
     }
 }
