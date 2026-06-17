@@ -3,8 +3,14 @@ package com.pobedie.attackgraph.core.entity
 import androidx.compose.ui.graphics.Color
 
 data class Node(
-    val name: String,
     val id: String,
+    val name: String,
+    val description: String,
+    val tactic: NodeTactic,
+)
+
+data class NodeTactic(
+    val id: String,
+    val name: String,
     val color: Color,
-    val connectedNodes: List<String>
 )

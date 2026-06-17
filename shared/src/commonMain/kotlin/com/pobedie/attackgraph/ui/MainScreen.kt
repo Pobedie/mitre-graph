@@ -8,13 +8,8 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowForward
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
@@ -26,9 +21,10 @@ import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.compose.ui.input.pointer.onPointerEvent
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.pobedie.attackgraph.ui.Stages.AttackGraph
 import com.pobedie.attackgraph.ui.Stages.ImportStage
 import com.pobedie.attackgraph.ui.Stages.TechniqueSelection
-import com.pobedie.attackgraph.ui.components.AtlasGraphViewer
+import com.pobedie.attackgraph.ui.components.StageArrow
 import com.pobedie.attackgraph.ui.components.StageButton
 import kotlinx.coroutines.launch
 
@@ -41,7 +37,7 @@ fun MainScreen(
 
     val state by viewModel.state.collectAsStateWithLifecycle()
 
-    println("DEBUGG state.nodes :  ${state.nodes}")
+    println("INFO: imported ${state.nodes.size} nodes")
 
     Column(
         modifier = Modifier
@@ -80,14 +76,7 @@ fun MainScreen(
                     isEnabled = true
                 )
             }
-            item {
-                Icon(
-                    modifier = Modifier.size(48.dp),
-                    imageVector = Icons.AutoMirrored.Filled.ArrowForward,
-                    tint = MaterialTheme.colorScheme.onBackground,
-                    contentDescription = "next step"
-                )
-            }
+            StageArrow()
             item {
                 StageButton(
                     onClick = {
@@ -97,6 +86,18 @@ fun MainScreen(
                     hintText = "Select techniques for each tactic",
                     isHighlighted = state.stage == Stage.TechniqueSelection,
                     isEnabled = state.isTechniqueSelectionStageAvailable
+                )
+            }
+            StageArrow()
+            item {
+                StageButton(
+                    onClick = {
+                        viewModel.switchToAttackVectorBuildingStage()
+                    },
+                    buttonText = "Build attack vectors",
+                    hintText = "Show attack vectors by drawing edges between nodes, then set penalty and risk values (0.0-1.0)",
+                    isHighlighted = state.stage == Stage.AttackVectorsBuilding,
+                    isEnabled = state.isAttackVectorMappingStageAvailable
                 )
             }
 
@@ -111,12 +112,10 @@ fun MainScreen(
             when (state.stage) {
                 Stage.Import -> ImportStage(viewModel, state)
                 Stage.TechniqueSelection -> TechniqueSelection(viewModel, state)
-                Stage.RelationshipMapping,
+                Stage.AttackVectorsBuilding -> AttackGraph(viewModel, state)
                 Stage.MitigationsAndAttacks,
                 Stage.BestPath ->
-                    AtlasGraphViewer(
-                        nodes = state.nodes
-                    )
+                    Unit
             }
         }
     }

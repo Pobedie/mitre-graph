@@ -1,5 +1,8 @@
 package com.pobedie.attackgraph.ui.Stages
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -9,11 +12,13 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyItemScope
 import androidx.compose.foundation.lazy.LazyRow
@@ -22,6 +27,8 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.onClick
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.selection.SelectionContainer
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -100,16 +107,39 @@ fun TechniqueSelection(
         ) {
             items(
                 items = state.tactics,
-                key = {tactic -> tactic.id}
+                key = { tactic -> tactic.id }
             ) { tactic ->
                 TacticColumn(
                     modifier = Modifier.padding(horizontal = 4.dp),
                     tactic = tactic,
                     selectedTechniques = state.selectedTechniquesId,
-                    onTechniqueClick ={viewModel.selectTechnique(it)}
+                    onTechniqueClick = { viewModel.selectTechnique(it) }
                 )
             }
 
+        }
+        AnimatedVisibility(
+            modifier = Modifier
+                .padding(vertical = 4.dp, horizontal = 8.dp)
+                .align(Alignment.End),
+            visible = state.isAttackVectorMappingStageAvailable,
+            enter = fadeIn(),
+            exit = fadeOut()
+        ) {
+            Row {
+                Button(
+                    onClick = {viewModel.clearTechniqueSelectoins()},
+                    colors = ButtonDefaults.filledTonalButtonColors()
+                ) {
+                    Text("Clear selections")
+                }
+                Spacer(Modifier.width(20.dp))
+                Button(
+                    onClick = {viewModel.switchToAttackVectorBuildingStage()},
+                ) {
+                    Text("Start building attack vectors")
+                }
+            }
         }
     }
 }

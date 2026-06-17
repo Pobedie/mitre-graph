@@ -3,7 +3,9 @@ package com.pobedie.attackgraph.ui
 import androidx.compose.ui.graphics.Color
 import attackgraph.shared.generated.resources.Res
 import com.pobedie.attackgraph.core.MainRepository
+import com.pobedie.attackgraph.core.entity.Edge
 import com.pobedie.attackgraph.core.entity.Node
+import com.pobedie.attackgraph.core.entity.NodeTactic
 import com.pobedie.attackgraph.core.entity.Tactic
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -14,6 +16,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
+import kotlin.math.absoluteValue
 
 
 class ViewModel(
@@ -25,40 +28,6 @@ class ViewModel(
     val state = _state.asStateFlow()
 
     init {
-        val mockNodes = listOf(
-            Node(
-                name = "Node 1",
-                id = "node_1",
-                color = Color(255, 100, 100),
-                connectedNodes = listOf("node_2", "node_3")
-            ),
-            Node(
-                name = "Node 2",
-                id = "node_2",
-                color = Color(100, 255, 100),
-                connectedNodes = listOf("node_1", "node_5")
-            ),
-            Node(
-                name = "Node 3",
-                id = "node_3",
-                color = Color(100, 100, 255),
-                connectedNodes = listOf("node_1", "node_4")
-            ),
-            Node(
-                name = "Node 4",
-                id = "node_4",
-                color = Color(255, 255, 100),
-                connectedNodes = listOf( "node_3")
-            ),
-            Node(
-                name = "Node 5",
-                id = "node_5",
-                color = Color(255, 100, 255),
-                connectedNodes = listOf("node_3")
-            )
-        )
-        addNodes(mockNodes)
-
         // todo: maybe make it a function
         scope.launch {
             mainRepository.importState.collectLatest { isImportSuccessful ->
@@ -69,16 +38,6 @@ class ViewModel(
                     switchToTechniqueSelectionStage()
                 }
             }
-        }
-    }
-
-    fun addNodes(newNodes: List<Node>) {
-        _state.update {
-            val _nodes = it.nodes.toMutableList()
-            _nodes.addAll(newNodes)
-            it.copy(
-                nodes = _nodes.toList()
-            )
         }
     }
 
@@ -99,13 +58,43 @@ class ViewModel(
         }
     }
 
+
+    fun switchToAttackVectorBuildingStage() {
+        val allTechniques = state.value.tactics.map{it.techniques}.flatten()
+//        selectedTechniques have to be sorted, otherwise the nodes might be places incorrectly on Y axis
+        val nodes: List<Node> = state.value.selectedTechniquesId.sortedBy { it }.mapNotNull { selectedIds ->
+            val selectedTechnique = allTechniques.find { it.id == selectedIds}
+            if (selectedTechnique != null) {
+                val tacticName = state.value.tactics.findLast { it.id == selectedTechnique.tacticId }?.name.orEmpty()
+                val color = generateColorFromId(selectedTechnique.tacticId)
+                println("DEBUGG color :  ${color}")
+                Node(
+                    id = selectedTechnique.id,
+                    name = selectedTechnique.name,
+                    description = selectedTechnique.description,
+                    tactic = NodeTactic(
+                        id = selectedTechnique.tacticId,
+                        name = tacticName,
+                        color = color
+                    )
+                )
+            } else null
+        }
+        _state.update { it.copy(
+            stage = Stage.AttackVectorsBuilding,
+            nodes = nodes,
+            selectedNode = null,
+        )
+        }
+    }
+
     fun importAtlasData(){
         _state.update { it.copy(fileError = null) }
         scope.launch {
             try {
                 var fileBinary: ByteArray? = null
                 if (state.value.isProvidedAtlasDateSelected) {
-                    fileBinary = Res.readBytes("files/ATLAS-2026.05.yaml")
+                    fileBinary = Res.readBytes(PROVIDED_ATLAS_DATA_PATH)
                 } else if (state.value.filePath.isNotBlank()) {
                     val file = File(state.value.filePath)
                     if (file.exists()) {
@@ -156,9 +145,117 @@ class ViewModel(
                 newSelections.add(techniqueId)
             }
             it.copy(
-                selectedTechniquesId = newSelections
+                selectedTechniquesId = newSelections,
+                isAttackVectorMappingStageAvailable = newSelections.size >= 3
             )
         }
+    }
+
+    fun clearTechniqueSelectoins(){
+        _state.update {
+            it.copy(
+                selectedTechniquesId = listOf(),
+                isAttackVectorMappingStageAvailable = false
+            )
+        }
+    }
+
+    fun setNodeConnection(selectedNode: String) {
+        _state.update { state ->
+            if (state.selectedNode == null) {
+                state.copy(
+                    selectedNode = selectedNode
+                )
+            } else if (
+                selectedNode == state.selectedNode ||
+                state.edges.find { edge ->
+                    (edge.startNode == state.selectedNode && edge.endNode == selectedNode)
+                } != null
+            ) {
+                state.copy(
+                    selectedNode = null
+                )
+            } else {
+                val newEdges = state.edges.toMutableList()
+                newEdges.add(
+                    Edge(
+                        startNode = state.selectedNode,
+                        endNode = selectedNode,
+                    )
+                )
+                state.copy(
+                    edges = newEdges,
+                    selectedNode = null
+                )
+            }
+        }
+    }
+
+    fun selectEdge(startNode: String, endNode: String) {
+        _state.update {
+            it.copy(
+                selectedEdge = Pair(startNode, endNode)
+            )
+        }
+    }
+
+    fun clearEdgeSelection() {
+        _state.update {
+            it.copy(
+                selectedEdge = null
+            )
+        }
+    }
+
+    fun clearNodeSelection() {
+        _state.update {
+            it.copy(
+                selectedNode = null
+            )
+        }
+    }
+
+    fun deleteEdge(startNode: String, endNode: String) {
+        _state.update {
+            val newEdges = it.edges.mapNotNull {
+                if (it.startNode == startNode && it.endNode == endNode) null else it
+            }
+            it.copy(edges = newEdges)
+        }
+    }
+
+    fun changeEdgeProbability(startNode: String, endNode: String, value: Float) {
+        _state.update {
+            val newEdges = it.edges.map {
+                if (it.startNode == startNode && it.endNode == endNode) {
+                    it.copy(
+                        probability = value
+                    )
+                } else it
+            }
+            it.copy(edges = newEdges)
+        }
+    }
+
+    fun changeEdgePunishment(startNode: String, endNode: String, value: Float) {
+        _state.update {
+            val newEdges = it.edges.map {
+                if (it.startNode == startNode && it.endNode == endNode) {
+                    it.copy(
+                        punishment = value
+                    )
+                } else it
+            }
+            it.copy(edges = newEdges)
+        }
+    }
+
+    private fun generateColorFromId(id: String): Color {
+        val hash = id.hashCode() * 999
+        val hue = (hash.absoluteValue % 360).toFloat()
+        val saturation = 0.5f + (hash.absoluteValue % 30) / 100f
+        val value = 0.45f
+        return Color.hsv(hue, saturation, value)
     }
 
 }
