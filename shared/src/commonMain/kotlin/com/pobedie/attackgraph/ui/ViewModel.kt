@@ -12,6 +12,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -39,6 +41,19 @@ class ViewModel(
                 }
             }
         }
+        // Handle side effects from state change
+        state.onEach { currentState ->
+            val mittigationAndAttackStageAvailable: Boolean =
+                (currentState.edges.size > 2 && currentState.edges.none { it.punishment == null || it.probability == null })
+            val isAttackVectorMappingStageAvailable =
+                currentState.selectedTechniquesId.size >= 3 && state.value.targetTechnique != null
+            _state.update {
+                it.copy(
+                    isMitigationsAndAttacksStageAvailable = mittigationAndAttackStageAvailable,
+                    isAttackVectorMappingStageAvailable = isAttackVectorMappingStageAvailable
+                )
+            }
+        }.launchIn(scope)
     }
 
     fun switchToImportStage() {
@@ -60,14 +75,13 @@ class ViewModel(
 
 
     fun switchToAttackVectorBuildingStage() {
-        val allTechniques = state.value.tactics.map{it.techniques}.flatten()
+        val allTechniques = state.value.tactics.map { it.techniques }.flatten()
 //        selectedTechniques have to be sorted, otherwise the nodes might be places incorrectly on Y axis
         val nodes: List<Node> = state.value.selectedTechniquesId.sortedBy { it }.mapNotNull { selectedIds ->
-            val selectedTechnique = allTechniques.find { it.id == selectedIds}
+            val selectedTechnique = allTechniques.find { it.id == selectedIds }
             if (selectedTechnique != null) {
                 val tacticName = state.value.tactics.findLast { it.id == selectedTechnique.tacticId }?.name.orEmpty()
                 val color = generateColorFromId(selectedTechnique.tacticId)
-                println("DEBUGG color :  ${color}")
                 Node(
                     id = selectedTechnique.id,
                     name = selectedTechnique.name,
@@ -80,11 +94,52 @@ class ViewModel(
                 )
             } else null
         }
-        _state.update { it.copy(
-            stage = Stage.AttackVectorsBuilding,
-            nodes = nodes,
-            selectedNode = null,
-        )
+        _state.update {
+            it.copy(
+                stage = Stage.AttackVectorsBuilding,
+                nodes = nodes,
+                selectedNode = null,
+            )
+        }
+        // Since we know the target technique, we can already start case-study fetching
+        if (state.value.targetTechnique != null) {
+            scope.launch {
+                val attackVectors = mainRepository.getAttackVectors(state.value.targetTechnique!!)
+                val mitigations = mainRepository.getMittigations(state.value.selectedTechniquesId)
+                _state.update {
+                    it.copy(
+                        attackVectors = attackVectors,
+                        mitigations = mitigations
+                    )
+                }
+            }
+        } else {
+            println("ERROR: target technique is not selected")
+        }
+    }
+
+    fun startTargetTechniqueSelection() {
+        _state.update {
+            it.copy(
+                isTargetSelectionInProgress = true
+            )
+        }
+    }
+
+    fun selectTargetTechnique(target: String) {
+        _state.update {
+            it.copy(
+                targetTechnique = target,
+                isTargetSelectionInProgress = false
+            )
+        }
+    }
+
+    fun switchToMittigationsAndAttacks() {
+        _state.update {
+            it.copy(
+                stage = Stage.MitigationsAndAttacks,
+            )
         }
     }
 
@@ -146,7 +201,6 @@ class ViewModel(
             }
             it.copy(
                 selectedTechniquesId = newSelections,
-                isAttackVectorMappingStageAvailable = newSelections.size >= 3
             )
         }
     }
@@ -155,6 +209,8 @@ class ViewModel(
         _state.update {
             it.copy(
                 selectedTechniquesId = listOf(),
+                targetTechnique = null,
+                isTargetSelectionInProgress = false,
                 isAttackVectorMappingStageAvailable = false
             )
         }
@@ -250,6 +306,16 @@ class ViewModel(
         }
     }
 
+    fun toggleMitigationRelevance(mitigation: String) {
+        _state.update {
+            val newMitigations = it.mitigations.map {
+                if (it.id == mitigation) it.copy(isRelevant = !it.isRelevant) else it
+            }
+            it.copy( mitigations = newMitigations )
+        }
+    }
+
+
     private fun generateColorFromId(id: String): Color {
         val hash = id.hashCode() * 999
         val hue = (hash.absoluteValue % 360).toFloat()
@@ -257,7 +323,6 @@ class ViewModel(
         val value = 0.45f
         return Color.hsv(hue, saturation, value)
     }
-
 }
 
 private const val PROVIDED_ATLAS_DATA_PATH = "files/ATLAS-2026.05.yaml"

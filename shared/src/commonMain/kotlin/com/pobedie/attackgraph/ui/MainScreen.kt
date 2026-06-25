@@ -100,6 +100,18 @@ fun MainScreen(
                     isEnabled = state.isAttackVectorMappingStageAvailable
                 )
             }
+            StageArrow()
+            item {
+                StageButton(
+                    onClick = {
+                        viewModel.switchToMittigationsAndAttacks()
+                    },
+                    buttonText = "Attack vectors and mitigations",
+                    hintText = "Show proven by case-studies attack vectors and mitigations",
+                    isHighlighted = state.stage == Stage.MitigationsAndAttacks,
+                    isEnabled = state.isMitigationsAndAttacksStageAvailable
+                )
+            }
 
         }
 
@@ -112,10 +124,9 @@ fun MainScreen(
             when (state.stage) {
                 Stage.Import -> ImportStage(viewModel, state)
                 Stage.TechniqueSelection -> TechniqueSelection(viewModel, state)
-                Stage.AttackVectorsBuilding -> AttackGraph(viewModel, state)
+                Stage.AttackVectorsBuilding,
                 Stage.MitigationsAndAttacks,
-                Stage.BestPath ->
-                    Unit
+                Stage.BestPath -> AttackGraph(viewModel, state)
             }
         }
     }

@@ -4,7 +4,10 @@ import com.pobedie.attackgraph.database.Atlas
 import com.charleskorn.kaml.Yaml
 import com.charleskorn.kaml.YamlConfiguration
 import com.pobedie.attackgraph.core.entity.AtlasYaml
+import com.pobedie.attackgraph.core.entity.AttackVector
+import com.pobedie.attackgraph.core.entity.Mitigation
 import com.pobedie.attackgraph.core.entity.Tactic
+import com.pobedie.attackgraph.core.mappers.toAttackVector
 import com.pobedie.attackgraph.core.mappers.toDomainModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
@@ -94,8 +97,23 @@ class MainRepository(
                 )
             }
 
-            // Insert Relationships (only 'employs' for now as per schema requirements)
             atlasData.relationships.values.forEach { group ->
+                group.mitigates.forEach { rel ->
+                    val tacticId = rel.tactic.takeIf { it.isNotEmpty() }
+                        ?: atlasData.relationships[rel.target]?.achieves
+                            ?.firstOrNull { it.target.startsWith("AML.T") }?.target
+                        ?: "UNKNOWN"
+
+                    database.relationshipsQueries.insertRelationship(
+                        step_id = rel.stepId,
+                        source_id = rel.source,
+                        target_id = rel.target,
+                        relationship_type = rel.relationshipType,
+                        description = rel.description,
+                        tactic_id = tacticId,
+                        leads_to = rel.leadsTo
+                    )
+                }
                 group.employs.forEach { rel ->
                     // relationship schema requires tactic_id
                     // Sometimes tactic is present in 'employs' relationship
@@ -104,6 +122,22 @@ class MainRepository(
                             ?.firstOrNull { it.target.startsWith("AML.TA") }?.target 
                         ?: "UNKNOWN"
                     
+                    database.relationshipsQueries.insertRelationship(
+                        step_id = rel.stepId,
+                        source_id = rel.source,
+                        target_id = rel.target,
+                        relationship_type = rel.relationshipType,
+                        description = rel.description,
+                        tactic_id = tacticId,
+                        leads_to = rel.leadsTo
+                    )
+                }
+                group.achieves.forEach { rel ->
+                    val tacticId = rel.tactic.takeIf { it.isNotEmpty() }
+                        ?: atlasData.relationships[rel.target]?.achieves
+                            ?.firstOrNull { it.target.startsWith("AML.TA") }?.target
+                        ?: "UNKNOWN"
+
                     database.relationshipsQueries.insertRelationship(
                         step_id = rel.stepId,
                         source_id = rel.source,
@@ -129,9 +163,50 @@ class MainRepository(
             )
         }
             .sortedBy { it.id }
-
         println("Tactics fetched from db:\n  ${tactics.map { it.id + " " + it.name }}")
         return@withContext tactics
+    }
+
+    suspend fun getAttackVectors(targetTechnique: String ): List<AttackVector> = withContext(Dispatchers.IO){
+        val relatedCaseStudies = database.relationshipsQueries.selectRelationshipsByTargetTechnique(targetTechnique)
+            .executeAsList()
+            .mapNotNull {
+                if (it.relationship_type == "employs") it.source_id else null
+            }
+        val attackVectors = relatedCaseStudies.flatMap {
+            database.relationshipsQueries.selectRelationshipsByCaseStudy(it)
+                .executeAsList()
+                .map { _relationship ->
+                    _relationship.toAttackVector()
+                }
+        }
+        println("For target technique: $targetTechnique found attack vectors :\n\t${attackVectors}")
+        return@withContext attackVectors
+    }
+
+    suspend fun getMittigations(techniques: List<String>): List<Mitigation> = withContext(Dispatchers.IO) {
+        val mitigations: List<Mitigation> = techniques.flatMap { _techId ->
+                database.relationshipsQueries.selectRelationshipsByTargetTechnique(_techId)
+                    .executeAsList()
+                    .mapNotNull { _relationship ->
+                        if (_relationship.relationship_type == "mitigates" && _relationship.target_id == _techId) {
+                            val mitigations = database.mitigationQueries.selectMitigationById(_relationship.source_id)
+                                .executeAsOne()
+                            Mitigation(
+                                id = _relationship.source_id,
+                                name = mitigations.name,
+                                mitigationDescription = mitigations.description,
+                                relationshipDescription = _relationship.description,
+                                targetTechnique = _techId,
+                                categories = mitigations.categories,
+                                lifecyclePhases = mitigations.lifecycle_phases,
+                                isRelevant = true
+                            )
+                    } else null
+            }
+        }
+        println("DEBUGG REPO mitigations :  ${mitigations}")
+        return@withContext mitigations
     }
 
     val importState: Flow<Boolean> = _state.map { it.isImportSuccessful }
