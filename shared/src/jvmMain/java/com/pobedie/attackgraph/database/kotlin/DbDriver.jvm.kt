@@ -8,9 +8,11 @@ import java.util.Properties
 actual class DriverFactory {
     actual fun createDriver(): SqlDriver {
         val driver: SqlDriver = JdbcSqliteDriver(
-            url = "jdbc:sqlite:atlas.db",
+//            url = "jdbc:sqlite:atlas.db", // for debug purposes
+            url = JdbcSqliteDriver.IN_MEMORY,
             properties = Properties(),
-            schema = Atlas.Schema)
+            schema = Atlas.Schema,
+        )
         return driver
     }
 }
