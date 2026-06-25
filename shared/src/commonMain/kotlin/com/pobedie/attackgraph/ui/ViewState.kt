@@ -1,6 +1,8 @@
 package com.pobedie.attackgraph.ui
 
+import com.pobedie.attackgraph.core.entity.AttackVector
 import com.pobedie.attackgraph.core.entity.Edge
+import com.pobedie.attackgraph.core.entity.Mitigation
 import com.pobedie.attackgraph.core.entity.Node
 import com.pobedie.attackgraph.core.entity.Tactic
 
@@ -8,6 +10,7 @@ data class ViewState(
     val stage: Stage = Stage.Import,
     val nodes: List<Node> = emptyList(),
     val edges: List<Edge> = emptyList(),
+    val targetTechnique: String? = null,
 
     // Import stage
     val filePath: String = "",
@@ -18,11 +21,19 @@ data class ViewState(
     val isTechniqueSelectionStageAvailable: Boolean = false,
     val tactics: List<Tactic> = listOf(),
     val selectedTechniquesId: List<String> = listOf(),
+    val isTargetSelectionInProgress: Boolean = false,
 
     // Attack vector mapping stage
     val isAttackVectorMappingStageAvailable: Boolean = false,
     val selectedNode: String? = null,
-    val selectedEdge: Pair<String, String>? = null // ids of start and end nodes
+    val selectedEdge: Pair<String, String>? = null, // ids of start and end nodes
+
+    // Mitigations and attacks stage
+    val isMitigationsAndAttacksStageAvailable: Boolean = false,
+    val attackVectors: List<AttackVector> = emptyList(),
+    val mitigations: List<Mitigation> = emptyList(),
+    val alphaValueDialogVisible: Boolean = false,
+    val alphaValue: Float = 0.0f
 )
 
 enum class Stage {

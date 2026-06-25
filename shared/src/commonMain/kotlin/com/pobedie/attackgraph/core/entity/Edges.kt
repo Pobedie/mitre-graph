@@ -4,10 +4,10 @@ data class Edge(
     val startNode: String,
     val endNode: String,
     val probability: Float? = null,
-    val punishment: Float? = null,
+    val risk: Float? = null,
     val state: EdgeState = EdgeState.Idle
 )
 
 enum class EdgeState{
-    Idle, CaseStudyProven, Unsuccessful, MostOptimal
+    Idle, CaseStudyProven, Unsuccessful, Probable, MostOptimal
 }

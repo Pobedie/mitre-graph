@@ -2,9 +2,8 @@ package com.pobedie.attackgraph.ui
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.scrollBy
-import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
@@ -24,6 +23,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.pobedie.attackgraph.ui.Stages.AttackGraph
 import com.pobedie.attackgraph.ui.Stages.ImportStage
 import com.pobedie.attackgraph.ui.Stages.TechniqueSelection
+import com.pobedie.attackgraph.ui.components.AlphaValueDialog
 import com.pobedie.attackgraph.ui.components.StageArrow
 import com.pobedie.attackgraph.ui.components.StageButton
 import kotlinx.coroutines.launch
@@ -100,22 +100,42 @@ fun MainScreen(
                     isEnabled = state.isAttackVectorMappingStageAvailable
                 )
             }
+            StageArrow()
+            item {
+                StageButton(
+                    onClick = {
+                        viewModel.showAlphaValueDialog()
+                    },
+                    buttonText = "Attack vectors and mitigations",
+                    hintText = "Show proven by case-studies attack vectors and mitigations",
+                    isHighlighted = state.stage == Stage.MitigationsAndAttacks,
+                    isEnabled = state.isMitigationsAndAttacksStageAvailable
+                )
+            }
 
         }
 
-        Row(
+        Box(
             modifier = Modifier
                 .fillMaxSize(),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Center
+            contentAlignment = Alignment.Center
         ) {
             when (state.stage) {
                 Stage.Import -> ImportStage(viewModel, state)
                 Stage.TechniqueSelection -> TechniqueSelection(viewModel, state)
-                Stage.AttackVectorsBuilding -> AttackGraph(viewModel, state)
+                Stage.AttackVectorsBuilding,
                 Stage.MitigationsAndAttacks,
-                Stage.BestPath ->
-                    Unit
+                Stage.BestPath -> AttackGraph(viewModel, state)
+            }
+
+            if (state.alphaValueDialogVisible) {
+                AlphaValueDialog(
+                    alpha = state.alphaValue,
+                    onClick ={
+                        viewModel.setAlphaValue(it)
+                        viewModel.switchToMitigationsAndAttacks()
+                    }
+                )
             }
         }
     }
