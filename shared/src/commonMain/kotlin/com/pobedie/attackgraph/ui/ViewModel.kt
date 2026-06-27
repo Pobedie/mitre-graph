@@ -44,7 +44,7 @@ class ViewModel(
         // Handle side effects from state change
         state.onEach { currentState ->
             val mittigationAndAttackStageAvailable: Boolean =
-                (currentState.edges.size > 2 && currentState.edges.none { it.punishment == null || it.probability == null })
+                (currentState.edges.size > 2 && currentState.edges.none { it.risk == null || it.probability == null })
             val isAttackVectorMappingStageAvailable =
                 currentState.selectedTechniquesId.size >= 3 && state.value.targetTechnique != null
             _state.update {
@@ -89,8 +89,8 @@ class ViewModel(
                     tactic = NodeTactic(
                         id = selectedTechnique.tacticId,
                         name = tacticName,
-                        color = color
-                    )
+                        color = color,
+                    ),
                 )
             } else null
         }
@@ -135,12 +135,19 @@ class ViewModel(
         }
     }
 
-    fun switchToMittigationsAndAttacks() {
+    fun switchToMitigationsAndAttacks() {
+        val rootNodes: List<String> = state.value.nodes
+            .filter { _node ->
+                state.value.edges.none { _edge ->
+                    _edge.endNode != _node.id
+                }
+            }.map { it.id }
         _state.update {
             it.copy(
                 stage = Stage.MitigationsAndAttacks,
             )
         }
+        println("DEBUGG rootNodes :  ${rootNodes}")
     }
 
     fun importAtlasData(){
@@ -298,7 +305,7 @@ class ViewModel(
             val newEdges = it.edges.map {
                 if (it.startNode == startNode && it.endNode == endNode) {
                     it.copy(
-                        punishment = value
+                        risk = value
                     )
                 } else it
             }

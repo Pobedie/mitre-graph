@@ -104,7 +104,7 @@ fun MainScreen(
             item {
                 StageButton(
                     onClick = {
-                        viewModel.switchToMittigationsAndAttacks()
+                        viewModel.switchToMitigationsAndAttacks()
                     },
                     buttonText = "Attack vectors and mitigations",
                     hintText = "Show proven by case-studies attack vectors and mitigations",

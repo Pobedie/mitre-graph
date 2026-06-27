@@ -31,8 +31,6 @@ import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonColors
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.PlainTooltip
@@ -267,7 +265,7 @@ fun AttackGraph(
                                     _edge.endNode == state.selectedEdge.second
                             TechniqueEdge(
                                 probability = _edge.probability,
-                                punishment = _edge.punishment,
+                                punishment = _edge.risk,
                                 isSelected = isSelected,
                                 onClick = { viewModel.selectEdge(_edge.startNode, _edge.endNode) },
                                 onDismissed = { viewModel.clearEdgeSelection() },
