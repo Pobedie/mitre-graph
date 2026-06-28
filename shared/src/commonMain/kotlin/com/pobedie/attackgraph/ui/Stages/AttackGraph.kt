@@ -268,37 +268,40 @@ fun AttackGraph(
                         _edge.state == EdgeState.Probable -> Color(201, 174, 29, 255)
                         else -> Color.Gray
                     }
-                EdgeContentWithLabel(
-                    from,
-                    to,
-                    color = edgeColor,
-                    strokeWidth = 2f,
-                    arrowDrawer = ArrowStyle,
-                    enableCurve = true,
-                    labelPlacement = LabelPlacement.END,
-                    label = "there must be anything for the lable to show up, even if it's not being used",
-                    labelContent = { _ ->
-                        if (_edge != null) {
-                            val isSelected = _edge.startNode == state.selectedEdge?.first &&
-                                    _edge.endNode == state.selectedEdge.second
-                            TechniqueEdge(
-                                probability = _edge.probability,
-                                risk = _edge.risk,
-                                isSelected = isSelected,
-                                isEnabled = state.stage == Stage.AttackVectorsBuilding,
-                                onClick = { viewModel.selectEdge(_edge.startNode, _edge.endNode) },
-                                onDismissed = { viewModel.clearEdgeSelection() },
-                                onDelete = { viewModel.deleteEdge(_edge.startNode, _edge.endNode) },
-                                onProbabilityChange = {
-                                    viewModel.changeEdgeProbability(_edge.startNode, _edge.endNode, it)
-                                },
-                                onPunishmentChange = {
-                                    viewModel.changeEdgePunishment(_edge.startNode, _edge.endNode, it)
-                                },
-                            )
+                val isSelected = state.selectedEdge?.let {
+                    _edge != null && _edge.startNode == it.first && _edge.endNode == it.second
+                } ?: false
+                Box(modifier = Modifier.zIndex(if (isSelected) 1000f else 0f)) {
+                    EdgeContentWithLabel(
+                        from,
+                        to,
+                        color = edgeColor,
+                        strokeWidth = 2f,
+                        arrowDrawer = ArrowStyle,
+                        enableCurve = true,
+                        labelPlacement = LabelPlacement.END,
+                        label = "there must be anything for the lable to show up, even if it's not being used",
+                        labelContent = { _ ->
+                            if (_edge != null) {
+                                TechniqueEdge(
+                                    probability = _edge.probability,
+                                    risk = _edge.risk,
+                                    isSelected = isSelected,
+                                    isEnabled = state.stage == Stage.AttackVectorsBuilding,
+                                    onClick = { viewModel.selectEdge(_edge.startNode, _edge.endNode) },
+                                    onDismissed = { viewModel.clearEdgeSelection() },
+                                    onDelete = { viewModel.deleteEdge(_edge.startNode, _edge.endNode) },
+                                    onProbabilityChange = {
+                                        viewModel.changeEdgeProbability(_edge.startNode, _edge.endNode, it)
+                                    },
+                                    onPunishmentChange = {
+                                        viewModel.changeEdgePunishment(_edge.startNode, _edge.endNode, it)
+                                    },
+                                )
+                            }
                         }
-                    }
-                )
+                    )
+                }
             }
         )
 
@@ -526,7 +529,6 @@ private fun TechniqueEdge(
         MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.8f)
     }
     Column(
-        modifier = Modifier.zIndex(999f),
         verticalArrangement = Arrangement.Top
     ) {
         Row(
