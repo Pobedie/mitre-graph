@@ -2,7 +2,7 @@
     <string name="import_button">Импорт</string>
     <string name="import_hint">Импорт YAML файла с данными MITRE ATLAS.\n\nВы можете найти этот файл по адресу https://github.com/mitre-atlas/atlas-data/blob/main/dist/ или использовать включенный (он может быть неактуальным)</string>
     <string name="select_techniques_button">Выбрать техники</string>
-    <string name="select_techniques_hint">Выберите техники для каждой тактики</string>
+    <string name="select_techniques_hint">Выберите техники атак из каждой тактики</string>
     <string name="build_attack_vectors_button">Построить векторы атаки</string>
     <string name="build_attack_vectors_hint">Показать векторы атаки, рисуя ребра между узлами, затем установите значения штрафа и риска (0.0-1.0)</string>
     <string name="mitigations_and_attacks_button">Векторы атаки и меры защиты</string>

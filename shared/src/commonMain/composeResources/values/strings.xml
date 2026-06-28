@@ -2,7 +2,7 @@
     <string name="import_button">Import</string>
     <string name="import_hint">Import a YAML file with MITRE ATLAS data.\n\nYou can find this file at https://github.com/mitre-atlas/atlas-data/blob/main/dist/ or use the included one (it might be not relevant)</string>
     <string name="select_techniques_button">Select techniques</string>
-    <string name="select_techniques_hint">Select techniques for each tactic</string>
+    <string name="select_techniques_hint">Select attack techniques from each tactic</string>
     <string name="build_attack_vectors_button">Build attack vectors</string>
     <string name="build_attack_vectors_hint">Show attack vectors by drawing edges between nodes, then set penalty and risk values (0.0-1.0)</string>
     <string name="mitigations_and_attacks_button">Attack vectors and mitigations</string>
