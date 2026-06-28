@@ -70,7 +70,7 @@ fun MainScreen(
                     }
                 },
 
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.Bottom
         ) {
             item {
                 StageButton(

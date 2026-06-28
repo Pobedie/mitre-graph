@@ -8,9 +8,9 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.PlainTooltip
@@ -45,19 +45,20 @@ fun StageButton(
 
     Button(
         modifier = modifier
-            .padding(8.dp)
+            .padding(horizontal = 8.dp)
             .width(200.dp)
             .then(
                 if (isHighlighted) {
                     Modifier.border(
                         width = 1.dp,
                         color = MaterialTheme.colorScheme.surface,
-                        shape = ButtonDefaults.shape
+                        shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp, bottomStart = 0.dp, bottomEnd = 0.dp),
                     )
                 } else Modifier
             ),
         onClick = onClick,
         enabled = isEnabled,
+        shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp, bottomStart = 0.dp, bottomEnd = 0.dp),
         contentPadding = PaddingValues(8.dp)
     ) {
         Row(
