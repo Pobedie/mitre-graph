@@ -41,4 +41,11 @@
     <string name="info_content_desc">Info</string>
     <string name="next_step_content_desc">next step</string>
     <string name="unknown_value">???</string>
+
+    <string name="optimal_path_label">OPTIMAL PATH:</string>
+    <string name="probable_paths_label">OTHER PROBABLE PATHS:</string>
+    <string name="no_optimal_path_found">INFO: no optimal path found</string>
+    <string name="target_not_selected_error">ERROR: target technique is not selected</string>
+    <string name="imported_nodes_info">INFO: imported %1$d nodes</string>
+    <string name="path_cost_format">%1$s | cost: %2$s</string>
 </resources>

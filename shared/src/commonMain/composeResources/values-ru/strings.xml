@@ -41,4 +41,11 @@
     <string name="info_content_desc">Информация</string>
     <string name="next_step_content_desc">следующий шаг</string>
     <string name="unknown_value">???</string>
+
+    <string name="optimal_path_label">ОПТИМАЛЬНЫЙ ПУТЬ:</string>
+    <string name="probable_paths_label">ДРУГИЕ ВЕРОЯТНЫЕ ПУТИ:</string>
+    <string name="no_optimal_path_found">ИНФО: оптимальный путь не найден</string>
+    <string name="target_not_selected_error">ОШИБКА: целевая техника не выбрана</string>
+    <string name="imported_nodes_info">ИНФО: импортировано %1$d узлов</string>
+    <string name="path_cost_format">%1$s | стоимость: %2$s</string>
 </resources>

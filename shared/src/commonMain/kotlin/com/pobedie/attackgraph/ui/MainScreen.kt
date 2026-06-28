@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
@@ -49,12 +48,6 @@ fun MainScreen(
 ){
 
     val state by viewModel.state.collectAsStateWithLifecycle()
-
-    LaunchedEffect(state.nodes.size) {
-        if (state.nodes.isNotEmpty()) {
-            viewModel.logToUiConsole("INFO: imported ${state.nodes.size} nodes")
-        }
-    }
 
     Column(
         modifier = Modifier

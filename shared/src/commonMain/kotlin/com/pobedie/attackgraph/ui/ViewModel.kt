@@ -4,6 +4,11 @@ import androidx.compose.ui.graphics.Color
 import attackgraph.shared.generated.resources.Res
 import attackgraph.shared.generated.resources.file_blank_error
 import attackgraph.shared.generated.resources.file_not_found_error
+import attackgraph.shared.generated.resources.no_optimal_path_found
+import attackgraph.shared.generated.resources.optimal_path_label
+import attackgraph.shared.generated.resources.path_cost_format
+import attackgraph.shared.generated.resources.probable_paths_label
+import attackgraph.shared.generated.resources.target_not_selected_error
 import attackgraph.shared.generated.resources.unexpected_error
 import com.pobedie.attackgraph.core.MainRepository
 import com.pobedie.attackgraph.core.entity.Edge
@@ -66,10 +71,12 @@ class ViewModel(
     }
 
     fun switchToImportStage() {
+        clearConsole()
         _state.update { it.copy(stage = Stage.Import) }
     }
 
     fun switchToTechniqueSelectionStage() {
+        clearConsole()
         var tactics: List<Tactic>
         scope.launch {
             tactics = mainRepository.getTactics()
@@ -83,6 +90,7 @@ class ViewModel(
     }
 
     fun switchToAttackVectorBuildingStage() {
+        clearConsole()
         val allTechniques = state.value.tactics.map { it.techniques }.flatten()
 //        selectedTechniques have to be sorted, otherwise the nodes might be places incorrectly on Y axis
         val nodes: List<Node> = state.value.selectedTechniquesId.sortedBy { it }.mapNotNull { selectedIds ->
@@ -130,7 +138,9 @@ class ViewModel(
                 }
             }
         } else {
-            logToUiConsole("ERROR: target technique is not selected")
+            scope.launch {
+                logToUiConsole(getString(Res.string.target_not_selected_error))
+            }
         }
     }
 
@@ -181,10 +191,6 @@ class ViewModel(
                     alpha = state.value.alphaValue
                 )
                 if (pathResult != null) {
-                    logToUiConsole(
-                        "INFO optimal path from node $_rootNode:  " +
-                            "${pathResult.first.map { Pair(it.startNode, it.endNode) }}, ${pathResult.second}"
-                    )
                     probablePaths.add(pathResult)
                     if (optimalPath == null || pathResult.second < optimalPath.second) {
                         optimalPath = pathResult
@@ -217,11 +223,22 @@ class ViewModel(
                     edges = newEdges
             )
         }
-        logToUiConsole("INFO rootNodes :  ${rootNodes}")
-        if (optimalPath != null) {
-            logToUiConsole("INFO optimalPath cost: ${optimalPath.second}")
-        } else {
-            logToUiConsole("INFO no optimal path found")
+        clearConsole()
+        scope.launch {
+            if (optimalPath != null) {
+                logToUiConsole(getString(Res.string.optimal_path_label), freezeDisplay = true)
+                logToUiConsole(formatPath(optimalPath!!), freezeDisplay = true)
+
+                val otherProbablePaths = probablePaths.filter { it != optimalPath }
+                if (otherProbablePaths.isNotEmpty()) {
+                    logToUiConsole("\n" + getString(Res.string.probable_paths_label), freezeDisplay = true)
+                    otherProbablePaths.forEach {
+                        logToUiConsole(formatPath(it), freezeDisplay = true)
+                    }
+                }
+            } else {
+                logToUiConsole(getString(Res.string.no_optimal_path_found), freezeDisplay = true)
+            }
         }
     }
 
@@ -436,6 +453,21 @@ class ViewModel(
         _state.update {
             it.copy(consoleText = "")
         }
+    }
+
+    private suspend fun formatPath(pathResult: Pair<List<Edge>, Double>): String {
+        val edges = pathResult.first
+        val cost = pathResult.second
+        val formattedCost = try {
+            "%.3f".format(cost)
+        } catch (e: Exception) {
+            cost.toString()
+        }
+        if (edges.isEmpty()) return getString(Res.string.path_cost_format, "", formattedCost)
+        val nodes = mutableListOf<String>()
+        nodes.add(edges.first().startNode)
+        nodes.addAll(edges.map { it.endNode })
+        return getString(Res.string.path_cost_format, nodes.joinToString(" -> "), formattedCost)
     }
 
     private fun generateColorFromId(id: String): Color {
