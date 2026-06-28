@@ -13,6 +13,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
@@ -23,12 +24,10 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.BasicTextField
-import androidx.compose.foundation.text.KeyboardActions
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.PlainTooltip
@@ -50,6 +49,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
@@ -58,18 +58,17 @@ import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.compose.ui.input.pointer.onPointerEvent
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.layout
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.ImeAction
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.util.fastCoerceAtMost
+import androidx.compose.ui.zIndex
 import attackgraph.shared.generated.resources.Res
 import attackgraph.shared.generated.resources.ic_info
+import attackgraph.shared.generated.resources.ic_shield
 import com.dk.kuiver.model.buildKuiver
 import com.dk.kuiver.model.buildKuiverWithClassifiedEdges
 import com.dk.kuiver.model.edges
@@ -82,9 +81,13 @@ import com.dk.kuiver.renderer.KuiverViewerConfig
 import com.dk.kuiver.ui.ArrowDrawer
 import com.dk.kuiver.ui.EdgeContentWithLabel
 import com.dk.kuiver.ui.LabelPlacement
+import com.pobedie.attackgraph.core.entity.EdgeState
+import com.pobedie.attackgraph.core.entity.Mitigation
 import com.pobedie.attackgraph.core.entity.Node
+import com.pobedie.attackgraph.ui.Stage
 import com.pobedie.attackgraph.ui.ViewModel
 import com.pobedie.attackgraph.ui.ViewState
+import com.pobedie.attackgraph.ui.components.FloatInputField
 import kotlinx.coroutines.delay
 import org.jetbrains.compose.resources.painterResource
 import kotlin.math.atan2
@@ -230,32 +233,45 @@ fun AttackGraph(
                     modifier = Modifier.width(180.dp),
                     node = node,
                     isSelected = node.id == state.selectedNode,
+                    isTarget = state.targetTechnique == node.id,
                     onClick = {
-                        println("DEBUGG add node: ${node.id}")
                         viewModel.setNodeConnection(node.id)
+                    },
+                    areMitigationsShown = state.stage == Stage.MitigationsAndAttacks,
+                    mitigations = state.mitigations,
+                    onToggleMitigationRelevance = {
+                        viewModel.toggleMitigationRelevance(it)
                     }
                 )
             },
             edgeContent = { libEdge, from, to ->
                 // Customize edge appearance
                 val _edge = state.edges.find { it.startNode == libEdge.fromId && it.endNode == libEdge.toId }
+                val edgeColor =
+                    when {
+                        state.stage == Stage.AttackVectorsBuilding ||
+                        _edge == null -> Color.Gray
+                        _edge.state == EdgeState.MostOptimal -> Color(129, 199, 9)
+                        _edge.state == EdgeState.Probable -> Color(201, 174, 29, 255)
+                        else -> Color.Gray
+                    }
                 EdgeContentWithLabel(
                     from,
                     to,
-                    color = Color.Gray,
+                    color = edgeColor,
                     strokeWidth = 2f,
                     arrowDrawer = ArrowStyle,
                     enableCurve = true,
                     labelPlacement = LabelPlacement.END,
-                    label = "test",
-                    labelContent = { text ->
+                    labelContent = {
                         if (_edge != null) {
                             val isSelected = _edge.startNode == state.selectedEdge?.first &&
                                     _edge.endNode == state.selectedEdge.second
                             TechniqueEdge(
                                 probability = _edge.probability,
-                                punishment = _edge.punishment,
+                                risk = _edge.risk,
                                 isSelected = isSelected,
+                                isEnabled = state.stage == Stage.AttackVectorsBuilding,
                                 onClick = { viewModel.selectEdge(_edge.startNode, _edge.endNode) },
                                 onDismissed = { viewModel.clearEdgeSelection() },
                                 onDelete = { viewModel.deleteEdge(_edge.startNode, _edge.endNode) },
@@ -288,7 +304,11 @@ fun AttackGraph(
 private fun TechniqueNode(
     node: Node,
     isSelected: Boolean,
+    isTarget: Boolean,
     onClick: () -> Unit,
+    areMitigationsShown: Boolean,
+    mitigations: List<Mitigation>,
+    onToggleMitigationRelevance: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val techniqueTooltipState = rememberTooltipState(isPersistent = true)
@@ -316,20 +336,120 @@ private fun TechniqueNode(
             }
             .clickable { onClick() }
             .then(
-                if (isSelected) {
-                    Modifier.border(1.dp, Color.White, RoundedCornerShape(4.dp))
-                } else Modifier
-            )
-        ,
+                when {
+                    isTarget && isSelected ->
+                        Modifier
+                            .border(1.dp, Color.White, RoundedCornerShape(4.dp))
+                            .border(3.dp, Color(255, 103, 76), RoundedCornerShape(4.dp))
+
+                    isTarget ->
+                        Modifier.border(3.dp, Color(255, 103, 76), RoundedCornerShape(4.dp))
+
+                    isSelected ->
+                        Modifier.border(1.dp, Color.White, RoundedCornerShape(4.dp))
+
+                    else -> Modifier
+                }
+            ),
         contentAlignment = Alignment.TopEnd
     ) {
-        Text(
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(vertical = 8.dp, horizontal = 8.dp),
-            text = node.name,
-            color = Color.White,
-        )
+        ) {
+            Text(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp, horizontal = 8.dp),
+                text = node.name,
+                color = Color.White,
+            )
+
+            if (areMitigationsShown && mitigations.isNotEmpty()) {
+                FlowRow(
+                    modifier = Modifier
+                        .padding(4.dp)
+                ) {
+                    mitigations.filter { it.targetTechnique == node.id }.forEach {
+
+                    val mitigationTooltipState = rememberTooltipState(isPersistent = true)
+                        var mitigationShowTooltip by remember{ mutableStateOf("") }
+                        LaunchedEffect(mitigationShowTooltip) {
+                            if (mitigationShowTooltip == it.id) {
+                                mitigationTooltipState.show()
+                            } else {
+                                mitigationTooltipState.dismiss()
+                            }
+                        }
+
+                        val backgroundColor = if (it.isRelevant) {
+                            MaterialTheme.colorScheme.errorContainer
+                        } else {
+                            Color.LightGray
+                        }
+                        TooltipBox(
+                            modifier = Modifier
+                                .padding(end = 2.dp)
+                                .size(16.dp)
+                                .clip(RoundedCornerShape(1.dp))
+                                .background(backgroundColor)
+                                .clickable(
+                                    onClick = {
+                                        mitigationShowTooltip = it.id
+                                    }
+                                ),
+                            positionProvider = TooltipDefaults.rememberTooltipPositionProvider(
+                                positioning = TooltipAnchorPosition.Above,
+                                spacingBetweenTooltipAndAnchor = 0.dp
+                            ),
+                            enableUserInput = false,
+                            tooltip = {
+                                PlainTooltip(
+                                    maxWidth = 400.dp,
+                                ) {
+                                    val mitigationDescription =
+                                        "ID: ${it.id}\n\nMitigation:\n${it.relationshipDescription}" +
+                                                "\n\n\n${it.mitigationDescription}"
+                                    SelectionContainer {
+                                        Column {
+                                            Text(mitigationDescription)
+                                            Button(
+                                                onClick = { onToggleMitigationRelevance(it.id) },
+                                                shape = RoundedCornerShape(4.dp)
+                                            ) {
+                                                Text(
+                                                    text = if (it.isRelevant)
+                                                        "Set as irrelevant"
+                                                    else
+                                                        "Set as relevant"
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+                            },
+                            state = mitigationTooltipState,
+                            onDismissRequest = { mitigationShowTooltip = "" }
+                        ) {
+                            val iconColor = if (it.isRelevant) {
+                                MaterialTheme.colorScheme.onErrorContainer
+                            } else {
+                                MaterialTheme.colorScheme.onTertiary
+                            }
+
+                            Icon(
+                                modifier = Modifier
+                                    .scale(0.7f),
+                                painter = painterResource(Res.drawable.ic_shield),
+                                tint = iconColor,
+                                contentDescription = "Show mitigation info"
+                            )
+                        }
+                    }
+
+                }
+            }
+        }
 
         TooltipBox(
             positionProvider = TooltipDefaults.rememberTooltipPositionProvider(
@@ -351,10 +471,11 @@ private fun TechniqueNode(
         ) {
             Icon(
                 modifier = Modifier
-                    .padding(2.dp)
-                    .size(16.dp)
+                    .size(32.dp)
+                    .scale(0.5f)
                     .align(Alignment.TopEnd)
                     .clip(CircleShape)
+                    .padding(2.dp)
                     .alpha(if (isTechniqueInfoIconVisible) 1f else 0f)
                     // todo: remove onHover highlighting
                     .clickable {
@@ -371,20 +492,24 @@ private fun TechniqueNode(
 @Composable
 private fun TechniqueEdge(
     probability: Float?,
-    punishment: Float?,
+    risk: Float?,
     isSelected: Boolean,
+    isEnabled: Boolean,
     onClick: () -> Unit,
     onDismissed: () -> Unit,
     onDelete: () -> Unit,
     onProbabilityChange: (Float) -> Unit,
     onPunishmentChange: (Float) -> Unit,
 ) {
-    val labelColor = if (probability == null || punishment == null) {
-        MaterialTheme.colorScheme.error
+    val labelColor = if (probability == null || risk == null) {
+        MaterialTheme.colorScheme.error.copy(alpha = 0.8f)
+    } else if (!isEnabled){
+        Color(208, 208, 208, 160)
     } else {
-        MaterialTheme.colorScheme.secondaryContainer
+        MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.8f)
     }
     Column(
+        modifier = Modifier.zIndex(999f),
         verticalArrangement = Arrangement.Top
     ) {
         Row(
@@ -392,7 +517,9 @@ private fun TechniqueEdge(
                 .clip(RoundedCornerShape(2.dp))
                 .background(labelColor)
                 .padding(if (isSelected) 2.dp else 1.dp)
-                .clickable(onClick = onClick),
+                .clickable(
+                    enabled = isEnabled,
+                    onClick = onClick),
         ) {
             if (isSelected) {
                 FloatInputField(
@@ -404,7 +531,7 @@ private fun TechniqueEdge(
                     modifier = Modifier.width(60.dp)
                 )
                 FloatInputField(
-                    value = punishment,
+                    value = risk,
                     onValueChange = { onPunishmentChange(it) },
                     onDismiss = onDismissed,
                     label = "R",
@@ -415,7 +542,7 @@ private fun TechniqueEdge(
                 Text(
                     modifier = Modifier
                         .padding(1.dp),
-                    text = "P:${probability ?: "???"} R:${punishment ?: "???"}"
+                    text = "P:${probability ?: "???"} R:${risk ?: "???"}"
                 )
             }
         }
@@ -471,84 +598,6 @@ private fun TacticColumn(
             softWrap = false
         )
     }
-}
-
-@Composable
-private fun FloatInputField(
-    value: Float?,
-    label: String,
-    onValueChange: (Float) -> Unit,
-    onDismiss: () -> Unit = {},
-    modifier: Modifier = Modifier,
-    enabled: Boolean = true,
-    textStyle: TextStyle = TextStyle(fontSize = 14.sp),
-    backgroundColor: Color = Color.White,
-    shape: RoundedCornerShape = RoundedCornerShape(2.dp)
-) {
-    var text by remember { mutableStateOf(value?.toString() ?: "") }
-
-    LaunchedEffect(value) {
-        val currentFloat = text.toFloatOrNull()
-        if (value != null && !value.isNaN()) {
-            if (currentFloat != value) {
-                text = value.toString()
-            }
-        } else if (value == null) {
-            text = ""
-        }
-    }
-
-    BasicTextField(
-        value = text,
-        onValueChange = { newText ->
-            val floatValue = newText.toFloatOrNull()
-            when {
-                floatValue == null -> {
-                    text = newText
-                }
-                floatValue in 0f..1f -> {
-                    text = newText
-                    onValueChange(floatValue)
-                }
-                floatValue > 1f -> {
-                    text = "1"
-                    onValueChange(1f)
-                }
-                floatValue < 0f -> {
-                    text = "0"
-                    onValueChange(0f)
-                }
-            }
-        },
-        modifier = modifier
-            .background(backgroundColor, shape)
-            .padding(horizontal = 8.dp, vertical = 4.dp),
-        enabled = enabled,
-        textStyle = textStyle,
-        singleLine = true,
-        keyboardOptions = KeyboardOptions(
-            keyboardType = KeyboardType.Decimal,
-            imeAction = ImeAction.Done
-        ),
-        keyboardActions = KeyboardActions(
-            onDone = { onDismiss() }
-        ),
-        decorationBox = { innerTextField ->
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(4.dp)
-            ) {
-                Text(
-                    text = "$label:",
-                    style = textStyle,
-                    color = if (enabled) Color.Black else Color.Gray
-                )
-                Box(modifier = Modifier.weight(1f)) {
-                    innerTextField()
-                }
-            }
-        }
-    )
 }
 
 

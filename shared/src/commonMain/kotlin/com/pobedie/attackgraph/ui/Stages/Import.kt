@@ -91,7 +91,7 @@ fun ImportStage(
                     onCheckedChange = { viewModel.selectFile(useDefault = !state.isProvidedAtlasDateSelected) },
                 )
                 Text(
-                    text = "Use included MITRE ATLAS data (might not be relevant)",
+                    text = "Use included MITRE ATLAS data (ATLAS-2026.05. Might not be relevant)",
                 )
             }
             val isImportAvailable = (state.filePath.isNotBlank() || state.isProvidedAtlasDateSelected)

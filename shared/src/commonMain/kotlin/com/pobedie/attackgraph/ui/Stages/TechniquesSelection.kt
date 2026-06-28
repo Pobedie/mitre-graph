@@ -113,31 +113,50 @@ fun TechniqueSelection(
                     modifier = Modifier.padding(horizontal = 4.dp),
                     tactic = tactic,
                     selectedTechniques = state.selectedTechniquesId,
-                    onTechniqueClick = { viewModel.selectTechnique(it) }
+                    isTargetSelectionInProgress = state.isTargetSelectionInProgress,
+                    targetTechnique = state.targetTechnique,
+                    onTechniqueClick = {
+                        viewModel.selectTechnique(it)
+                        if (state.isTargetSelectionInProgress){
+                            viewModel.selectTargetTechnique(it)
+                        }
+                    }
                 )
             }
 
         }
-        AnimatedVisibility(
+
+        Row(
             modifier = Modifier
                 .padding(vertical = 4.dp, horizontal = 8.dp)
-                .align(Alignment.End),
-            visible = state.isAttackVectorMappingStageAvailable,
-            enter = fadeIn(),
-            exit = fadeOut()
+                .fillMaxWidth(),
+            verticalAlignment = Alignment.Bottom
         ) {
-            Row {
-                Button(
-                    onClick = {viewModel.clearTechniqueSelectoins()},
-                    colors = ButtonDefaults.filledTonalButtonColors()
-                ) {
-                    Text("Clear selections")
-                }
-                Spacer(Modifier.width(20.dp))
-                Button(
-                    onClick = {viewModel.switchToAttackVectorBuildingStage()},
-                ) {
-                    Text("Start building attack vectors")
+            Button(
+                onClick = { viewModel.startTargetTechniqueSelection() },
+                enabled = !state.isTargetSelectionInProgress
+            ) {
+                Text("Select target")
+            }
+            Spacer(Modifier.weight(1f))
+            AnimatedVisibility(
+                visible = state.isAttackVectorMappingStageAvailable,
+                enter = fadeIn(),
+                exit = fadeOut()
+            ) {
+                Row {
+                    Button(
+                        onClick = { viewModel.clearTechniqueSelectoins() },
+                        colors = ButtonDefaults.filledTonalButtonColors()
+                    ) {
+                        Text("Clear selections")
+                    }
+                    Spacer(Modifier.width(20.dp))
+                    Button(
+                        onClick = { viewModel.switchToAttackVectorBuildingStage() },
+                    ) {
+                        Text("Start building attack vectors")
+                    }
                 }
             }
         }
@@ -148,11 +167,13 @@ fun TechniqueSelection(
 @Composable
 private fun LazyItemScope.TacticColumn(
     tactic: Tactic,
+    isTargetSelectionInProgress: Boolean,
     selectedTechniques: List<String>,
+    targetTechnique: String?,
     onTechniqueClick: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val columnColor = Color(120, 190, 200)
+    val columnColor = if (isTargetSelectionInProgress) Color(255, 171, 140, 255) else Color.LightGray
 
     val tacticTooltipState = rememberTooltipState(isPersistent = true)
     var tacticShowTooltip by remember{ mutableStateOf(false) }
@@ -241,6 +262,7 @@ private fun LazyItemScope.TacticColumn(
             val techniqueTooltipState = rememberTooltipState(isPersistent = true)
             var techniqueShowTooltip by remember{ mutableStateOf(false) }
             var isTechniqueInfoIconVisible by remember{ mutableStateOf(false) }
+            val isTarget = technique.id == targetTechnique
 
             LaunchedEffect(techniqueShowTooltip) {
                 if (techniqueShowTooltip) {
@@ -258,21 +280,23 @@ private fun LazyItemScope.TacticColumn(
                     }
                     .onPointerEvent(PointerEventType.Exit) {
                         isTechniqueInfoIconVisible = false
-                    },
+                    }
+                    .then(
+                        if (isTarget)
+                            Modifier.background(Color(255, 103, 76))
+                        else if (selectedTechniques.contains(technique.id))
+                            Modifier.background(Color(170, 218, 255, 255))
+                        else
+                            Modifier
+                    ),
                 contentAlignment = Alignment.TopEnd
-                ) {
+            ) {
                 Text(
                     modifier = Modifier
                         .clickable(
                             onClick = { onTechniqueClick(technique.id) }
                         )
                         .fillMaxWidth()
-                        .then (
-                            if (selectedTechniques.contains(technique.id) ) {
-                                Modifier
-                                    .background(Color.White.copy(alpha = 0.5f))
-                            } else Modifier
-                        )
                         .padding(2.dp)
                         .widthIn(max = 150.dp),
                     text = technique.name

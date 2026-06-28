@@ -4,19 +4,23 @@ import androidx.compose.ui.graphics.Color
 import attackgraph.shared.generated.resources.Res
 import com.pobedie.attackgraph.core.MainRepository
 import com.pobedie.attackgraph.core.entity.Edge
+import com.pobedie.attackgraph.core.entity.EdgeState
 import com.pobedie.attackgraph.core.entity.Node
 import com.pobedie.attackgraph.core.entity.NodeTactic
 import com.pobedie.attackgraph.core.entity.Tactic
+import com.pobedie.attackgraph.core.findOptimalPath
+import java.io.File
+import kotlin.math.absoluteValue
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import java.io.File
-import kotlin.math.absoluteValue
 
 
 class ViewModel(
@@ -33,12 +37,28 @@ class ViewModel(
             mainRepository.importState.collectLatest { isImportSuccessful ->
                 if (isImportSuccessful) {
                     _state.update {
-                        it.copy( isTechniqueSelectionStageAvailable = true )
+                        it.copy(isTechniqueSelectionStageAvailable = true)
                     }
                     switchToTechniqueSelectionStage()
                 }
             }
         }
+        // Handle side effects from state change
+        state.onEach { currentState ->
+            val mittigationAndAttackStageAvailable: Boolean = (
+                    currentState.edges.size > 2 &&
+                    currentState.edges.none { it.risk == null || it.probability == null } &&
+                    state.value.edges.any { it.endNode == state.value.targetTechnique }
+                    )
+            val isAttackVectorMappingStageAvailable =
+                currentState.selectedTechniquesId.size >= 3 && state.value.targetTechnique != null
+            _state.update {
+                it.copy(
+                    isMitigationsAndAttacksStageAvailable = mittigationAndAttackStageAvailable,
+                    isAttackVectorMappingStageAvailable = isAttackVectorMappingStageAvailable
+                )
+            }
+        }.launchIn(scope)
     }
 
     fun switchToImportStage() {
@@ -46,7 +66,7 @@ class ViewModel(
     }
 
     fun switchToTechniqueSelectionStage() {
-        var tactics: List<Tactic> = emptyList()
+        var tactics: List<Tactic>
         scope.launch {
             tactics = mainRepository.getTactics()
             _state.update {
@@ -58,16 +78,14 @@ class ViewModel(
         }
     }
 
-
     fun switchToAttackVectorBuildingStage() {
-        val allTechniques = state.value.tactics.map{it.techniques}.flatten()
+        val allTechniques = state.value.tactics.map { it.techniques }.flatten()
 //        selectedTechniques have to be sorted, otherwise the nodes might be places incorrectly on Y axis
         val nodes: List<Node> = state.value.selectedTechniquesId.sortedBy { it }.mapNotNull { selectedIds ->
-            val selectedTechnique = allTechniques.find { it.id == selectedIds}
+            val selectedTechnique = allTechniques.find { it.id == selectedIds }
             if (selectedTechnique != null) {
                 val tacticName = state.value.tactics.findLast { it.id == selectedTechnique.tacticId }?.name.orEmpty()
                 val color = generateColorFromId(selectedTechnique.tacticId)
-                println("DEBUGG color :  ${color}")
                 Node(
                     id = selectedTechnique.id,
                     name = selectedTechnique.name,
@@ -75,16 +93,131 @@ class ViewModel(
                     tactic = NodeTactic(
                         id = selectedTechnique.tacticId,
                         name = tacticName,
-                        color = color
-                    )
+                        color = color,
+                    ),
                 )
             } else null
         }
-        _state.update { it.copy(
-            stage = Stage.AttackVectorsBuilding,
-            nodes = nodes,
-            selectedNode = null,
-        )
+//        User might build the graph then go back to SelectTechnique stage and deselect nodes.
+//        If we don't handle this, we will have incorrect optimal path calculations
+        val newEdges = state.value.edges.mapNotNull { _edge ->
+            if (nodes.any { it.id == _edge.startNode } && nodes.any { it.id == _edge.endNode }) {
+                _edge
+            } else null
+        }
+        _state.update {
+            it.copy(
+                stage = Stage.AttackVectorsBuilding,
+                nodes = nodes,
+                edges = newEdges,
+                selectedNode = null,
+            )
+        }
+        // Since we know the target technique, we can already start case-study fetching
+        if (state.value.targetTechnique != null) {
+            scope.launch {
+                val attackVectors = mainRepository.getAttackVectors(state.value.targetTechnique!!)
+                val mitigations = mainRepository.getMittigations(state.value.selectedTechniquesId)
+                _state.update {
+                    it.copy(
+                        attackVectors = attackVectors,
+                        mitigations = mitigations
+                    )
+                }
+            }
+        } else {
+            println("ERROR: target technique is not selected")
+        }
+    }
+
+    fun startTargetTechniqueSelection() {
+        _state.update {
+            it.copy(
+                isTargetSelectionInProgress = true
+            )
+        }
+    }
+
+    fun selectTargetTechnique(target: String) {
+        _state.update {
+            it.copy(
+                targetTechnique = target,
+                isTargetSelectionInProgress = false
+            )
+        }
+    }
+
+    fun showAlphaValueDialog() {
+        _state.update {
+            it.copy(
+                alphaValueDialogVisible = true
+            )
+        }
+    }
+
+    fun switchToMitigationsAndAttacks() {
+        val rootNodes: List<String> =
+                state.value.nodes
+                        .filter { _node ->
+                            state.value.edges.none { _edge -> _edge.endNode == _node.id }
+                        }
+                        .map { it.id }
+
+        val targetTechnique = state.value.targetTechnique
+        val allEdges = state.value.edges
+        val probablePaths: MutableList<Pair<List<Edge>, Double>> = mutableListOf()
+        var optimalPath: Pair<List<Edge>, Double>? = null
+
+        if (targetTechnique != null) {
+            rootNodes.forEach { _rootNode ->
+                val pathResult = findOptimalPath(
+                    edges = allEdges,
+                    start = _rootNode,
+                    target = targetTechnique,
+                    alpha = state.value.alphaValue
+                )
+                if (pathResult != null) {
+                    println(
+                        "INFO optimal path from node $_rootNode:  " +
+                            "${pathResult.first.map { Pair(it.startNode, it.endNode) }}, ${pathResult.second}"
+                    )
+                    probablePaths.add(pathResult)
+                    if (optimalPath == null || pathResult.second < optimalPath.second) {
+                        optimalPath = pathResult
+                    }
+                }
+            }
+        }
+
+        val newEdges =
+            if (optimalPath != null) {
+                allEdges.map { _edge ->
+                    if (optimalPath.first.contains(_edge)) {
+                        _edge.copy( state = EdgeState.MostOptimal )
+                    } else if (
+                        probablePaths.any {
+                            it.first.contains(_edge)
+                        }
+                    ) {
+                        _edge.copy( state = EdgeState.Probable )
+                    }
+                    else _edge
+                }
+            } else {
+                allEdges
+            }
+
+        _state.update {
+            it.copy(
+                    stage = Stage.MitigationsAndAttacks,
+                    edges = newEdges
+            )
+        }
+        println("INFO rootNodes :  ${rootNodes}")
+        if (optimalPath != null) {
+            println("INFO optimalPath cost: ${optimalPath.second}")
+        } else {
+            println("INFO no optimal path found")
         }
     }
 
@@ -146,7 +279,6 @@ class ViewModel(
             }
             it.copy(
                 selectedTechniquesId = newSelections,
-                isAttackVectorMappingStageAvailable = newSelections.size >= 3
             )
         }
     }
@@ -155,6 +287,8 @@ class ViewModel(
         _state.update {
             it.copy(
                 selectedTechniquesId = listOf(),
+                targetTechnique = null,
+                isTargetSelectionInProgress = false,
                 isAttackVectorMappingStageAvailable = false
             )
         }
@@ -242,13 +376,32 @@ class ViewModel(
             val newEdges = it.edges.map {
                 if (it.startNode == startNode && it.endNode == endNode) {
                     it.copy(
-                        punishment = value
+                        risk = value
                     )
                 } else it
             }
             it.copy(edges = newEdges)
         }
     }
+
+    fun toggleMitigationRelevance(mitigation: String) {
+        _state.update {
+            val newMitigations = it.mitigations.map {
+                if (it.id == mitigation) it.copy(isRelevant = !it.isRelevant) else it
+            }
+            it.copy( mitigations = newMitigations )
+        }
+    }
+
+    fun setAlphaValue(alpha: Float) {
+        _state.update {
+            it.copy(
+                alphaValue = alpha,
+                alphaValueDialogVisible = false
+                )
+        }
+    }
+
 
     private fun generateColorFromId(id: String): Color {
         val hash = id.hashCode() * 999
@@ -257,7 +410,6 @@ class ViewModel(
         val value = 0.45f
         return Color.hsv(hue, saturation, value)
     }
-
 }
 
 private const val PROVIDED_ATLAS_DATA_PATH = "files/ATLAS-2026.05.yaml"
