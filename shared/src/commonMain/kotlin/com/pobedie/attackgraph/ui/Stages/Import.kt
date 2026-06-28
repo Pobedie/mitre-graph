@@ -25,9 +25,19 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import attackgraph.shared.generated.resources.Res
 import attackgraph.shared.generated.resources.ic_floder
+import attackgraph.shared.generated.resources.import_button
+import attackgraph.shared.generated.resources.import_from_file_title
+import attackgraph.shared.generated.resources.or_use_included_data
+import attackgraph.shared.generated.resources.select_yaml_file_content_desc
+import attackgraph.shared.generated.resources.select_yaml_file_dialog_title
+import attackgraph.shared.generated.resources.select_yaml_file_placeholder
+import attackgraph.shared.generated.resources.use_included_data_checkbox
 import com.pobedie.attackgraph.ui.ViewModel
 import com.pobedie.attackgraph.ui.ViewState
+import kotlinx.coroutines.runBlocking
+import org.jetbrains.compose.resources.getString
 import org.jetbrains.compose.resources.painterResource
+import org.jetbrains.compose.resources.stringResource
 import java.awt.FileDialog
 import java.awt.Frame
 import java.io.File
@@ -50,7 +60,7 @@ fun ImportStage(
 
             Text(
                 modifier = Modifier.padding(vertical = 8.dp, horizontal = 16.dp),
-                text = "Import from file",
+                text = stringResource(Res.string.import_from_file_title),
                 style = MaterialTheme.typography.titleLarge
             )
             FileSelectionField(
@@ -79,7 +89,7 @@ fun ImportStage(
                 modifier = Modifier
                     .padding(top = 16.dp)
                     .padding( horizontal = 16.dp),
-                text = "or use included data",
+                text = stringResource(Res.string.or_use_included_data),
                 style = MaterialTheme.typography.titleLarge
             )
             Row(
@@ -91,7 +101,7 @@ fun ImportStage(
                     onCheckedChange = { viewModel.selectFile(useDefault = !state.isProvidedAtlasDateSelected) },
                 )
                 Text(
-                    text = "Use included MITRE ATLAS data (ATLAS-2026.05. Might not be relevant)",
+                    text = stringResource(Res.string.use_included_data_checkbox),
                 )
             }
             val isImportAvailable = (state.filePath.isNotBlank() || state.isProvidedAtlasDateSelected)
@@ -102,7 +112,7 @@ fun ImportStage(
                 onClick = { viewModel.importAtlasData() },
                 enabled = isImportAvailable
             ) {
-                Text("Import")
+                Text(stringResource(Res.string.import_button))
             }
 
         }
@@ -137,7 +147,7 @@ private fun FileSelectionField(
     ) {
         Text(
             modifier = Modifier.padding(horizontal = 8.dp),
-            text = filePath.takeUnless{it.isBlank()} ?: "Select yaml file from MITRE ATLAS",
+            text = filePath.takeUnless{it.isBlank()} ?: stringResource(Res.string.select_yaml_file_placeholder),
             color = contentColor
         )
         Icon(
@@ -146,17 +156,18 @@ private fun FileSelectionField(
                 .size(24.dp),
             painter = painterResource(Res.drawable.ic_floder),
             tint = contentColor,
-            contentDescription = "Select yaml file"
+            contentDescription = stringResource(Res.string.select_yaml_file_content_desc)
         )
 
     }
 }
 
 fun openFilePicker(
-    title: String = "Select MITRE ATLAS yaml file"
+    title: String? = null
 ): String? {
-    val window = Frame(title)
-    val dialog = FileDialog(window, title, FileDialog.LOAD)
+    val resolvedTitle = title ?: runBlocking { getString(Res.string.select_yaml_file_dialog_title) }
+    val window = Frame(resolvedTitle)
+    val dialog = FileDialog(window, resolvedTitle, FileDialog.LOAD)
     window.setSize(800, 600)
     window.setLocationRelativeTo(null)
     val allowedExtensions = listOf(".yaml")

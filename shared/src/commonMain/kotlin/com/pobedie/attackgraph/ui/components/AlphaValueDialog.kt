@@ -19,6 +19,11 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import attackgraph.shared.generated.resources.Res
+import attackgraph.shared.generated.resources.alpha_value_description
+import attackgraph.shared.generated.resources.apply_button
+import attackgraph.shared.generated.resources.enter_alpha_value_title
+import org.jetbrains.compose.resources.stringResource
 
 
 @Composable
@@ -36,12 +41,12 @@ fun AlphaValueDialog(
         horizontalAlignment = Alignment.Start
     ) {
         Text(
-            text = "Enter alpha value",
+            text = stringResource(Res.string.enter_alpha_value_title),
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold
         )
         Text(
-            text = "It will be used as a multiplier for risk values"
+            text = stringResource(Res.string.alpha_value_description)
         )
         FloatInputField(
             value = alphaValue,
@@ -55,7 +60,7 @@ fun AlphaValueDialog(
             modifier = Modifier.align(Alignment.End),
             onClick = {onClick(alphaValue)}
         ) {
-            Text("Apply")
+            Text(stringResource(Res.string.apply_button))
         }
     }
 }

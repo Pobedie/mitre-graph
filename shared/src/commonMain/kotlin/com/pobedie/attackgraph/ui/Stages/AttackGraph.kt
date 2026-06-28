@@ -67,8 +67,20 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.util.fastCoerceAtMost
 import androidx.compose.ui.zIndex
 import attackgraph.shared.generated.resources.Res
+import attackgraph.shared.generated.resources.delete_connection_content_desc
+import attackgraph.shared.generated.resources.deselect_hint
+import attackgraph.shared.generated.resources.edge_probability_risk_format
 import attackgraph.shared.generated.resources.ic_info
 import attackgraph.shared.generated.resources.ic_shield
+import attackgraph.shared.generated.resources.id_description_format
+import attackgraph.shared.generated.resources.mitigation_full_description_format
+import attackgraph.shared.generated.resources.p_label
+import attackgraph.shared.generated.resources.r_label
+import attackgraph.shared.generated.resources.set_as_irrelevant
+import attackgraph.shared.generated.resources.set_as_relevant
+import attackgraph.shared.generated.resources.show_mitigation_info_content_desc
+import attackgraph.shared.generated.resources.technique_description_content_desc
+import attackgraph.shared.generated.resources.unknown_value
 import com.dk.kuiver.model.buildKuiver
 import com.dk.kuiver.model.buildKuiverWithClassifiedEdges
 import com.dk.kuiver.model.edges
@@ -90,6 +102,7 @@ import com.pobedie.attackgraph.ui.ViewState
 import com.pobedie.attackgraph.ui.components.FloatInputField
 import kotlinx.coroutines.delay
 import org.jetbrains.compose.resources.painterResource
+import org.jetbrains.compose.resources.stringResource
 import kotlin.math.atan2
 import kotlin.math.cos
 import kotlin.math.sin
@@ -293,7 +306,7 @@ fun AttackGraph(
                 .align(Alignment.BottomStart)
                 .padding(4.dp)
             ,
-            text = "Right click anywhere to deselect",
+            text = stringResource(Res.string.deselect_hint),
             color = Color.White.copy(alpha = 0.5f)
         )
     }
@@ -407,9 +420,12 @@ private fun TechniqueNode(
                                 PlainTooltip(
                                     maxWidth = 400.dp,
                                 ) {
-                                    val mitigationDescription =
-                                        "ID: ${it.id}\n\nMitigation:\n${it.relationshipDescription}" +
-                                                "\n\n\n${it.mitigationDescription}"
+                                    val mitigationDescription = stringResource(
+                                        Res.string.mitigation_full_description_format,
+                                        it.id,
+                                        it.relationshipDescription,
+                                        it.mitigationDescription
+                                    )
                                     SelectionContainer {
                                         Column {
                                             Text(mitigationDescription)
@@ -419,9 +435,9 @@ private fun TechniqueNode(
                                             ) {
                                                 Text(
                                                     text = if (it.isRelevant)
-                                                        "Set as irrelevant"
+                                                        stringResource(Res.string.set_as_irrelevant)
                                                     else
-                                                        "Set as relevant"
+                                                        stringResource(Res.string.set_as_relevant)
                                                 )
                                             }
                                         }
@@ -442,7 +458,7 @@ private fun TechniqueNode(
                                     .scale(0.7f),
                                 painter = painterResource(Res.drawable.ic_shield),
                                 tint = iconColor,
-                                contentDescription = "Show mitigation info"
+                                contentDescription = stringResource(Res.string.show_mitigation_info_content_desc)
                             )
                         }
                     }
@@ -462,7 +478,7 @@ private fun TechniqueNode(
                     maxWidth = 400.dp,
                 ) {
                     SelectionContainer {
-                        Text("ID: ${node.id}\n\n${node.description}")
+                        Text(stringResource(Res.string.id_description_format, node.id, node.description))
                     }
                 }
             },
@@ -483,7 +499,7 @@ private fun TechniqueNode(
                     },
                 painter = painterResource(Res.drawable.ic_info),
                 tint = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.6f),
-                contentDescription = "Technique description"
+                contentDescription = stringResource(Res.string.technique_description_content_desc)
             )
         }
     }
@@ -526,7 +542,7 @@ private fun TechniqueEdge(
                     value = probability,
                     onValueChange = { onProbabilityChange(it) },
                     onDismiss = onDismissed,
-                    label = "P",
+                    label = stringResource(Res.string.p_label),
                     enabled = true,
                     modifier = Modifier.width(60.dp)
                 )
@@ -534,7 +550,7 @@ private fun TechniqueEdge(
                     value = risk,
                     onValueChange = { onPunishmentChange(it) },
                     onDismiss = onDismissed,
-                    label = "R",
+                    label = stringResource(Res.string.r_label),
                     enabled = true,
                     modifier = Modifier.width(60.dp)
                 )
@@ -542,7 +558,11 @@ private fun TechniqueEdge(
                 Text(
                     modifier = Modifier
                         .padding(1.dp),
-                    text = "P:${probability ?: "???"} R:${risk ?: "???"}"
+                    text = stringResource(
+                        Res.string.edge_probability_risk_format,
+                        probability ?: stringResource(Res.string.unknown_value),
+                        risk ?: stringResource(Res.string.unknown_value)
+                    )
                 )
             }
         }
@@ -562,7 +582,7 @@ private fun TechniqueEdge(
                 Icon(
                     modifier = Modifier.padding(2.dp),
                     imageVector = Icons.Default.Delete,
-                    contentDescription = "Delete connection"
+                    contentDescription = stringResource(Res.string.delete_connection_content_desc)
                 )
             }
         }

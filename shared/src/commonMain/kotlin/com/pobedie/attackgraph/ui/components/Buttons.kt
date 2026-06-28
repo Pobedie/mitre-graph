@@ -27,7 +27,9 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import attackgraph.shared.generated.resources.Res
 import attackgraph.shared.generated.resources.ic_info
+import attackgraph.shared.generated.resources.info_content_desc
 import org.jetbrains.compose.resources.painterResource
+import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun StageButton(
@@ -91,7 +93,7 @@ fun StageButton(
                         .padding(start = 8.dp)
                     ,
                     painter = painterResource(Res.drawable.ic_info),
-                    contentDescription = "Info",
+                    contentDescription = stringResource(Res.string.info_content_desc),
                     tint = contentColor
                 )
             }

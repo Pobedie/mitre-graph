@@ -2,6 +2,9 @@ package com.pobedie.attackgraph.ui
 
 import androidx.compose.ui.graphics.Color
 import attackgraph.shared.generated.resources.Res
+import attackgraph.shared.generated.resources.file_blank_error
+import attackgraph.shared.generated.resources.file_not_found_error
+import attackgraph.shared.generated.resources.unexpected_error
 import com.pobedie.attackgraph.core.MainRepository
 import com.pobedie.attackgraph.core.entity.Edge
 import com.pobedie.attackgraph.core.entity.EdgeState
@@ -21,6 +24,7 @@ import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import org.jetbrains.compose.resources.getString
 
 
 class ViewModel(
@@ -235,8 +239,9 @@ class ViewModel(
                             file.readBytes()
                         }
                     } else {
-                        _state.update { it.copy(fileError = "File not found at ${state.value.filePath}") }
-                        println("Error: File not found at ${state.value.filePath}")
+                        val error = getString(Res.string.file_not_found_error, state.value.filePath)
+                        _state.update { it.copy(fileError = error) }
+                        println("Error: $error")
                     }
                 }
 
@@ -245,12 +250,14 @@ class ViewModel(
                     if (fileContent.isNotBlank()) {
                         mainRepository.importMitreAtlasData(fileContent)
                     } else {
-                        _state.update { it.copy(fileError = "File ${state.value.filePath} seems to be blank") }
-                        println("Error: File ${state.value.filePath} seems to be blank")
+                        val error = getString(Res.string.file_blank_error, state.value.filePath)
+                        _state.update { it.copy(fileError = error) }
+                        println("Error: $error")
                     }
                 }
             } catch (e: Exception) {
-                _state.update { it.copy(fileError = "Unexpected error: ${e.localizedMessage}") }
+                val error = getString(Res.string.unexpected_error, e.localizedMessage ?: "")
+                _state.update { it.copy(fileError = error) }
                 e.printStackTrace()
             }
         }

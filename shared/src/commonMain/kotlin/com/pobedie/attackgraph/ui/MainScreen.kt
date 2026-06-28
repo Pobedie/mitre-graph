@@ -26,7 +26,17 @@ import com.pobedie.attackgraph.ui.Stages.TechniqueSelection
 import com.pobedie.attackgraph.ui.components.AlphaValueDialog
 import com.pobedie.attackgraph.ui.components.StageArrow
 import com.pobedie.attackgraph.ui.components.StageButton
+import attackgraph.shared.generated.resources.Res
+import attackgraph.shared.generated.resources.build_attack_vectors_button
+import attackgraph.shared.generated.resources.build_attack_vectors_hint
+import attackgraph.shared.generated.resources.import_button
+import attackgraph.shared.generated.resources.import_hint
+import attackgraph.shared.generated.resources.mitigations_and_attacks_button
+import attackgraph.shared.generated.resources.mitigations_and_attacks_hint
+import attackgraph.shared.generated.resources.select_techniques_button
+import attackgraph.shared.generated.resources.select_techniques_hint
 import kotlinx.coroutines.launch
+import org.jetbrains.compose.resources.stringResource
 
 
 @OptIn(ExperimentalComposeUiApi::class)
@@ -68,10 +78,8 @@ fun MainScreen(
                         viewModel.switchToImportStage()
                         viewModel.importAtlasData()
                               },
-                    buttonText = "Import",
-                    hintText = "Import a YAML file with MITRE ATLAS data.\n\n" +
-                            "You can find this file at https://github.com/mitre-atlas/atlas-data/blob/main/dist/ or" +
-                            " use the included one (it might be not relevant)",
+                    buttonText = stringResource(Res.string.import_button),
+                    hintText = stringResource(Res.string.import_hint),
                     isHighlighted = state.stage == Stage.Import,
                     isEnabled = true
                 )
@@ -82,8 +90,8 @@ fun MainScreen(
                     onClick = {
                         viewModel.switchToTechniqueSelectionStage()
                     },
-                    buttonText = "Select techniques",
-                    hintText = "Select techniques for each tactic",
+                    buttonText = stringResource(Res.string.select_techniques_button),
+                    hintText = stringResource(Res.string.select_techniques_hint),
                     isHighlighted = state.stage == Stage.TechniqueSelection,
                     isEnabled = state.isTechniqueSelectionStageAvailable
                 )
@@ -94,8 +102,8 @@ fun MainScreen(
                     onClick = {
                         viewModel.switchToAttackVectorBuildingStage()
                     },
-                    buttonText = "Build attack vectors",
-                    hintText = "Show attack vectors by drawing edges between nodes, then set penalty and risk values (0.0-1.0)",
+                    buttonText = stringResource(Res.string.build_attack_vectors_button),
+                    hintText = stringResource(Res.string.build_attack_vectors_hint),
                     isHighlighted = state.stage == Stage.AttackVectorsBuilding,
                     isEnabled = state.isAttackVectorMappingStageAvailable
                 )
@@ -106,8 +114,8 @@ fun MainScreen(
                     onClick = {
                         viewModel.showAlphaValueDialog()
                     },
-                    buttonText = "Attack vectors and mitigations",
-                    hintText = "Show proven by case-studies attack vectors and mitigations",
+                    buttonText = stringResource(Res.string.mitigations_and_attacks_button),
+                    hintText = stringResource(Res.string.mitigations_and_attacks_hint),
                     isHighlighted = state.stage == Stage.MitigationsAndAttacks,
                     isEnabled = state.isMitigationsAndAttacksStageAvailable
                 )

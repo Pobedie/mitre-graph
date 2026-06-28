@@ -56,12 +56,20 @@ import androidx.compose.ui.input.pointer.onPointerEvent
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import attackgraph.shared.generated.resources.Res
+import attackgraph.shared.generated.resources.clear_selections_button
 import attackgraph.shared.generated.resources.ic_info
+import attackgraph.shared.generated.resources.id_description_format
+import attackgraph.shared.generated.resources.select_target_button
+import attackgraph.shared.generated.resources.select_techniques_title
+import attackgraph.shared.generated.resources.start_building_vectors_button
+import attackgraph.shared.generated.resources.tactic_description_content_desc
+import attackgraph.shared.generated.resources.technique_description_content_desc
 import com.pobedie.attackgraph.core.entity.Tactic
 import com.pobedie.attackgraph.ui.ViewModel
 import com.pobedie.attackgraph.ui.ViewState
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.painterResource
+import org.jetbrains.compose.resources.stringResource
 
 
 @OptIn(ExperimentalComposeUiApi::class)
@@ -84,7 +92,7 @@ fun TechniqueSelection(
                 .fillMaxWidth()
         ){
             Text(
-                text = "Select techniqies for different tactics",
+                text = stringResource(Res.string.select_techniques_title),
                 style = MaterialTheme.typography.titleLarge,
                 color = MaterialTheme.colorScheme.onPrimary
             )
@@ -136,7 +144,7 @@ fun TechniqueSelection(
                 onClick = { viewModel.startTargetTechniqueSelection() },
                 enabled = !state.isTargetSelectionInProgress
             ) {
-                Text("Select target")
+                Text(stringResource(Res.string.select_target_button))
             }
             Spacer(Modifier.weight(1f))
             AnimatedVisibility(
@@ -149,13 +157,13 @@ fun TechniqueSelection(
                         onClick = { viewModel.clearTechniqueSelectoins() },
                         colors = ButtonDefaults.filledTonalButtonColors()
                     ) {
-                        Text("Clear selections")
+                        Text(stringResource(Res.string.clear_selections_button))
                     }
                     Spacer(Modifier.width(20.dp))
                     Button(
                         onClick = { viewModel.switchToAttackVectorBuildingStage() },
                     ) {
-                        Text("Start building attack vectors")
+                        Text(stringResource(Res.string.start_building_vectors_button))
                     }
                 }
             }
@@ -204,7 +212,7 @@ private fun LazyItemScope.TacticColumn(
                     maxWidth = 400.dp,
                 ) {
                     SelectionContainer {
-                        Text("ID: ${tactic.id}\n\n${tactic.description}")
+                        Text(stringResource(Res.string.id_description_format, tactic.id, tactic.description))
                     }
                 }
             },
@@ -249,7 +257,7 @@ private fun LazyItemScope.TacticColumn(
                     ,
                     painter = painterResource(Res.drawable.ic_info),
                     tint = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.6f),
-                    contentDescription = "Tactic description"
+                    contentDescription = stringResource(Res.string.tactic_description_content_desc)
                 )
             }
         }
@@ -313,7 +321,7 @@ private fun LazyItemScope.TacticColumn(
                             maxWidth = 400.dp,
                         ) {
                             SelectionContainer {
-                                Text("ID: ${technique.id}\n\n${technique.description}")
+                                Text(stringResource(Res.string.id_description_format, technique.id, technique.description))
                             }
                         }
                     },
@@ -332,7 +340,7 @@ private fun LazyItemScope.TacticColumn(
                         ,
                         painter = painterResource(Res.drawable.ic_info),
                         tint = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.6f),
-                        contentDescription = "Technique description"
+                        contentDescription = stringResource(Res.string.technique_description_content_desc)
                     )
 
                 }
