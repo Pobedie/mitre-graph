@@ -36,7 +36,9 @@ data class ViewState(
     val alphaValue: Float = 0.0f,
 
     // App settings
-    val language: Language = Language.English
+    val language: Language = Language.English,
+    val consoleText: String = "",
+    val isConsoleFrozen: Boolean = false
 )
 
 enum class Language(val code: String) {

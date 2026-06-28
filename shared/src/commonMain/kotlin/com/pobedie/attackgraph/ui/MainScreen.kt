@@ -7,9 +7,11 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
@@ -24,6 +26,7 @@ import com.pobedie.attackgraph.ui.Stages.AttackGraph
 import com.pobedie.attackgraph.ui.Stages.ImportStage
 import com.pobedie.attackgraph.ui.Stages.TechniqueSelection
 import com.pobedie.attackgraph.ui.components.AlphaValueDialog
+import com.pobedie.attackgraph.ui.components.Console
 import com.pobedie.attackgraph.ui.components.StageArrow
 import com.pobedie.attackgraph.ui.components.StageButton
 import attackgraph.shared.generated.resources.Res
@@ -47,7 +50,11 @@ fun MainScreen(
 
     val state by viewModel.state.collectAsStateWithLifecycle()
 
-    println("INFO: imported ${state.nodes.size} nodes")
+    LaunchedEffect(state.nodes.size) {
+        if (state.nodes.isNotEmpty()) {
+            viewModel.logToUiConsole("INFO: imported ${state.nodes.size} nodes")
+        }
+    }
 
     Column(
         modifier = Modifier
@@ -135,6 +142,15 @@ fun MainScreen(
                 Stage.MitigationsAndAttacks,
                 Stage.BestPath -> AttackGraph(viewModel, state)
             }
+
+            Console(
+                text = state.consoleText,
+                freezeDisplay = state.isConsoleFrozen,
+                onTimeout = { viewModel.clearConsole() },
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(16.dp)
+            )
 
             if (state.alphaValueDialogVisible) {
                 AlphaValueDialog(

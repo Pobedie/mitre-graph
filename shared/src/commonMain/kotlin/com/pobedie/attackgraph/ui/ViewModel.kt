@@ -130,7 +130,7 @@ class ViewModel(
                 }
             }
         } else {
-            println("ERROR: target technique is not selected")
+            logToUiConsole("ERROR: target technique is not selected")
         }
     }
 
@@ -181,7 +181,7 @@ class ViewModel(
                     alpha = state.value.alphaValue
                 )
                 if (pathResult != null) {
-                    println(
+                    logToUiConsole(
                         "INFO optimal path from node $_rootNode:  " +
                             "${pathResult.first.map { Pair(it.startNode, it.endNode) }}, ${pathResult.second}"
                     )
@@ -217,11 +217,11 @@ class ViewModel(
                     edges = newEdges
             )
         }
-        println("INFO rootNodes :  ${rootNodes}")
+        logToUiConsole("INFO rootNodes :  ${rootNodes}")
         if (optimalPath != null) {
-            println("INFO optimalPath cost: ${optimalPath.second}")
+            logToUiConsole("INFO optimalPath cost: ${optimalPath.second}")
         } else {
-            println("INFO no optimal path found")
+            logToUiConsole("INFO no optimal path found")
         }
     }
 
@@ -241,7 +241,7 @@ class ViewModel(
                     } else {
                         val error = getString(Res.string.file_not_found_error, state.value.filePath)
                         _state.update { it.copy(fileError = error) }
-                        println("Error: $error")
+                        logToUiConsole("Error: $error")
                     }
                 }
 
@@ -252,7 +252,7 @@ class ViewModel(
                     } else {
                         val error = getString(Res.string.file_blank_error, state.value.filePath)
                         _state.update { it.copy(fileError = error) }
-                        println("Error: $error")
+                        logToUiConsole("Error: $error")
                     }
                 }
             } catch (e: Exception) {
@@ -422,6 +422,21 @@ class ViewModel(
         }
     }
 
+
+    fun logToUiConsole(message: String, freezeDisplay: Boolean = false) {
+        _state.update {
+            it.copy(
+                consoleText = it.consoleText + (if (it.consoleText.isEmpty()) "" else "\n") + message,
+                isConsoleFrozen = freezeDisplay
+            )
+        }
+    }
+
+    fun clearConsole() {
+        _state.update {
+            it.copy(consoleText = "")
+        }
+    }
 
     private fun generateColorFromId(id: String): Color {
         val hash = id.hashCode() * 999
