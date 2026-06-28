@@ -247,6 +247,7 @@ fun AttackGraph(
                     node = node,
                     isSelected = node.id == state.selectedNode,
                     isTarget = state.targetTechnique == node.id,
+                    isEnabled = state.stage == Stage.AttackVectorsBuilding,
                     onClick = {
                         viewModel.setNodeConnection(node.id)
                     },
@@ -305,14 +306,16 @@ fun AttackGraph(
             }
         )
 
-        Text(
-            modifier = Modifier
-                .align(Alignment.BottomStart)
-                .padding(4.dp)
-            ,
-            text = stringResource(Res.string.deselect_hint),
-            color = Color.White.copy(alpha = 0.5f)
-        )
+        AnimatedVisibility(
+            visible = state.stage == Stage.AttackVectorsBuilding,
+            modifier = Modifier.align(Alignment.BottomStart)
+        ) {
+            Text(
+                modifier = Modifier.padding(4.dp),
+                text = stringResource(Res.string.deselect_hint),
+                color = Color.White.copy(alpha = 0.5f)
+            )
+        }
     }
 }
 
@@ -322,6 +325,7 @@ private fun TechniqueNode(
     node: Node,
     isSelected: Boolean,
     isTarget: Boolean,
+    isEnabled: Boolean,
     onClick: () -> Unit,
     areMitigationsShown: Boolean,
     mitigations: List<Mitigation>,
@@ -351,7 +355,7 @@ private fun TechniqueNode(
             .onPointerEvent(PointerEventType.Exit) {
                 isTechniqueInfoIconVisible = false
             }
-            .clickable { onClick() }
+            .clickable(enabled = isEnabled) { onClick() }
             .then(
                 when {
                     isTarget && isSelected ->
