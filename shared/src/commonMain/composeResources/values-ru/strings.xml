@@ -1,0 +1,44 @@
+<resources>
+    <string name="import_button">Импорт</string>
+    <string name="import_hint">Импорт YAML файла с данными MITRE ATLAS.\n\nВы можете найти этот файл по адресу https://github.com/mitre-atlas/atlas-data/blob/main/dist/ или использовать включенный (он может быть неактуальным)</string>
+    <string name="select_techniques_button">Выбрать техники</string>
+    <string name="select_techniques_hint">Выберите техники для каждой тактики</string>
+    <string name="build_attack_vectors_button">Построить векторы атаки</string>
+    <string name="build_attack_vectors_hint">Показать векторы атаки, рисуя ребра между узлами, затем установите значения штрафа и риска (0.0-1.0)</string>
+    <string name="mitigations_and_attacks_button">Векторы атаки и меры защиты</string>
+    <string name="mitigations_and_attacks_hint">Показать подтвержденные тематическими исследованиями (case-studies) векторы атаки и меры защиты</string>
+    <string name="import_from_file_title">Импорт из файла</string>
+    <string name="or_use_included_data">или использовать включенные данные</string>
+    <string name="use_included_data_checkbox">Использовать включенные данные MITRE ATLAS (ATLAS-2026.05. Могут быть неактуальными)</string>
+    <string name="select_yaml_file_placeholder">Выберите yaml файл из MITRE ATLAS</string>
+    <string name="select_yaml_file_content_desc">Выбрать yaml файл</string>
+    <string name="select_yaml_file_dialog_title">Выберите yaml файл MITRE ATLAS</string>
+    <string name="select_techniques_title">Выберите техники для различных тактик</string>
+    <string name="select_target_button">Выбрать цель</string>
+    <string name="clear_selections_button">Очистить выбор</string>
+    <string name="start_building_vectors_button">Начать построение векторов атаки</string>
+    <string name="tactic_description_content_desc">Описание тактики</string>
+    <string name="technique_description_content_desc">Описание техники</string>
+    <string name="deselect_hint">Щелкните правой кнопкой мыши в любом месте, чтобы отменить выбор</string>
+    <string name="set_as_irrelevant">Пометить как нерелевантное</string>
+    <string name="set_as_relevant">Пометить как релевантное</string>
+    <string name="show_mitigation_info_content_desc">Показать информацию о мерах защиты</string>
+    <string name="delete_connection_content_desc">Удалить соединение</string>
+    <string name="enter_alpha_value_title">Введите значение альфа</string>
+    <string name="alpha_value_description">Оно будет использоваться как множитель для значений риска</string>
+    <string name="apply_button">Применить</string>
+    <string name="p_label">P</string>
+    <string name="r_label">R</string>
+
+    <string name="id_description_format">ID: %1$s\n\n%2$s</string>
+    <string name="mitigation_full_description_format">ID: %1$s\n\nМеры защиты:\n%2$s\n\n\n%3$s</string>
+    <string name="edge_probability_risk_format">P:%1$s R:%2$s</string>
+
+    <string name="file_not_found_error">Файл не найден по адресу %1$s</string>
+    <string name="file_blank_error">Файл %1$s пуст</string>
+    <string name="unexpected_error">Непредвиденная ошибка: %1$s</string>
+
+    <string name="info_content_desc">Информация</string>
+    <string name="next_step_content_desc">следующий шаг</string>
+    <string name="unknown_value">???</string>
+</resources>

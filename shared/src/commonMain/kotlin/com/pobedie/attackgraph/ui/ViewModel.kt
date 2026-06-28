@@ -409,6 +409,19 @@ class ViewModel(
         }
     }
 
+    fun changeLanguage(language: Language) {
+        _state.update {
+            it.copy(language = language)
+        }
+        // Workaround for Desktop to update locale for Compose Resources
+        try {
+            val locale = java.util.Locale(language.code)
+            java.util.Locale.setDefault(locale)
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
 
     private fun generateColorFromId(id: String): Color {
         val hash = id.hashCode() * 999

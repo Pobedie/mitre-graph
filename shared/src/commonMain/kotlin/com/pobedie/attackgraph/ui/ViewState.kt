@@ -33,8 +33,16 @@ data class ViewState(
     val attackVectors: List<AttackVector> = emptyList(),
     val mitigations: List<Mitigation> = emptyList(),
     val alphaValueDialogVisible: Boolean = false,
-    val alphaValue: Float = 0.0f
+    val alphaValue: Float = 0.0f,
+
+    // App settings
+    val language: Language = Language.English
 )
+
+enum class Language(val code: String) {
+    English("en"),
+    Russian("ru")
+}
 
 enum class Stage {
     Import,
