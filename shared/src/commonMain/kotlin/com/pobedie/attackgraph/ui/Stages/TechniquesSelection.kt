@@ -256,7 +256,7 @@ private fun LazyItemScope.TacticColumn(
                         )
                     ,
                     painter = painterResource(Res.drawable.ic_info),
-                    tint = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.6f),
+                    tint = Color.DarkGray.copy(alpha = 0.8f),
                     contentDescription = stringResource(Res.string.tactic_description_content_desc)
                 )
             }
@@ -339,7 +339,7 @@ private fun LazyItemScope.TacticColumn(
                             )
                         ,
                         painter = painterResource(Res.drawable.ic_info),
-                        tint = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.6f),
+                        tint = Color.DarkGray.copy(alpha = 0.8f),
                         contentDescription = stringResource(Res.string.technique_description_content_desc)
                     )
 
