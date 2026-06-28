@@ -688,5 +688,5 @@ fun Modifier.sideBorders(width: Dp, color: Color): Modifier = this.drawBehind {
 
 
 private const val COLUMN_X_SPACING = 400
-private const val COLUMN_Y_SPACING = 60
+private const val COLUMN_Y_SPACING = 80
 private const val COLUMN_X_WIDTH = 230
