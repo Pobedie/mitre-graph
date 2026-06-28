@@ -276,7 +276,8 @@ fun AttackGraph(
                     arrowDrawer = ArrowStyle,
                     enableCurve = true,
                     labelPlacement = LabelPlacement.END,
-                    labelContent = {
+                    label = "there must be anything for the lable to show up, even if it's not being used",
+                    labelContent = { _ ->
                         if (_edge != null) {
                             val isSelected = _edge.startNode == state.selectedEdge?.first &&
                                     _edge.endNode == state.selectedEdge.second
