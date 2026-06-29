@@ -21,8 +21,9 @@ compose.desktop {
 
         nativeDistributions {
             targetFormats(TargetFormat.Dmg, TargetFormat.Exe,  TargetFormat.AppImage)
-            packageName = "com.pobedie.attackgraph"
+            packageName = "Mitrenom"
             packageVersion = "1.0.0"
+            modules("java.sql")
         }
     }
 }
