@@ -11,6 +11,7 @@ import attackgraph.shared.generated.resources.probable_paths_label
 import attackgraph.shared.generated.resources.target_not_selected_error
 import attackgraph.shared.generated.resources.unexpected_error
 import com.pobedie.attackgraph.core.MainRepository
+import com.pobedie.attackgraph.core.calculateProbabilitiesAndRisks
 import com.pobedie.attackgraph.core.entity.Edge
 import com.pobedie.attackgraph.core.entity.EdgeState
 import com.pobedie.attackgraph.core.entity.Node
@@ -30,6 +31,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.jetbrains.compose.resources.getString
+import java.util.Locale
 
 
 class ViewModel(
@@ -171,15 +173,20 @@ class ViewModel(
     }
 
     fun switchToMitigationsAndAttacks() {
+        val updatedEdges = calculateProbabilitiesAndRisks(
+            edges = state.value.edges,
+            nodes = state.value.nodes,
+            target = state.value.targetTechnique!!
+        )
         val rootNodes: List<String> =
                 state.value.nodes
                         .filter { _node ->
-                            state.value.edges.none { _edge -> _edge.endNode == _node.id }
+                            updatedEdges.none { _edge -> _edge.endNode == _node.id }
                         }
                         .map { it.id }
 
         val targetTechnique = state.value.targetTechnique
-        val allEdges = state.value.edges
+        val allEdges = updatedEdges
         val probablePaths: MutableList<Pair<List<Edge>, Double>> = mutableListOf()
         var optimalPath: Pair<List<Edge>, Double>? = null
 
@@ -433,8 +440,8 @@ class ViewModel(
         }
         // Workaround for Desktop to update locale for Compose Resources
         try {
-            val locale = java.util.Locale(language.code)
-            java.util.Locale.setDefault(locale)
+            val locale = Locale(language.code)
+            Locale.setDefault(locale)
         } catch (e: Exception) {
             e.printStackTrace()
         }
