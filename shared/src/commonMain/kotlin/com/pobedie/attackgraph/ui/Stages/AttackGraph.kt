@@ -68,11 +68,11 @@ import androidx.compose.ui.util.fastCoerceAtMost
 import androidx.compose.ui.zIndex
 import attackgraph.shared.generated.resources.Res
 import attackgraph.shared.generated.resources.delete_connection_content_desc
+import attackgraph.shared.generated.resources.description_maturity_format
 import attackgraph.shared.generated.resources.deselect_hint
 import attackgraph.shared.generated.resources.edge_probability_risk_format
 import attackgraph.shared.generated.resources.ic_info
 import attackgraph.shared.generated.resources.ic_shield
-import attackgraph.shared.generated.resources.id_description_format
 import attackgraph.shared.generated.resources.mitigation_full_description_format
 import attackgraph.shared.generated.resources.p_label
 import attackgraph.shared.generated.resources.r_label
@@ -252,7 +252,7 @@ fun AttackGraph(
                         viewModel.setNodeConnection(node.id)
                     },
                     areMitigationsShown = state.stage == Stage.MitigationsAndAttacks,
-                    mitigations = state.mitigations,
+                    mitigations = state.mitigations.filter { it.id == node.id },
                     onToggleMitigationRelevance = {
                         viewModel.toggleMitigationRelevance(it)
                     }
@@ -391,10 +391,9 @@ private fun TechniqueNode(
                     modifier = Modifier
                         .padding(4.dp)
                 ) {
-                    mitigations.filter { it.targetTechnique == node.id }.forEach {
-
-                    val mitigationTooltipState = rememberTooltipState(isPersistent = true)
-                        var mitigationShowTooltip by remember{ mutableStateOf("") }
+                    mitigations.forEach {
+                        val mitigationTooltipState = rememberTooltipState(isPersistent = true)
+                        var mitigationShowTooltip by remember { mutableStateOf("") }
                         LaunchedEffect(mitigationShowTooltip) {
                             if (mitigationShowTooltip == it.id) {
                                 mitigationTooltipState.show()
@@ -486,12 +485,19 @@ private fun TechniqueNode(
                     maxWidth = 400.dp,
                 ) {
                     SelectionContainer {
-                        Text(stringResource(Res.string.id_description_format, node.id, node.description))
+                        Text(
+                            stringResource(
+                                Res.string.description_maturity_format,
+                                node.id,
+                                node.maturity.name,
+                                node.description
+                            )
+                        )
                     }
                 }
             },
             state = techniqueTooltipState,
-            onDismissRequest = {techniqueShowTooltip = false}
+            onDismissRequest = { techniqueShowTooltip = false }
         ) {
             Icon(
                 modifier = Modifier

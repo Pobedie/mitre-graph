@@ -6,6 +6,7 @@ data class Node(
     val id: String,
     val name: String,
     val description: String,
+    val maturity: TechniqueMaturity,
     val tactic: NodeTactic,
 )
 

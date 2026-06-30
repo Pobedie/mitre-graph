@@ -79,7 +79,7 @@ class ViewModel(
         clearConsole()
         var tactics: List<Tactic>
         scope.launch {
-            tactics = mainRepository.getTactics()
+            tactics = mainRepository.getTacticsWithTechniques()
             _state.update {
                 it.copy(
                     stage = Stage.TechniqueSelection,
@@ -102,6 +102,7 @@ class ViewModel(
                     id = selectedTechnique.id,
                     name = selectedTechnique.name,
                     description = selectedTechnique.description,
+                    maturity = selectedTechnique.maturity,
                     tactic = NodeTactic(
                         id = selectedTechnique.tacticId,
                         name = tacticName,

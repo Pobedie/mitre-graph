@@ -3,7 +3,7 @@ package com.pobedie.attackgraph.core.mappers
 import com.pobedie.attackgraph.core.entity.AttackVector
 import com.pobedie.attackgraph.core.entity.Tactic
 import com.pobedie.attackgraph.core.entity.Technique
-import com.pobedie.attackgraph.database.Case_study
+import com.pobedie.attackgraph.core.entity.TechniqueMaturity
 import com.pobedie.attackgraph.database.Relationship
 
 
@@ -25,7 +25,13 @@ fun com.pobedie.attackgraph.database.Technique.toDomainModel(
         id = id,
         name = name,
         description = description,
-        tacticId = tacticId
+        tacticId = tacticId,
+        maturity = when (maturity) {
+            "Demonstrated" -> TechniqueMaturity.Demonstrated
+            "Feasible" -> TechniqueMaturity.Feasible
+            "Realized" -> TechniqueMaturity.Realized
+            else -> TechniqueMaturity.Unknown
+        }
     )
 
 fun Relationship.toAttackVector(): AttackVector =

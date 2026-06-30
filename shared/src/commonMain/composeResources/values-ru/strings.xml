@@ -30,7 +30,8 @@
     <string name="p_label">P</string>
     <string name="r_label">R</string>
 
-    <string name="id_description_format">ID: %1$s\n\n%2$s</string>
+    <string name="description_maturity_format">ID: %1$s\nЗрелость атаки: %2$s\n\n%3$s</string>
+    <string name="description_format">ID: %1$s\n\n%2$s</string>
     <string name="mitigation_full_description_format">ID: %1$s\n\nМеры защиты:\n%2$s\n\n\n%3$s</string>
     <string name="edge_probability_risk_format">P:%1$s R:%2$s</string>
 

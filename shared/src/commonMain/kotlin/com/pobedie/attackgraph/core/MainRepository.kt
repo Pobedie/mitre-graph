@@ -155,7 +155,7 @@ class MainRepository(
         _state.update { it.copy(isImportSuccessful = true) }
     }
 
-    suspend fun getTactics(): List<Tactic> = withContext(Dispatchers.IO) {
+    suspend fun getTacticsWithTechniques(): List<Tactic> = withContext(Dispatchers.IO) {
         val tactics = database.tacticsQueries.selectAllTactics().executeAsList().map { tactic ->
             val techniques = database.techniqueQueries.selectTechniquesByTactic(tactic.id).executeAsList()
             tactic.toDomainModel(

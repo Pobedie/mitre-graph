@@ -58,7 +58,8 @@ import androidx.compose.ui.unit.dp
 import attackgraph.shared.generated.resources.Res
 import attackgraph.shared.generated.resources.clear_selections_button
 import attackgraph.shared.generated.resources.ic_info
-import attackgraph.shared.generated.resources.id_description_format
+import attackgraph.shared.generated.resources.description_format
+import attackgraph.shared.generated.resources.description_maturity_format
 import attackgraph.shared.generated.resources.select_target_button
 import attackgraph.shared.generated.resources.select_techniques_title
 import attackgraph.shared.generated.resources.start_building_vectors_button
@@ -212,7 +213,7 @@ private fun LazyItemScope.TacticColumn(
                     maxWidth = 400.dp,
                 ) {
                     SelectionContainer {
-                        Text(stringResource(Res.string.id_description_format, tactic.id, tactic.description))
+                        Text(stringResource(Res.string.description_format, tactic.id, tactic.description))
                     }
                 }
             },
@@ -321,12 +322,19 @@ private fun LazyItemScope.TacticColumn(
                             maxWidth = 400.dp,
                         ) {
                             SelectionContainer {
-                                Text(stringResource(Res.string.id_description_format, technique.id, technique.description))
+                                Text(
+                                    stringResource(
+                                        Res.string.description_maturity_format,
+                                        technique.id,
+                                        technique.maturity.name,
+                                        technique.description
+                                    )
+                                )
                             }
                         }
                     },
                     state = techniqueTooltipState,
-                    onDismissRequest = {techniqueShowTooltip = false}
+                    onDismissRequest = { techniqueShowTooltip = false }
                 ) {
                     Icon(
                         modifier = Modifier
@@ -335,9 +343,8 @@ private fun LazyItemScope.TacticColumn(
                             .align(Alignment.TopEnd)
                             .alpha(if (isTechniqueInfoIconVisible) 1f else 0f)
                             .onClick(
-                                onClick = {techniqueShowTooltip = true}
-                            )
-                        ,
+                                onClick = { techniqueShowTooltip = true }
+                            ),
                         painter = painterResource(Res.drawable.ic_info),
                         tint = Color.DarkGray.copy(alpha = 0.8f),
                         contentDescription = stringResource(Res.string.technique_description_content_desc)
