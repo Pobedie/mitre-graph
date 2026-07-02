@@ -73,16 +73,16 @@ class ViewModel(
         }
         // Handle side effects from state change
         state.onEach { currentState ->
-            val mittigationAndAttackStageAvailable: Boolean = (
+            val mitigationAndAttackStageAvailable: Boolean = (
                     currentState.edges.size > 2 &&
                             currentState.edges.none { it.risk == null || it.probability == null } &&
                             state.value.edges.any { it.endNode == state.value.targetTechnique }
                     )
             val isAttackVectorMappingStageAvailable =
-                currentState.selectedTechniquesId.size >= 3 && state.value.targetTechnique != null
+                currentState.hosts.count { it.techniques.isNotEmpty() } >= 3 && state.value.targetTechnique != null
             _state.update {
                 it.copy(
-                    isMitigationsAndAttacksStageAvailable = mittigationAndAttackStageAvailable,
+                    isMitigationsAndAttacksStageAvailable = mitigationAndAttackStageAvailable,
                     isAttackVectorMappingStageAvailable = isAttackVectorMappingStageAvailable
                 )
             }
