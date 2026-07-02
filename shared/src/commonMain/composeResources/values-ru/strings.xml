@@ -54,6 +54,7 @@
     <string name="previous_host_content_desc">Предыдущий хост</string>
     <string name="next_host_content_desc">Следующий хост</string>
     <string name="add_host_content_desc">Добавить хост</string>
+    <string name="delete_host_content_desc">Удалить хост</string>
     <string name="delete_technique_from_host_content_desc">Удалить технику с хоста</string>
     <string name="maturity_format">Зрелость атаки: %1$s</string>
     <string name="severity_score_format">Оценка критичности: %1$d</string>

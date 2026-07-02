@@ -348,7 +348,11 @@ class ViewModel(
     fun nextHost() {
         _state.update {
             if (it.currentHostIndex < it.hosts.size - 1) {
-                it.copy(currentHostIndex = it.currentHostIndex + 1)
+                val nextIndex = it.currentHostIndex + 1
+                it.copy(
+                    currentHostIndex = nextIndex,
+                    selectedTechniquesId = it.hosts[nextIndex].techniques.map { it.id }
+                )
             } else {
                 it
             }
@@ -358,7 +362,11 @@ class ViewModel(
     fun previousHost() {
         _state.update {
             if (it.currentHostIndex > 0) {
-                it.copy(currentHostIndex = it.currentHostIndex - 1)
+                val prevIndex = it.currentHostIndex - 1
+                it.copy(
+                    currentHostIndex = prevIndex,
+                    selectedTechniquesId = it.hosts[prevIndex].techniques.map { it.id }
+                )
             } else {
                 it
             }
@@ -380,9 +388,29 @@ class ViewModel(
                 )
                 it.copy(
                     hosts = newHosts,
-                    currentHostIndex = newHosts.size - 1
+                    currentHostIndex = newHosts.size - 1,
+                    selectedTechniquesId = emptyList()
                 )
             }
+        }
+    }
+
+    fun deleteHost(hostId: String) {
+        _state.update { state ->
+            if (state.hosts.size <= 1) return@update state // Keep at least one host
+
+            val newHosts = state.hosts.filter { it.id != hostId }
+            val newIndex = if (state.currentHostIndex >= newHosts.size) {
+                newHosts.size - 1
+            } else {
+                state.currentHostIndex
+            }
+
+            state.copy(
+                hosts = newHosts,
+                currentHostIndex = newIndex,
+                selectedTechniquesId = newHosts[newIndex].techniques.map { it.id }
+            )
         }
     }
 
@@ -430,6 +458,7 @@ class ViewModel(
         _state.update {
             it.copy(
                 selectedTechniquesId = listOf(),
+                hosts = it.hosts.map { host -> host.copy(techniques = emptyList()) },
                 targetTechnique = null,
                 isTargetSelectionInProgress = false,
                 isAttackVectorMappingStageAvailable = false

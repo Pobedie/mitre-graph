@@ -70,6 +70,7 @@ import kotlin.math.roundToInt
 import attackgraph.shared.generated.resources.Res
 import attackgraph.shared.generated.resources.add_host_content_desc
 import attackgraph.shared.generated.resources.clear_selections_button
+import attackgraph.shared.generated.resources.delete_host_content_desc
 import attackgraph.shared.generated.resources.delete_technique_from_host_content_desc
 import attackgraph.shared.generated.resources.description_format
 import attackgraph.shared.generated.resources.description_maturity_format
@@ -252,6 +253,20 @@ fun TechniqueSelection(
                             imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
                             contentDescription = stringResource(Res.string.next_host_content_desc),
                             tint = Color.White
+                        )
+                    }
+                }
+
+                if (state.hosts.size > 1) {
+                    IconButton(onClick = {
+                        state.hosts.getOrNull(state.currentHostIndex)?.let {
+                            viewModel.deleteHost(it.id)
+                        }
+                    }) {
+                        Icon(
+                            imageVector = Icons.Default.Delete,
+                            contentDescription = stringResource(Res.string.delete_host_content_desc),
+                            tint = Color(255, 100, 100)
                         )
                     }
                 }
