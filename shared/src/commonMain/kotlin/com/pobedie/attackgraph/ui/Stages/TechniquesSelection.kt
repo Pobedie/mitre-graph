@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -20,23 +21,33 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyItemScope
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.onClick
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.selection.SelectionContainer
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.PlainTooltip
+import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.material3.TooltipAnchorPosition
 import androidx.compose.material3.TooltipBox
 import androidx.compose.material3.TooltipDefaults
+import androidx.compose.material3.rememberSliderState
 import androidx.compose.material3.rememberTooltipState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -55,6 +66,7 @@ import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.compose.ui.input.pointer.onPointerEvent
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import kotlin.math.roundToInt
 import attackgraph.shared.generated.resources.Res
 import attackgraph.shared.generated.resources.clear_selections_button
 import attackgraph.shared.generated.resources.ic_info
@@ -66,6 +78,7 @@ import attackgraph.shared.generated.resources.start_building_vectors_button
 import attackgraph.shared.generated.resources.tactic_description_content_desc
 import attackgraph.shared.generated.resources.technique_description_content_desc
 import com.pobedie.attackgraph.core.entity.Tactic
+import com.pobedie.attackgraph.core.entity.Technique
 import com.pobedie.attackgraph.ui.ViewModel
 import com.pobedie.attackgraph.ui.ViewState
 import kotlinx.coroutines.launch
@@ -79,94 +92,175 @@ fun TechniqueSelection(
     viewModel: ViewModel,
     state: ViewState
 ) {
-
-    Column(
-        modifier = Modifier
-            .fillMaxSize(),
-        verticalArrangement = Arrangement.Top,
-        horizontalAlignment = Alignment.CenterHorizontally
+    Row(
+        modifier = Modifier.fillMaxSize()
     ) {
-        Row(
+        Column(
             modifier = Modifier
-                .padding(top = 30.dp)
-                .padding(horizontal = 30.dp)
-                .fillMaxWidth()
-        ){
-            Text(
-                text = stringResource(Res.string.select_techniques_title),
-                style = MaterialTheme.typography.titleLarge,
-                color = MaterialTheme.colorScheme.onPrimary
-            )
-        }
-
-        val scrollState = rememberLazyListState()
-        val coroutineScope = rememberCoroutineScope()
-        LazyRow(
-            state = scrollState,
-            modifier = Modifier
-                .weight(1f)
-                // by default to scroll horizontaly you need to use Shift+MouseWheel which is a bad UX in this case
-                .onPointerEvent(PointerEventType.Scroll) {
-                    val delta = it.changes.first().scrollDelta
-                    coroutineScope.launch {
-                        scrollState.scrollBy(delta.y * 40f)
-                    }
-                },
-            contentPadding = PaddingValues(vertical = 8.dp, horizontal = 30.dp)
+                .weight(2f)
+                .fillMaxHeight(),
+            verticalArrangement = Arrangement.Top,
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            items(
-                items = state.tactics,
-                key = { tactic -> tactic.id }
-            ) { tactic ->
-                TacticColumn(
-                    modifier = Modifier.padding(horizontal = 4.dp),
-                    tactic = tactic,
-                    selectedTechniques = state.selectedTechniquesId,
-                    isTargetSelectionInProgress = state.isTargetSelectionInProgress,
-                    targetTechnique = state.targetTechnique,
-                    onTechniqueClick = {
-                        viewModel.selectTechnique(it)
-                        if (state.isTargetSelectionInProgress){
-                            viewModel.selectTargetTechnique(it)
-                        }
-                    }
+            Row(
+                modifier = Modifier
+                    .padding(top = 30.dp)
+                    .padding(horizontal = 30.dp)
+                    .fillMaxWidth()
+            ) {
+                Text(
+                    text = stringResource(Res.string.select_techniques_title),
+                    style = MaterialTheme.typography.titleLarge,
+                    color = Color.White
                 )
             }
 
-        }
-
-        Row(
-            modifier = Modifier
-                .padding(vertical = 4.dp, horizontal = 8.dp)
-                .fillMaxWidth(),
-            verticalAlignment = Alignment.Bottom
-        ) {
-            Button(
-                onClick = { viewModel.startTargetTechniqueSelection() },
-                enabled = !state.isTargetSelectionInProgress
+            val scrollState = rememberLazyListState()
+            val coroutineScope = rememberCoroutineScope()
+            LazyRow(
+                state = scrollState,
+                modifier = Modifier
+                    .weight(1f)
+                    // by default to scroll horizontaly you need to use Shift+MouseWheel which is a bad UX in this case
+                    .onPointerEvent(PointerEventType.Scroll) {
+                        val delta = it.changes.first().scrollDelta
+                        coroutineScope.launch {
+                            scrollState.scrollBy(delta.y * 40f)
+                        }
+                    },
+                contentPadding = PaddingValues(vertical = 8.dp, horizontal = 30.dp)
             ) {
-                Text(stringResource(Res.string.select_target_button))
+                items(
+                    items = state.tactics,
+                    key = { tactic -> tactic.id }
+                ) { tactic ->
+                    TacticColumn(
+                        modifier = Modifier.padding(horizontal = 4.dp),
+                        tactic = tactic,
+                        selectedTechniques = state.selectedTechniquesId,
+                        isTargetSelectionInProgress = state.isTargetSelectionInProgress,
+                        targetTechnique = state.targetTechnique,
+                        onTechniqueClick = {
+                            viewModel.selectTechnique(it)
+                            if (state.isTargetSelectionInProgress) {
+                                viewModel.selectTargetTechnique(it)
+                            }
+                        }
+                    )
+                }
             }
-            Spacer(Modifier.weight(1f))
-            AnimatedVisibility(
+
+            Row(
+                modifier = Modifier
+                    .padding(vertical = 4.dp, horizontal = 8.dp)
+                    .fillMaxWidth(),
+                verticalAlignment = Alignment.Bottom
+            ) {
+                Button(
+                    onClick = { viewModel.startTargetTechniqueSelection() },
+                    enabled = !state.isTargetSelectionInProgress
+                ) {
+                    Text(stringResource(Res.string.select_target_button))
+                }
+                Spacer(Modifier.weight(1f))
+                AnimatedVisibility(
                 visible = state.isAttackVectorMappingStageAvailable,
                 enter = fadeIn(),
                 exit = fadeOut()
             ) {
-                Row {
-                    Button(
-                        onClick = { viewModel.clearTechniqueSelectoins() },
-                        colors = ButtonDefaults.filledTonalButtonColors()
-                    ) {
-                        Text(stringResource(Res.string.clear_selections_button))
-                    }
-                    Spacer(Modifier.width(20.dp))
-                    Button(
-                        onClick = { viewModel.switchToAttackVectorBuildingStage() },
-                    ) {
-                        Text(stringResource(Res.string.start_building_vectors_button))
+                    Row {
+                        Button(
+                            onClick = { viewModel.clearTechniqueSelectoins() },
+                            colors = ButtonDefaults.filledTonalButtonColors()
+                        ) {
+                            Text(stringResource(Res.string.clear_selections_button))
+                        }
+                        Spacer(Modifier.width(20.dp))
+                        Button(
+                            onClick = { viewModel.switchToAttackVectorBuildingStage() },
+                        ) {
+                            Text(stringResource(Res.string.start_building_vectors_button))
+                        }
                     }
                 }
+            }
+        }
+
+        // Host zone (1/3)
+        Column(
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxHeight()
+                .background(Color(35, 35, 35))
+                .padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(
+                text = "Hosts",
+                style = MaterialTheme.typography.titleLarge,
+                color = Color.White
+            )
+
+            Spacer(Modifier.height(8.dp))
+
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                IconButton(
+                    onClick = { viewModel.previousHost() },
+                    enabled = state.currentHostIndex > 0
+                ) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.KeyboardArrowLeft,
+                        contentDescription = "Previous Host",
+                        tint = if (state.currentHostIndex > 0) Color.White else Color.Gray
+                    )
+                }
+
+                Text(
+                    text = "${state.currentHostIndex + 1} / ${state.hosts.size}",
+                    modifier = Modifier.padding(horizontal = 8.dp),
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = Color.White
+                )
+
+                if (state.currentHostIndex == state.hosts.size - 1) {
+                    IconButton(onClick = { viewModel.addHost() }) {
+                        Icon(
+                            imageVector = Icons.Default.Add,
+                            contentDescription = "Add Host",
+                            tint = Color.White
+                        )
+                    }
+                } else {
+                    IconButton(onClick = { viewModel.nextHost() }) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                            contentDescription = "Next Host",
+                            tint = Color.White
+                        )
+                    }
+                }
+            }
+
+            Spacer(Modifier.height(16.dp))
+
+            val currentHost = state.hosts.getOrNull(state.currentHostIndex)
+            if (currentHost != null) {
+                HostItem(
+                    name = currentHost.name,
+                    techniques = currentHost.techniques,
+                    onNameChange = { viewModel.updateHostName(currentHost.id, it) },
+                    onSeverityScoreSet = { techId, score ->
+                        viewModel.updateTechniqueSeverityScore(currentHost.id, techId, score)
+                    },
+                    onTechniqueDelete = { techId ->
+                        viewModel.removeTechniqueFromHost(currentHost.id, techId)
+                    },
+                    modifier = Modifier.weight(1f)
+                )
             }
         }
     }
@@ -360,6 +454,116 @@ private fun LazyItemScope.TacticColumn(
                 )
             }
         }
+    }
+}
 
+/**
+* @param onSeverityScoreSet returns Technique id and its severity score
+*/
+@Composable
+private fun HostItem(
+    name: String,
+    techniques: List<Technique>,
+    onNameChange: (String) -> Unit,
+    onSeverityScoreSet: (String, Int) -> Unit,
+    onTechniqueDelete: (String) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+
+    Column(
+        modifier = modifier
+            .padding(vertical = 8.dp)
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(12.dp))
+            .background(Color(50, 50, 50))
+    ) {
+        BasicTextField(
+            value = name,
+            onValueChange = onNameChange,
+            textStyle = MaterialTheme.typography.titleMedium.copy(
+                color = Color.White,
+                fontWeight = FontWeight.Bold
+            ),
+            modifier = Modifier.padding(12.dp)
+        )
+
+        LazyColumn(
+            modifier = Modifier.weight(1f),
+            contentPadding = PaddingValues(12.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            items(techniques) { _technique ->
+                TechniqueInHost(
+                    technique = _technique,
+                    onSeverityScoreSet = { onSeverityScoreSet(_technique.id, it) },
+                    onDelete = { onTechniqueDelete(_technique.id) },
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun LazyItemScope.TechniqueInHost(
+    technique: Technique,
+    onSeverityScoreSet: (Int) -> Unit,
+    onDelete: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(8.dp))
+            .background(Color(65, 65, 65))
+            .padding(12.dp),
+        horizontalAlignment = Alignment.Start,
+        verticalArrangement = Arrangement.Top
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text(
+                text = technique.name,
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.Bold,
+                color = Color.White,
+                modifier = Modifier.weight(1f)
+            )
+            IconButton(
+                onClick = onDelete,
+                modifier = Modifier.size(24.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Delete,
+                    contentDescription = "Delete technique from the host",
+                    tint = Color(255, 100, 100)
+                )
+            }
+        }
+
+        Spacer(Modifier.height(8.dp))
+
+        Text(
+            text = "Maturity: ${technique.maturity}",
+            style = MaterialTheme.typography.bodySmall,
+            color = Color.LightGray
+        )
+        Text(
+            text = "Severity score: ${technique.severityScore}",
+            style = MaterialTheme.typography.bodySmall,
+            color = Color.LightGray
+        )
+
+        Spacer(Modifier.height(4.dp))
+
+        Slider(
+            value = technique.severityScore.toFloat(),
+            onValueChange = { onSeverityScoreSet(it.roundToInt()) },
+            valueRange = 1f..5f,
+            steps = 3,
+            modifier = Modifier.fillMaxWidth()
+        )
     }
 }

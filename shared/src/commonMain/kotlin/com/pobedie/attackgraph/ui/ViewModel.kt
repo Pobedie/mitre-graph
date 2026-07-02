@@ -14,6 +14,7 @@ import com.pobedie.attackgraph.core.MainRepository
 import com.pobedie.attackgraph.core.calculateProbabilitiesAndRisks
 import com.pobedie.attackgraph.core.entity.Edge
 import com.pobedie.attackgraph.core.entity.EdgeState
+import com.pobedie.attackgraph.core.entity.Host
 import com.pobedie.attackgraph.core.entity.Node
 import com.pobedie.attackgraph.core.entity.NodeTactic
 import com.pobedie.attackgraph.core.entity.Tactic
@@ -32,6 +33,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.jetbrains.compose.resources.getString
 import java.util.Locale
+import java.util.UUID
 
 
 class ViewModel(
@@ -43,6 +45,17 @@ class ViewModel(
     val state = _state.asStateFlow()
 
     init {
+        _state.update {
+            it.copy(
+                hosts = listOf(
+                    Host(
+                        name = "Host 1",
+                        id = UUID.randomUUID().toString(),
+                        techniques = emptyList()
+                    )
+                )
+            )
+        }
         // todo: maybe make it a function
         scope.launch {
             mainRepository.importState.collectLatest { isImportSuccessful ->
@@ -58,8 +71,8 @@ class ViewModel(
         state.onEach { currentState ->
             val mittigationAndAttackStageAvailable: Boolean = (
                     currentState.edges.size > 2 &&
-                    currentState.edges.none { it.risk == null || it.probability == null } &&
-                    state.value.edges.any { it.endNode == state.value.targetTechnique }
+                            currentState.edges.none { it.risk == null || it.probability == null } &&
+                            state.value.edges.any { it.endNode == state.value.targetTechnique }
                     )
             val isAttackVectorMappingStageAvailable =
                 currentState.selectedTechniquesId.size >= 3 && state.value.targetTechnique != null
@@ -301,16 +314,107 @@ class ViewModel(
     }
 
     fun selectTechnique(techniqueId: String) {
-        _state.update {
-            val techniqueAlreadySelected = it.selectedTechniquesId.contains(techniqueId)
-            val newSelections = it.selectedTechniquesId.toMutableList()
+        _state.update { state ->
+            val techniqueAlreadySelected = state.selectedTechniquesId.contains(techniqueId)
+            val newSelections = state.selectedTechniquesId.toMutableList()
+            val newHosts = state.hosts.toMutableList()
+            val currentHost = newHosts[state.currentHostIndex]
+
             if (techniqueAlreadySelected) {
                 newSelections.remove(techniqueId)
+                val newHostTechniques = currentHost.techniques.filter { it.id != techniqueId }
+                newHosts[state.currentHostIndex] = currentHost.copy(techniques = newHostTechniques)
             } else {
                 newSelections.add(techniqueId)
+                val allTechniques = state.tactics.flatMap { it.techniques }
+                val technique = allTechniques.find { it.id == techniqueId }
+                if (technique != null) {
+                    val newHostTechniques = currentHost.techniques.toMutableList()
+                    newHostTechniques.add(technique)
+                    newHosts[state.currentHostIndex] = currentHost.copy(techniques = newHostTechniques)
+                }
             }
-            it.copy(
+            state.copy(
                 selectedTechniquesId = newSelections,
+                hosts = newHosts
+            )
+        }
+    }
+
+    fun nextHost() {
+        _state.update {
+            if (it.currentHostIndex < it.hosts.size - 1) {
+                it.copy(currentHostIndex = it.currentHostIndex + 1)
+            } else {
+                it
+            }
+        }
+    }
+
+    fun previousHost() {
+        _state.update {
+            if (it.currentHostIndex > 0) {
+                it.copy(currentHostIndex = it.currentHostIndex - 1)
+            } else {
+                it
+            }
+        }
+    }
+
+    fun addHost() {
+        _state.update {
+            val newHosts = it.hosts.toMutableList()
+            val newIndex = newHosts.size + 1
+            newHosts.add(
+                Host(
+                    "Host $newIndex",
+                    UUID.randomUUID().toString(),
+                    emptyList()
+                )
+            )
+            it.copy(
+                hosts = newHosts,
+                currentHostIndex = newHosts.size - 1
+            )
+        }
+    }
+
+    fun updateHostName(hostId: String, newName: String) {
+        _state.update { state ->
+            val newHosts = state.hosts.map {
+                if (it.id == hostId) it.copy(name = newName) else it
+            }
+            state.copy(hosts = newHosts)
+        }
+    }
+
+    fun updateTechniqueSeverityScore(hostId: String, techniqueId: String, score: Int) {
+        _state.update { state ->
+            val newHosts = state.hosts.map { host ->
+                if (host.id == hostId) {
+                    val newTechniques = host.techniques.map { tech ->
+                        if (tech.id == techniqueId) tech.copy(severityScore = score) else tech
+                    }
+                    host.copy(techniques = newTechniques)
+                } else host
+            }
+            state.copy(hosts = newHosts)
+        }
+    }
+
+    fun removeTechniqueFromHost(hostId: String, techniqueId: String) {
+        _state.update { state ->
+            val newHosts = state.hosts.map { host ->
+                if (host.id == hostId) {
+                    val newTechniques = host.techniques.filter { it.id != techniqueId }
+                    host.copy(techniques = newTechniques)
+                } else host
+            }
+            val newSelections = state.selectedTechniquesId.toMutableList()
+            newSelections.remove(techniqueId)
+            state.copy(
+                hosts = newHosts,
+                selectedTechniquesId = newSelections
             )
         }
     }

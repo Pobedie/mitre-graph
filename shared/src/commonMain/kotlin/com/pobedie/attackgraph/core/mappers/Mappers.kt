@@ -32,7 +32,8 @@ fun com.pobedie.attackgraph.database.Technique.toDomainModel(
             "Feasible" -> TechniqueMaturity.Feasible
             "Realized" -> TechniqueMaturity.Realized
             else -> TechniqueMaturity.Unknown
-        }
+        },
+        severityScore = 3
     )
 
 fun Relationship.toAttackVector(): AttackVector =
