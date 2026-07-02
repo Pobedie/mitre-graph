@@ -10,6 +10,7 @@ import attackgraph.shared.generated.resources.path_cost_format
 import attackgraph.shared.generated.resources.probable_paths_label
 import attackgraph.shared.generated.resources.target_not_selected_error
 import attackgraph.shared.generated.resources.unexpected_error
+import attackgraph.shared.generated.resources.host_name_format
 import com.pobedie.attackgraph.core.MainRepository
 import com.pobedie.attackgraph.core.calculateProbabilitiesAndRisks
 import com.pobedie.attackgraph.core.entity.Edge
@@ -45,16 +46,19 @@ class ViewModel(
     val state = _state.asStateFlow()
 
     init {
-        _state.update {
-            it.copy(
-                hosts = listOf(
-                    Host(
-                        name = "Host 1",
-                        id = UUID.randomUUID().toString(),
-                        techniques = emptyList()
+        scope.launch {
+            val initialHostName = getString(Res.string.host_name_format, 1)
+            _state.update {
+                it.copy(
+                    hosts = listOf(
+                        Host(
+                            name = initialHostName,
+                            id = UUID.randomUUID().toString(),
+                            techniques = emptyList()
+                        )
                     )
                 )
-            )
+            }
         }
         // todo: maybe make it a function
         scope.launch {
@@ -362,20 +366,23 @@ class ViewModel(
     }
 
     fun addHost() {
-        _state.update {
-            val newHosts = it.hosts.toMutableList()
-            val newIndex = newHosts.size + 1
-            newHosts.add(
-                Host(
-                    "Host $newIndex",
-                    UUID.randomUUID().toString(),
-                    emptyList()
+        scope.launch {
+            val newIndex = state.value.hosts.size + 1
+            val newHostName = getString(Res.string.host_name_format, newIndex)
+            _state.update {
+                val newHosts = it.hosts.toMutableList()
+                newHosts.add(
+                    Host(
+                        newHostName,
+                        UUID.randomUUID().toString(),
+                        emptyList()
+                    )
                 )
-            )
-            it.copy(
-                hosts = newHosts,
-                currentHostIndex = newHosts.size - 1
-            )
+                it.copy(
+                    hosts = newHosts,
+                    currentHostIndex = newHosts.size - 1
+                )
+            }
         }
     }
 
