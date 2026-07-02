@@ -3,12 +3,13 @@ CREATE TABLE tactic (
     name TEXT NOT NULL,
     description TEXT NOT NULL,
     created_date TEXT NOT NULL,
-    modified_date TEXT NOT NULL
+    modified_date TEXT NOT NULL,
+    position INTEGER NOT NULL DEFAULT 0
 );
 
 insertTactic:
-INSERT OR REPLACE INTO tactic(id, name, description, created_date, modified_date)
-VALUES(?, ?, ?, ?, ?);
+INSERT OR REPLACE INTO tactic(id, name, description, created_date, modified_date, position)
+VALUES(?, ?, ?, ?, ?, ?);
 
 selectTacticById:
 SELECT 
@@ -16,7 +17,8 @@ SELECT
     name,
     description,
     created_date,
-    modified_date
+    modified_date,
+    position
 FROM tactic WHERE id = ?;
 
 selectAllTactics:
@@ -25,12 +27,13 @@ SELECT
     name,
     description,
     created_date,
-    modified_date
+    modified_date,
+    position
 FROM tactic;
 
 updateTactic:
 UPDATE tactic
-SET name = ?, description = ?, created_date = ?, modified_date = ?
+SET name = ?, description = ?, created_date = ?, modified_date = ?, position = ?
 WHERE id = ?;
 
 deleteTactic:
