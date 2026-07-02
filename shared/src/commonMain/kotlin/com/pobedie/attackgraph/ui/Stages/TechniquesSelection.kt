@@ -68,17 +68,29 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import kotlin.math.roundToInt
 import attackgraph.shared.generated.resources.Res
+import attackgraph.shared.generated.resources.add_host_content_desc
 import attackgraph.shared.generated.resources.clear_selections_button
-import attackgraph.shared.generated.resources.ic_info
+import attackgraph.shared.generated.resources.delete_technique_from_host_content_desc
 import attackgraph.shared.generated.resources.description_format
 import attackgraph.shared.generated.resources.description_maturity_format
+import attackgraph.shared.generated.resources.hosts_title
+import attackgraph.shared.generated.resources.ic_info
+import attackgraph.shared.generated.resources.maturity_demonstrated
+import attackgraph.shared.generated.resources.maturity_feasible
+import attackgraph.shared.generated.resources.maturity_format
+import attackgraph.shared.generated.resources.maturity_realized
+import attackgraph.shared.generated.resources.maturity_unknown
+import attackgraph.shared.generated.resources.next_host_content_desc
+import attackgraph.shared.generated.resources.previous_host_content_desc
 import attackgraph.shared.generated.resources.select_target_button
 import attackgraph.shared.generated.resources.select_techniques_title
+import attackgraph.shared.generated.resources.severity_score_format
 import attackgraph.shared.generated.resources.start_building_vectors_button
 import attackgraph.shared.generated.resources.tactic_description_content_desc
 import attackgraph.shared.generated.resources.technique_description_content_desc
 import com.pobedie.attackgraph.core.entity.Tactic
 import com.pobedie.attackgraph.core.entity.Technique
+import com.pobedie.attackgraph.core.entity.TechniqueMaturity
 import com.pobedie.attackgraph.ui.ViewModel
 import com.pobedie.attackgraph.ui.ViewState
 import kotlinx.coroutines.launch
@@ -196,7 +208,7 @@ fun TechniqueSelection(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
-                text = "Hosts",
+                text = stringResource(Res.string.hosts_title),
                 style = MaterialTheme.typography.titleLarge,
                 color = Color.White
             )
@@ -214,7 +226,7 @@ fun TechniqueSelection(
                 ) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.KeyboardArrowLeft,
-                        contentDescription = "Previous Host",
+                        contentDescription = stringResource(Res.string.previous_host_content_desc),
                         tint = if (state.currentHostIndex > 0) Color.White else Color.Gray
                     )
                 }
@@ -230,7 +242,7 @@ fun TechniqueSelection(
                     IconButton(onClick = { viewModel.addHost() }) {
                         Icon(
                             imageVector = Icons.Default.Add,
-                            contentDescription = "Add Host",
+                            contentDescription = stringResource(Res.string.add_host_content_desc),
                             tint = Color.White
                         )
                     }
@@ -238,7 +250,7 @@ fun TechniqueSelection(
                     IconButton(onClick = { viewModel.nextHost() }) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                            contentDescription = "Next Host",
+                            contentDescription = stringResource(Res.string.next_host_content_desc),
                             tint = Color.White
                         )
                     }
@@ -416,11 +428,19 @@ private fun LazyItemScope.TacticColumn(
                             maxWidth = 400.dp,
                         ) {
                             SelectionContainer {
+                                val maturityString = stringResource(
+                                    when (technique.maturity) {
+                                        TechniqueMaturity.Demonstrated -> Res.string.maturity_demonstrated
+                                        TechniqueMaturity.Feasible -> Res.string.maturity_feasible
+                                        TechniqueMaturity.Realized -> Res.string.maturity_realized
+                                        TechniqueMaturity.Unknown -> Res.string.maturity_unknown
+                                    }
+                                )
                                 Text(
                                     stringResource(
                                         Res.string.description_maturity_format,
                                         technique.id,
-                                        technique.maturity.name,
+                                        maturityString,
                                         technique.description
                                     )
                                 )
@@ -537,7 +557,7 @@ private fun LazyItemScope.TechniqueInHost(
             ) {
                 Icon(
                     imageVector = Icons.Default.Delete,
-                    contentDescription = "Delete technique from the host",
+                    contentDescription = stringResource(Res.string.delete_technique_from_host_content_desc),
                     tint = Color(255, 100, 100)
                 )
             }
@@ -545,13 +565,21 @@ private fun LazyItemScope.TechniqueInHost(
 
         Spacer(Modifier.height(8.dp))
 
+        val maturityString = stringResource(
+            when (technique.maturity) {
+                TechniqueMaturity.Demonstrated -> Res.string.maturity_demonstrated
+                TechniqueMaturity.Feasible -> Res.string.maturity_feasible
+                TechniqueMaturity.Realized -> Res.string.maturity_realized
+                TechniqueMaturity.Unknown -> Res.string.maturity_unknown
+            }
+        )
         Text(
-            text = "Maturity: ${technique.maturity}",
+            text = stringResource(Res.string.maturity_format, maturityString),
             style = MaterialTheme.typography.bodySmall,
             color = Color.LightGray
         )
         Text(
-            text = "Severity score: ${technique.severityScore}",
+            text = stringResource(Res.string.severity_score_format, technique.severityScore),
             style = MaterialTheme.typography.bodySmall,
             color = Color.LightGray
         )
