@@ -88,7 +88,8 @@ data class AtlasRelationshipGroup(
     val employs: List<AtlasRelationship> = emptyList(),
     val achieves: List<AtlasRelationship> = emptyList(),
     val specializes: List<AtlasRelationship> = emptyList(),
-    val mitigates: List<AtlasRelationship> = emptyList()
+    val mitigates: List<AtlasRelationship> = emptyList(),
+    val sequences: List<AtlasRelationship> = emptyList()
 )
 
 @Serializable
@@ -99,6 +100,7 @@ data class AtlasRelationship(
     val description: String = "",
     val tactic: String = "",
     @SerialName("step-id") val stepId: String = "",
-    @SerialName("leads-to") val leadsTo: List<String> = emptyList()
+    @SerialName("leads-to") val leadsTo: List<String> = emptyList(),
+    val position: Int = 0
 )
 

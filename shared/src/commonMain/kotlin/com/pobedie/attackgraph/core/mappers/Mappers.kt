@@ -14,6 +14,7 @@ fun com.pobedie.attackgraph.database.Tactic.toDomainModel(
         id = id,
         name = name,
         description = description,
+        position = position.toInt(),
         techniques = techniques
     )
 

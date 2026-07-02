@@ -33,6 +33,8 @@ class MainRepository(
         )
         val atlasData = yaml.decodeFromString(AtlasYaml.serializer(), yamlContent)
 
+        val tacticPositions = atlasData.relationships["ATLAS-matrix"]?.sequences?.associate { it.target to it.position } ?: emptyMap()
+
         database.transaction {
             database.metadataQueries.insertOrReplaceMetadata(
                 id = atlasData.collection.id,
@@ -48,7 +50,8 @@ class MainRepository(
                     name = tactic.name,
                     description = tactic.description,
                     created_date = tactic.createdDate,
-                    modified_date = tactic.modifiedDate
+                    modified_date = tactic.modifiedDate,
+                    position = tacticPositions[tactic.id]?.toLong() ?: 0L
                 )
             }
 
@@ -161,8 +164,7 @@ class MainRepository(
             tactic.toDomainModel(
                 techniques = techniques.map { it.toDomainModel(tacticId = tactic.id) }
             )
-        }
-            .sortedBy { it.id }
+        }.sortedBy { it.position }
         println("Tactics fetched from db:\n  ${tactics.map { it.id + " " + it.name }}")
         return@withContext tactics
     }
