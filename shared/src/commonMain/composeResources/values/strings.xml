@@ -54,6 +54,7 @@
     <string name="previous_host_content_desc">Previous Host</string>
     <string name="next_host_content_desc">Next Host</string>
     <string name="add_host_content_desc">Add Host</string>
+    <string name="delete_host_content_desc">Delete Host</string>
     <string name="delete_technique_from_host_content_desc">Delete technique from the host</string>
     <string name="maturity_format">Maturity: %1$s</string>
     <string name="severity_score_format">Severity score: %1$d</string>
