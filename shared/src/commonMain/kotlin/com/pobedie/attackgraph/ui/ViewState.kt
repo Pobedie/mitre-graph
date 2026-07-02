@@ -2,6 +2,7 @@ package com.pobedie.attackgraph.ui
 
 import com.pobedie.attackgraph.core.entity.AttackVector
 import com.pobedie.attackgraph.core.entity.Edge
+import com.pobedie.attackgraph.core.entity.Host
 import com.pobedie.attackgraph.core.entity.Mitigation
 import com.pobedie.attackgraph.core.entity.Node
 import com.pobedie.attackgraph.core.entity.Tactic
@@ -10,6 +11,7 @@ data class ViewState(
     val stage: Stage = Stage.Import,
     val nodes: List<Node> = emptyList(),
     val edges: List<Edge> = emptyList(),
+    val hosts: List<Host> = emptyList(),
     val targetTechnique: String? = null,
 
     // Import stage
@@ -22,6 +24,7 @@ data class ViewState(
     val tactics: List<Tactic> = listOf(),
     val selectedTechniquesId: List<String> = listOf(),
     val isTargetSelectionInProgress: Boolean = false,
+    val currentHostIndex: Int = 0,
 
     // Attack vector mapping stage
     val isAttackVectorMappingStageAvailable: Boolean = false,
