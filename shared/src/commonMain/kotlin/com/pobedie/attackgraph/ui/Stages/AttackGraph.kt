@@ -185,8 +185,11 @@ fun AttackGraph(
                         HostContainerData(
                             name = hostName,
                             rect = Rect(
-                                Offset(x + HOST_CONTAINER_X_OFFSET, hostStartY),
-                                Size(NODE_WIDTH + HOST_CONTAINER_WIDTH_PADDING, currentY - hostStartY - HOST_CONTAINER_BOTTOM_PADDING)
+                                Offset(x, hostStartY),
+                                Size(
+                                    NODE_WIDTH + HOST_CONTAINER_WIDTH_PADDING,
+                                    currentY - hostStartY - HOST_CONTAINER_BOTTOM_PADDING
+                                )
                             )
                         )
                     )
@@ -268,15 +271,17 @@ fun AttackGraph(
                 .drawBehind {
                     val vsScale = viewerState.scale
                     val vsOffset = viewerState.offset
+
+                    val minNodeY = (hostContainers.minOfOrNull { it.rect.top } ?: 0f) + HOST_TITLE_HEIGHT
+                    val maxNodeY = (hostContainers.maxOfOrNull { it.rect.bottom } ?: 0f) + HOST_CONTAINER_BOTTOM_PADDING - NODE_Y_SPACING
+                    val graphCenterY = (minNodeY + maxNodeY) / 2f
+
                     val coordsOffsetX = (tactics.size / 2f * COLUMN_X_SPACING - COLUMN_X_SPACING / 2f)
+                    val graphCenterX = coordsOffsetX + (NODE_X_OFFSET + NODE_WIDTH / 2f)
 
                     hostContainers.forEach { container ->
-                        val nodeOffsetX =
-                            container.rect.left - coordsOffsetX - container.rect.width / 2 - HOST_CONTAINER_WIDTH_PADDING / 2 + NODE_X_OFFSET / 2
-                        val nodeOffsteYSum =
-                            INITIAL_Y_PADDING + HOST_TITLE_HEIGHT + NODE_Y_SPACING + HOST_SPACING + DEFAULT_NODE_HEIGHT + HOST_CONTAINER_BOTTOM_PADDING/2
-                        val nodeOffsetY =
-                            container.rect.top - nodeOffsteYSum * 2
+                        val nodeOffsetX = container.rect.left - graphCenterX
+                        val nodeOffsetY = container.rect.top - graphCenterY
                         val translatedRect = Rect(
                             offset = Offset(
                                 center.x + (vsOffset.x + nodeOffsetX * vsScale),
@@ -803,7 +808,6 @@ private const val NODE_X_OFFSET = 10f
 private const val DEFAULT_NODE_HEIGHT = 80f
 private const val NODE_Y_SPACING = 20f
 
-private const val HOST_CONTAINER_X_OFFSET = 5f
 private const val HOST_CONTAINER_WIDTH_PADDING = 20f
 private const val HOST_CONTAINER_BOTTOM_PADDING = 10f
 
