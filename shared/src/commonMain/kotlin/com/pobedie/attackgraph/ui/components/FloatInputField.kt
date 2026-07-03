@@ -19,6 +19,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import com.pobedie.attackgraph.ui.theme.DisabledLabelColor
+import com.pobedie.attackgraph.ui.theme.LabelColor
+import com.pobedie.attackgraph.ui.theme.SelectedBorderColor
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -34,7 +37,7 @@ fun FloatInputField(
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
     textStyle: TextStyle = TextStyle(fontSize = 14.sp),
-    backgroundColor: Color = Color.White,
+    backgroundColor: Color = SelectedBorderColor,
     shape: RoundedCornerShape = RoundedCornerShape(2.dp)
 ) {
     var text by remember { mutableStateOf(value?.toString() ?: "") }
@@ -94,7 +97,7 @@ fun FloatInputField(
                     Text(
                         text = "$label:",
                         style = textStyle,
-                        color = if (enabled) Color.Black else Color.Gray
+                        color = if (enabled) LabelColor else DisabledLabelColor
                     )
                 }
                 Box(modifier = Modifier.weight(1f)) {

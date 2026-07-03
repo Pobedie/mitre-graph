@@ -29,7 +29,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
+import com.pobedie.attackgraph.ui.theme.*
 import androidx.compose.ui.unit.dp
 import attackgraph.shared.generated.resources.Res
 import attackgraph.shared.generated.resources.ic_floder
@@ -64,7 +64,7 @@ fun ImportStage(
             modifier = Modifier
                 .align(Alignment.Center)
                 .clip(RoundedCornerShape(8.dp))
-                .background(Color.LightGray)
+                .background(DialogBackground)
                 .widthIn(max = 600.dp)
                 .heightIn(max = 800.dp)
             ,
@@ -94,7 +94,7 @@ fun ImportStage(
             ) {
                 Text(
                     text = state.fileError.orEmpty(),
-                    color = MaterialTheme.colorScheme.error
+                    color = ErrorColor
                 )
             }
 
@@ -141,7 +141,7 @@ fun ImportStage(
                 onClick = { isMenuExpanded = true },
                 shape = RoundedCornerShape(8.dp),
                 interactionSource = MutableInteractionSource(),
-                colors = ButtonDefaults.buttonColors(containerColor = Color.DarkGray)
+                colors = ButtonDefaults.buttonColors(containerColor = SecondaryButtonBackground)
             ) {
                 val currentLangLabel = when (state.language) {
                     Language.English -> "ENGLISH"
@@ -149,13 +149,13 @@ fun ImportStage(
                 }
                 Text(
                     text = currentLangLabel,
-                    color = Color.White
+                    color = PrimaryTextColor
                 )
             }
             DropdownMenu(
                 expanded = isMenuExpanded,
                 onDismissRequest = { isMenuExpanded = false },
-                modifier = Modifier.background(Color.Gray)
+                modifier = Modifier.background(DropdownMenuBackground)
             ) {
                 Language.entries.forEach { lang ->
                     DropdownMenuItem(
@@ -166,7 +166,7 @@ fun ImportStage(
                             }
                             Text(
                                 text = label,
-                                color = Color.White
+                                color = PrimaryTextColor
                             )
                         },
                         onClick = {
@@ -189,9 +189,9 @@ private fun FileSelectionField(
     modifier: Modifier = Modifier
 ){
     val contentColor = when {
-        isFileError -> MaterialTheme.colorScheme.onError
-        !isEnabled -> MaterialTheme.colorScheme.background.copy(alpha =  0.4f)
-        else -> MaterialTheme.colorScheme.background
+        isFileError -> OnErrorColor
+        !isEnabled -> BackgroundColor.copy(alpha =  0.4f)
+        else -> OnBackgroundColor
     }
 
     Row(
@@ -199,7 +199,7 @@ private fun FileSelectionField(
             .fillMaxWidth()
             .heightIn(min = 40.dp, max = 80.dp)
             .clip(RoundedCornerShape(4.dp))
-            .background(Color.DarkGray)
+            .background(FileSelectionBackground)
             .clickable(
                 enabled = true,
                 onClick = onClick

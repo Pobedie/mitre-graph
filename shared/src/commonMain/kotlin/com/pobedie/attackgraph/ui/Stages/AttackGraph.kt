@@ -29,7 +29,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.PlainTooltip
 import androidx.compose.material3.Text
 import androidx.compose.material3.TooltipAnchorPosition
@@ -71,15 +70,18 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.util.fastCoerceAtMost
 import androidx.compose.ui.zIndex
 import attackgraph.shared.generated.resources.Res
 import attackgraph.shared.generated.resources.delete_connection_content_desc
-import attackgraph.shared.generated.resources.description_maturity_format
+import attackgraph.shared.generated.resources.description_maturity_severity_format
 import attackgraph.shared.generated.resources.deselect_hint
 import attackgraph.shared.generated.resources.edge_probability_risk_format
 import attackgraph.shared.generated.resources.ic_info
 import attackgraph.shared.generated.resources.ic_shield
+import attackgraph.shared.generated.resources.maturity_demonstrated
+import attackgraph.shared.generated.resources.maturity_feasible
+import attackgraph.shared.generated.resources.maturity_realized
+import attackgraph.shared.generated.resources.maturity_unknown
 import attackgraph.shared.generated.resources.mitigation_full_description_format
 import attackgraph.shared.generated.resources.p_label
 import attackgraph.shared.generated.resources.r_label
@@ -88,6 +90,7 @@ import attackgraph.shared.generated.resources.set_as_relevant
 import attackgraph.shared.generated.resources.show_mitigation_info_content_desc
 import attackgraph.shared.generated.resources.technique_description_content_desc
 import attackgraph.shared.generated.resources.unknown_value
+import com.pobedie.attackgraph.ui.theme.*
 import com.dk.kuiver.model.KuiverNode
 import com.dk.kuiver.model.buildKuiver
 import com.dk.kuiver.model.buildKuiverWithClassifiedEdges
@@ -104,6 +107,7 @@ import com.dk.kuiver.ui.LabelPlacement
 import com.pobedie.attackgraph.core.entity.EdgeState
 import com.pobedie.attackgraph.core.entity.Mitigation
 import com.pobedie.attackgraph.core.entity.Node
+import com.pobedie.attackgraph.core.entity.TechniqueMaturity
 import com.pobedie.attackgraph.ui.Stage
 import com.pobedie.attackgraph.ui.ViewModel
 import com.pobedie.attackgraph.ui.ViewState
@@ -282,13 +286,13 @@ fun AttackGraph(
                         )
 
                         drawRoundRect(
-                            color = Color(50, 50, 50, 150),
+                            color = HostContainerBackground,
                             topLeft = translatedRect.topLeft,
                             size = translatedRect.size,
                             cornerRadius = androidx.compose.ui.geometry.CornerRadius(8f * vsScale)
                         )
                         drawRoundRect(
-                            color = Color.White.copy(alpha = 0.4f),
+                            color = HostContainerBorder,
                             topLeft = translatedRect.topLeft,
                             size = translatedRect.size,
                             cornerRadius = androidx.compose.ui.geometry.CornerRadius(8f * vsScale),
@@ -300,7 +304,7 @@ fun AttackGraph(
                             text = container.name,
                             topLeft = translatedRect.topLeft + Offset(8f * vsScale, 4f * vsScale),
                             style = TextStyle(
-                                color = Color.White,
+                                color = PrimaryTextColor,
                                 fontSize = 12.sp * vsScale,
                                 fontWeight = FontWeight.Bold
                             )
@@ -340,10 +344,10 @@ fun AttackGraph(
                 val edgeColor =
                     when {
                         state.stage == Stage.AttackVectorsBuilding ||
-                        _edge == null -> Color.Gray
-                        _edge.state == EdgeState.MostOptimal -> Color(129, 199, 9)
-                        _edge.state == EdgeState.Probable -> Color(201, 174, 29, 255)
-                        else -> Color.Gray
+                        _edge == null -> EdgeDefault
+                        _edge.state == EdgeState.MostOptimal -> EdgeOptimal
+                        _edge.state == EdgeState.Probable -> EdgeProbable
+                        else -> EdgeDefault
                     }
                 val isSelected = state.selectedEdge?.let {
                     _edge != null && _edge.startNode == it.first && _edge.endNode == it.second
@@ -389,7 +393,7 @@ fun AttackGraph(
             Text(
                 modifier = Modifier.padding(4.dp),
                 text = stringResource(Res.string.deselect_hint),
-                color = Color.White.copy(alpha = 0.5f)
+                color = DeselectHint
             )
         }
     }
@@ -441,14 +445,14 @@ private fun TechniqueNode(
                 when {
                     isTarget && isSelected ->
                         Modifier
-                            .border(1.dp, Color.White, RoundedCornerShape(4.dp))
-                            .border(3.dp, Color(255, 103, 76), RoundedCornerShape(4.dp))
+                            .border(1.dp, SelectedBorderColor, RoundedCornerShape(4.dp))
+                            .border(3.dp, NodeBorderTarget, RoundedCornerShape(4.dp))
 
                     isTarget ->
-                        Modifier.border(3.dp, Color(255, 103, 76), RoundedCornerShape(4.dp))
+                        Modifier.border(3.dp, NodeBorderTarget, RoundedCornerShape(4.dp))
 
                     isSelected ->
-                        Modifier.border(1.dp, Color.White, RoundedCornerShape(4.dp))
+                        Modifier.border(1.dp, SelectedBorderColor, RoundedCornerShape(4.dp))
 
                     else -> Modifier
                 }
@@ -464,7 +468,7 @@ private fun TechniqueNode(
                     .fillMaxWidth()
                     .padding(vertical = 8.dp, horizontal = 8.dp),
                 text = node.name,
-                color = Color.White,
+                color = PrimaryTextColor,
             )
 
             if (areMitigationsShown && mitigations.isNotEmpty()) {
@@ -484,9 +488,9 @@ private fun TechniqueNode(
                         }
 
                         val backgroundColor = if (it.isRelevant) {
-                            MaterialTheme.colorScheme.errorContainer
+                            ErrorContainerColor
                         } else {
-                            Color.LightGray
+                            MitigationIrrelevant
                         }
                         TooltipBox(
                             modifier = Modifier
@@ -536,9 +540,9 @@ private fun TechniqueNode(
                             onDismissRequest = { mitigationShowTooltip = "" }
                         ) {
                             val iconColor = if (it.isRelevant) {
-                                MaterialTheme.colorScheme.onErrorContainer
+                                OnErrorContainerColor
                             } else {
-                                MaterialTheme.colorScheme.onTertiary
+                                OnTertiaryColor
                             }
 
                             Icon(
@@ -566,11 +570,19 @@ private fun TechniqueNode(
                     maxWidth = 400.dp,
                 ) {
                     SelectionContainer {
+                        val maturityString = stringResource(
+                            when (node.maturity) {
+                                TechniqueMaturity.Demonstrated -> Res.string.maturity_demonstrated
+                                TechniqueMaturity.Feasible -> Res.string.maturity_feasible
+                                TechniqueMaturity.Realized -> Res.string.maturity_realized
+                                TechniqueMaturity.Unknown -> Res.string.maturity_unknown
+                            }
+                        )
                         Text(
                             stringResource(
-                                Res.string.description_maturity_format,
+                                Res.string.description_maturity_severity_format,
                                 node.techniqueId,
-                                node.maturity.name,
+                                maturityString,
                                 node.severityScore,
                                 node.description
                             )
@@ -594,7 +606,7 @@ private fun TechniqueNode(
                         techniqueShowTooltip = true
                     },
                 painter = painterResource(Res.drawable.ic_info),
-                tint = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.6f),
+                tint = InfoIconColor,
                 contentDescription = stringResource(Res.string.technique_description_content_desc)
             )
         }
@@ -614,11 +626,11 @@ private fun TechniqueEdge(
     onPunishmentChange: (Float) -> Unit,
 ) {
     val labelColor = if (probability == null || risk == null) {
-        MaterialTheme.colorScheme.error.copy(alpha = 0.8f)
+        ErrorColor.copy(alpha = 0.8f)
     } else if (!isEnabled){
-        Color(208, 208, 208, 160)
+        EdgeLabelDisabled
     } else {
-        MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.8f)
+        SecondaryContainerColor.copy(alpha = 0.8f)
     }
     Column(
         verticalArrangement = Arrangement.Top
@@ -671,7 +683,7 @@ private fun TechniqueEdge(
                     .padding(top = 2.dp)
                     .size(24.dp)
                     .clip(RoundedCornerShape(4.dp))
-                    .background(MaterialTheme.colorScheme.errorContainer)
+                    .background(ErrorContainerColor)
                     .clickable(onClick = onDelete),
             ) {
                 Icon(

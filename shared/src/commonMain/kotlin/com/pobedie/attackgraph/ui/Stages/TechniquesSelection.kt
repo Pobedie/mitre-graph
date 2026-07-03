@@ -47,7 +47,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TooltipAnchorPosition
 import androidx.compose.material3.TooltipBox
 import androidx.compose.material3.TooltipDefaults
-import androidx.compose.material3.rememberSliderState
 import androidx.compose.material3.rememberTooltipState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -61,7 +60,7 @@ import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
+import com.pobedie.attackgraph.ui.theme.*
 import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.compose.ui.input.pointer.onPointerEvent
 import androidx.compose.ui.text.font.FontWeight
@@ -124,7 +123,7 @@ fun TechniqueSelection(
                 Text(
                     text = stringResource(Res.string.select_techniques_title),
                     style = MaterialTheme.typography.titleLarge,
-                    color = Color.White
+                    color = PrimaryTextColor
                 )
             }
 
@@ -204,14 +203,14 @@ fun TechniqueSelection(
             modifier = Modifier
                 .weight(1f)
                 .fillMaxHeight()
-                .background(Color(35, 35, 35))
+                .background(HostZoneBackground)
                 .padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
                 text = stringResource(Res.string.hosts_title),
                 style = MaterialTheme.typography.titleLarge,
-                color = Color.White
+                color = PrimaryTextColor
             )
 
             Spacer(Modifier.height(8.dp))
@@ -228,7 +227,7 @@ fun TechniqueSelection(
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.KeyboardArrowLeft,
                         contentDescription = stringResource(Res.string.previous_host_content_desc),
-                        tint = if (state.currentHostIndex > 0) Color.White else Color.Gray
+                        tint = if (state.currentHostIndex > 0) PrimaryTextColor else DisabledContentColor
                     )
                 }
 
@@ -236,7 +235,7 @@ fun TechniqueSelection(
                     text = "${state.currentHostIndex + 1} / ${state.hosts.size}",
                     modifier = Modifier.padding(horizontal = 8.dp),
                     style = MaterialTheme.typography.bodyLarge,
-                    color = Color.White
+                    color = PrimaryTextColor
                 )
 
                 if (state.currentHostIndex == state.hosts.size - 1) {
@@ -244,7 +243,7 @@ fun TechniqueSelection(
                         Icon(
                             imageVector = Icons.Default.Add,
                             contentDescription = stringResource(Res.string.add_host_content_desc),
-                            tint = Color.White
+                            tint = PrimaryTextColor
                         )
                     }
                 } else {
@@ -252,7 +251,7 @@ fun TechniqueSelection(
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
                             contentDescription = stringResource(Res.string.next_host_content_desc),
-                            tint = Color.White
+                            tint = PrimaryTextColor
                         )
                     }
                 }
@@ -266,7 +265,7 @@ fun TechniqueSelection(
                         Icon(
                             imageVector = Icons.Default.Delete,
                             contentDescription = stringResource(Res.string.delete_host_content_desc),
-                            tint = Color(255, 100, 100)
+                            tint = DeleteIconColor
                         )
                     }
                 }
@@ -303,7 +302,7 @@ private fun LazyItemScope.TacticColumn(
     onTechniqueClick: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val columnColor = if (isTargetSelectionInProgress) Color(255, 171, 140, 255) else Color.LightGray
+    val columnColor = if (isTargetSelectionInProgress) SelectionInProgressBackground else DialogBackground
 
     val tacticTooltipState = rememberTooltipState(isPersistent = true)
     var tacticShowTooltip by remember{ mutableStateOf(false) }
@@ -378,7 +377,7 @@ private fun LazyItemScope.TacticColumn(
                         )
                     ,
                     painter = painterResource(Res.drawable.ic_info),
-                    tint = Color.DarkGray.copy(alpha = 0.8f),
+                    tint = InfoIconSecondaryColor,
                     contentDescription = stringResource(Res.string.tactic_description_content_desc)
                 )
             }
@@ -386,7 +385,7 @@ private fun LazyItemScope.TacticColumn(
         HorizontalDivider(
             modifier = Modifier.weight(1f, false),
             thickness = 3.dp,
-            color = MaterialTheme.colorScheme.onBackground
+            color = BackgroundColor
         )
         tactic.techniques.forEachIndexed { index, technique ->
             val techniqueTooltipState = rememberTooltipState(isPersistent = true)
@@ -413,9 +412,9 @@ private fun LazyItemScope.TacticColumn(
                     }
                     .then(
                         if (isTarget)
-                            Modifier.background(Color(255, 103, 76))
+                            Modifier.background(NodeBorderTarget)
                         else if (selectedTechniques.contains(technique.id))
-                            Modifier.background(Color(170, 218, 255, 255))
+                            Modifier.background(SelectedTechniqueBackground)
                         else
                             Modifier
                     ),
@@ -475,7 +474,7 @@ private fun LazyItemScope.TacticColumn(
                                 onClick = { techniqueShowTooltip = true }
                             ),
                         painter = painterResource(Res.drawable.ic_info),
-                        tint = Color.DarkGray.copy(alpha = 0.8f),
+                        tint = InfoIconSecondaryColor,
                         contentDescription = stringResource(Res.string.technique_description_content_desc)
                     )
 
@@ -485,7 +484,7 @@ private fun LazyItemScope.TacticColumn(
                 HorizontalDivider(
                     modifier = Modifier.weight(1f, false),
                     thickness = 1.dp,
-                    color = MaterialTheme.colorScheme.onBackground
+                    color = BackgroundColor
                 )
             }
         }
@@ -510,13 +509,13 @@ private fun HostItem(
             .padding(vertical = 8.dp)
             .fillMaxWidth()
             .clip(RoundedCornerShape(12.dp))
-            .background(Color(50, 50, 50))
+            .background(HostItemSelectionBackground)
     ) {
         BasicTextField(
             value = name,
             onValueChange = onNameChange,
             textStyle = MaterialTheme.typography.titleMedium.copy(
-                color = Color.White,
+                color = PrimaryTextColor,
                 fontWeight = FontWeight.Bold
             ),
             modifier = Modifier.padding(12.dp)
@@ -549,7 +548,7 @@ private fun LazyItemScope.TechniqueInHost(
         modifier = modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(8.dp))
-            .background(Color(65, 65, 65))
+            .background(TechniqueInHostBackground)
             .padding(12.dp),
         horizontalAlignment = Alignment.Start,
         verticalArrangement = Arrangement.Top
@@ -563,7 +562,7 @@ private fun LazyItemScope.TechniqueInHost(
                 text = technique.name,
                 style = MaterialTheme.typography.titleSmall,
                 fontWeight = FontWeight.Bold,
-                color = Color.White,
+                color = PrimaryTextColor,
                 modifier = Modifier.weight(1f)
             )
             IconButton(
@@ -573,7 +572,7 @@ private fun LazyItemScope.TechniqueInHost(
                 Icon(
                     imageVector = Icons.Default.Delete,
                     contentDescription = stringResource(Res.string.delete_technique_from_host_content_desc),
-                    tint = Color(255, 100, 100)
+                    tint = DeleteIconColor
                 )
             }
         }
@@ -591,12 +590,12 @@ private fun LazyItemScope.TechniqueInHost(
         Text(
             text = stringResource(Res.string.maturity_format, maturityString),
             style = MaterialTheme.typography.bodySmall,
-            color = Color.LightGray
+            color = SecondaryTextColor
         )
         Text(
             text = stringResource(Res.string.severity_score_format, technique.severityScore),
             style = MaterialTheme.typography.bodySmall,
-            color = Color.LightGray
+            color = SecondaryTextColor
         )
 
         Spacer(Modifier.height(4.dp))

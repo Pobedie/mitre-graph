@@ -16,11 +16,12 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.compose.ui.input.pointer.onPointerEvent
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.pobedie.attackgraph.ui.theme.MainBackground
+import com.pobedie.attackgraph.ui.theme.StageBarBackground
 import com.pobedie.attackgraph.ui.Stages.AttackGraph
 import com.pobedie.attackgraph.ui.Stages.ImportStage
 import com.pobedie.attackgraph.ui.Stages.TechniqueSelection
@@ -51,7 +52,7 @@ fun MainScreen(
 
     Column(
         modifier = Modifier
-            .background(Color(20, 20, 20))
+            .background(MainBackground)
             .fillMaxSize(),
     ) {
         val scrollState = rememberLazyListState()
@@ -61,7 +62,7 @@ fun MainScreen(
             modifier = Modifier
                 .fillMaxWidth()
                 .heightIn(min = 80.dp)
-                .background(Color.DarkGray)
+                .background(StageBarBackground)
                 // by default to scroll horizontaly you need to use Shift+MouseWheel which is a bad UX in this case
                 .onPointerEvent(PointerEventType.Scroll) {
                     val delta = it.changes.first().scrollDelta
