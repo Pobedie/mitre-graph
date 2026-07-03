@@ -12,7 +12,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.PlainTooltip
 import androidx.compose.material3.Text
 import androidx.compose.material3.TooltipAnchorPosition
@@ -22,7 +21,7 @@ import androidx.compose.material3.rememberTooltipState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
+import com.pobedie.attackgraph.ui.theme.*
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import attackgraph.shared.generated.resources.Res
@@ -41,7 +40,7 @@ fun StageButton(
     modifier: Modifier = Modifier
 ) {
     val tooltipState = rememberTooltipState(isPersistent = true)
-    val contentColor = if (isEnabled) MaterialTheme.colorScheme.onPrimary else Color.Gray
+    val contentColor = if (isEnabled) OnPrimaryColor else DisabledContentColor
 
     Button(
         modifier = modifier
@@ -51,7 +50,7 @@ fun StageButton(
                 if (isHighlighted) {
                     Modifier.border(
                         width = 1.dp,
-                        color = MaterialTheme.colorScheme.surface,
+                        color = SelectedBorderColor,
                         shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp, bottomStart = 0.dp, bottomEnd = 0.dp),
                     )
                 } else Modifier

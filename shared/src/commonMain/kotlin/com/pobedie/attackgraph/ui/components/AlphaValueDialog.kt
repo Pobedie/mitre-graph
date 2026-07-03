@@ -16,7 +16,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
+import com.pobedie.attackgraph.ui.theme.DialogBackground
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import attackgraph.shared.generated.resources.Res
@@ -35,7 +35,7 @@ fun AlphaValueDialog(
     Column(
         modifier = Modifier
             .clip(RoundedCornerShape(8.dp))
-            .background(Color.LightGray)
+            .background(DialogBackground)
             .padding(8.dp)
         ,
         horizontalAlignment = Alignment.Start
