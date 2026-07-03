@@ -110,25 +110,26 @@ class ViewModel(
 
     fun switchToAttackVectorBuildingStage() {
         clearConsole()
-        val allTechniques = state.value.tactics.map { it.techniques }.flatten()
-//        selectedTechniques have to be sorted, otherwise the nodes might be places incorrectly on Y axis
-        val nodes: List<Node> = state.value.selectedTechniquesId.sortedBy { it }.mapNotNull { selectedIds ->
-            val selectedTechnique = allTechniques.find { it.id == selectedIds }
-            if (selectedTechnique != null) {
-                val tacticName = state.value.tactics.findLast { it.id == selectedTechnique.tacticId }?.name.orEmpty()
-                val color = generateColorFromId(selectedTechnique.tacticId)
+        val nodes: List<Node> = state.value.hosts.flatMap { host ->
+            host.techniques.map { technique ->
+                val tacticName = state.value.tactics.findLast { it.id == technique.tacticId }?.name.orEmpty()
+                val color = generateColorFromId(technique.tacticId)
                 Node(
-                    id = selectedTechnique.id,
-                    name = selectedTechnique.name,
-                    description = selectedTechnique.description,
-                    maturity = selectedTechnique.maturity,
+                    id = "${host.id}_${technique.id}",
+                    techniqueId = technique.id,
+                    hostId = host.id,
+                    hostName = host.name,
+                    name = technique.name,
+                    description = technique.description,
+                    maturity = technique.maturity,
+                    severityScore = technique.severityScore,
                     tactic = NodeTactic(
-                        id = selectedTechnique.tacticId,
+                        id = technique.tacticId,
                         name = tacticName,
                         color = color,
                     ),
                 )
-            } else null
+            }
         }
 //        User might build the graph then go back to SelectTechnique stage and deselect nodes.
 //        If we don't handle this, we will have incorrect optimal path calculations
@@ -149,7 +150,8 @@ class ViewModel(
         if (state.value.targetTechnique != null) {
             scope.launch {
                 val attackVectors = mainRepository.getAttackVectors(state.value.targetTechnique!!)
-                val mitigations = mainRepository.getMittigations(state.value.selectedTechniquesId)
+                val uniqueTechniqueIds = nodes.map { it.techniqueId }.distinct()
+                val mitigations = mainRepository.getMittigations(uniqueTechniqueIds)
                 _state.update {
                     it.copy(
                         attackVectors = attackVectors,
