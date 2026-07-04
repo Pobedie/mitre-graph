@@ -28,6 +28,7 @@ data class ViewState(
 
     // Attack vector mapping stage
     val isAttackVectorMappingStageAvailable: Boolean = false,
+    val isEdgeValueCalculationStageAvailable: Boolean = false,
     val selectedNode: String? = null,
     val selectedEdge: Pair<String, String>? = null, // ids of start and end nodes
 
@@ -35,8 +36,6 @@ data class ViewState(
     val isMitigationsAndAttacksStageAvailable: Boolean = false,
     val attackVectors: List<AttackVector> = emptyList(),
     val mitigations: List<Mitigation> = emptyList(),
-    val alphaValueDialogVisible: Boolean = false,
-    val alphaValue: Float = 0.0f,
 
     // App settings
     val language: Language = Language.English,
@@ -53,6 +52,7 @@ enum class Stage {
     Import,
     TechniqueSelection, // User selects techniques from tactics. Similar to MITRE ATLAS site
     AttackVectorsBuilding, // User draws edges between nodes and sets risk and penalty values
+    EdgeValueCalculation, // The program calculates the values of the edges
     MitigationsAndAttacks, // The program shows nodes that will be mitigated and edges that form a proven attack vector
     BestPath, // The program calculates the best path based on risks, penalties and mitigations
 }

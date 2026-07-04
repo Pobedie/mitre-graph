@@ -4,7 +4,7 @@
     <string name="select_techniques_button">Select techniques</string>
     <string name="select_techniques_hint">Select attack techniques from each tactic</string>
     <string name="build_attack_vectors_button">Build attack vectors</string>
-    <string name="build_attack_vectors_hint">Show attack vectors by drawing edges between nodes, then set penalty and risk values (0.0-1.0)</string>
+    <string name="build_attack_vectors_hint">Show attack vectors by drawing edges between nodes, then set probability values (0.0-1.0)</string>
     <string name="mitigations_and_attacks_button">Attack vectors and mitigations</string>
     <string name="mitigations_and_attacks_hint">Show proven by case-studies attack vectors and mitigations</string>
     <string name="import_from_file_title">Import from file</string>
@@ -17,6 +17,8 @@
     <string name="select_target_button">Select target</string>
     <string name="clear_selections_button">Clear selections</string>
     <string name="start_building_vectors_button">Start building attack vectors</string>
+    <string name="edge_value_calculation_button">Calculate edge values</string>
+    <string name="edge_value_calculation_hint">Calculate edge probabilities based on node maturity and severity scores</string>
     <string name="tactic_description_content_desc">Tactic description</string>
     <string name="technique_description_content_desc">Technique description</string>
     <string name="deselect_hint">Right click anywhere to deselect</string>
@@ -28,13 +30,12 @@
     <string name="alpha_value_description">It will be used as a multiplier for risk values</string>
     <string name="apply_button">Apply</string>
     <string name="p_label">P</string>
-    <string name="r_label">R</string>
 
     <string name="description_maturity_format">ID: %1$s\nMaturity: %2$s\n\n%3$s</string>
     <string name="description_maturity_severity_format">ID: %1$s\nMaturity: %2$s\nSeverity score: %3$s\n\n%4$s</string>
     <string name="description_format">ID: %1$s\n\n%2$s</string>
     <string name="mitigation_full_description_format">ID: %1$s\n\nMitigation:\n%2$s\n\n\n%3$s</string>
-    <string name="edge_probability_risk_format">P:%1$s R:%2$s</string>
+    <string name="edge_probability_risk_format">P:%1$s</string>
 
     <string name="file_not_found_error">File not found at %1$s</string>
     <string name="file_blank_error">File %1$s seems to be blank</string>

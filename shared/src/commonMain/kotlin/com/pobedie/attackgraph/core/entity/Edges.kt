@@ -4,7 +4,6 @@ data class Edge(
     val startNode: String,
     val endNode: String,
     val probability: Float? = null,
-    val risk: Float? = null,
     val state: EdgeState = EdgeState.Idle
 )
 

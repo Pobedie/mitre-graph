@@ -84,7 +84,6 @@ import attackgraph.shared.generated.resources.maturity_realized
 import attackgraph.shared.generated.resources.maturity_unknown
 import attackgraph.shared.generated.resources.mitigation_full_description_format
 import attackgraph.shared.generated.resources.p_label
-import attackgraph.shared.generated.resources.r_label
 import attackgraph.shared.generated.resources.set_as_irrelevant
 import attackgraph.shared.generated.resources.set_as_relevant
 import attackgraph.shared.generated.resources.show_mitigation_info_content_desc
@@ -349,6 +348,7 @@ fun AttackGraph(
                 val edgeColor =
                     when {
                         state.stage == Stage.AttackVectorsBuilding ||
+                        state.stage == Stage.EdgeValueCalculation ||
                         _edge == null -> EdgeDefault
                         _edge.state == EdgeState.MostOptimal -> EdgeOptimal
                         _edge.state == EdgeState.Probable -> EdgeProbable
@@ -371,17 +371,13 @@ fun AttackGraph(
                             if (_edge != null) {
                                 TechniqueEdge(
                                     probability = _edge.probability,
-                                    risk = _edge.risk,
                                     isSelected = isSelected,
-                                    isEnabled = state.stage == Stage.AttackVectorsBuilding,
+                                    isEnabled = state.stage == Stage.AttackVectorsBuilding || state.stage == Stage.EdgeValueCalculation,
                                     onClick = { viewModel.selectEdge(_edge.startNode, _edge.endNode) },
                                     onDismissed = { viewModel.clearEdgeSelection() },
                                     onDelete = { viewModel.deleteEdge(_edge.startNode, _edge.endNode) },
                                     onProbabilityChange = {
                                         viewModel.changeEdgeProbability(_edge.startNode, _edge.endNode, it)
-                                    },
-                                    onPunishmentChange = {
-                                        viewModel.changeEdgePunishment(_edge.startNode, _edge.endNode, it)
                                     },
                                 )
                             }
@@ -392,7 +388,7 @@ fun AttackGraph(
         )
 
         AnimatedVisibility(
-            visible = state.stage == Stage.AttackVectorsBuilding,
+            visible = state.stage == Stage.AttackVectorsBuilding || state.stage == Stage.EdgeValueCalculation,
             modifier = Modifier.align(Alignment.BottomStart)
         ) {
             Text(
@@ -621,16 +617,14 @@ private fun TechniqueNode(
 @Composable
 private fun TechniqueEdge(
     probability: Float?,
-    risk: Float?,
     isSelected: Boolean,
     isEnabled: Boolean,
     onClick: () -> Unit,
     onDismissed: () -> Unit,
     onDelete: () -> Unit,
     onProbabilityChange: (Float) -> Unit,
-    onPunishmentChange: (Float) -> Unit,
 ) {
-    val labelColor = if (probability == null || risk == null) {
+    val labelColor = if (probability == null) {
         ErrorColor.copy(alpha = 0.8f)
     } else if (!isEnabled){
         EdgeLabelDisabled
@@ -658,22 +652,13 @@ private fun TechniqueEdge(
                     enabled = true,
                     modifier = Modifier.width(60.dp)
                 )
-                FloatInputField(
-                    value = risk,
-                    onValueChange = { onPunishmentChange(it) },
-                    onDismiss = onDismissed,
-                    label = stringResource(Res.string.r_label),
-                    enabled = true,
-                    modifier = Modifier.width(60.dp)
-                )
             } else {
                 Text(
                     modifier = Modifier
                         .padding(1.dp),
                     text = stringResource(
                         Res.string.edge_probability_risk_format,
-                        probability ?: stringResource(Res.string.unknown_value),
-                        risk ?: stringResource(Res.string.unknown_value)
+                        probability ?: stringResource(Res.string.unknown_value)
                     )
                 )
             }

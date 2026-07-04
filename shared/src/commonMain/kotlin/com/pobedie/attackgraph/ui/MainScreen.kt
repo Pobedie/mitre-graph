@@ -25,13 +25,14 @@ import com.pobedie.attackgraph.ui.theme.StageBarBackground
 import com.pobedie.attackgraph.ui.Stages.AttackGraph
 import com.pobedie.attackgraph.ui.Stages.ImportStage
 import com.pobedie.attackgraph.ui.Stages.TechniqueSelection
-import com.pobedie.attackgraph.ui.components.AlphaValueDialog
 import com.pobedie.attackgraph.ui.components.Console
 import com.pobedie.attackgraph.ui.components.StageArrow
 import com.pobedie.attackgraph.ui.components.StageButton
 import attackgraph.shared.generated.resources.Res
 import attackgraph.shared.generated.resources.build_attack_vectors_button
 import attackgraph.shared.generated.resources.build_attack_vectors_hint
+import attackgraph.shared.generated.resources.edge_value_calculation_button
+import attackgraph.shared.generated.resources.edge_value_calculation_hint
 import attackgraph.shared.generated.resources.import_button
 import attackgraph.shared.generated.resources.import_hint
 import attackgraph.shared.generated.resources.mitigations_and_attacks_button
@@ -113,7 +114,19 @@ fun MainScreen(
             item {
                 StageButton(
                     onClick = {
-                        viewModel.showAlphaValueDialog()
+                        viewModel.switchToEdgeValueCalculationStage()
+                    },
+                    buttonText = stringResource(Res.string.edge_value_calculation_button),
+                    hintText = stringResource(Res.string.edge_value_calculation_hint),
+                    isHighlighted = state.stage == Stage.EdgeValueCalculation,
+                    isEnabled = state.isEdgeValueCalculationStageAvailable
+                )
+            }
+            StageArrow()
+            item {
+                StageButton(
+                    onClick = {
+                        viewModel.switchToMitigationsAndAttacks()
                     },
                     buttonText = stringResource(Res.string.mitigations_and_attacks_button),
                     hintText = stringResource(Res.string.mitigations_and_attacks_hint),
@@ -133,6 +146,7 @@ fun MainScreen(
                 Stage.Import -> ImportStage(viewModel, state)
                 Stage.TechniqueSelection -> TechniqueSelection(viewModel, state)
                 Stage.AttackVectorsBuilding,
+                Stage.EdgeValueCalculation,
                 Stage.MitigationsAndAttacks,
                 Stage.BestPath -> AttackGraph(viewModel, state)
             }
@@ -145,16 +159,6 @@ fun MainScreen(
                     .align(Alignment.BottomEnd)
                     .padding(16.dp)
             )
-
-            if (state.alphaValueDialogVisible) {
-                AlphaValueDialog(
-                    alpha = state.alphaValue,
-                    onClick ={
-                        viewModel.setAlphaValue(it)
-                        viewModel.switchToMitigationsAndAttacks()
-                    }
-                )
-            }
         }
     }
 }
