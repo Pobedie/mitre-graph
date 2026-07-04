@@ -12,7 +12,7 @@ import attackgraph.shared.generated.resources.target_not_selected_error
 import attackgraph.shared.generated.resources.unexpected_error
 import attackgraph.shared.generated.resources.host_name_format
 import com.pobedie.attackgraph.core.MainRepository
-import com.pobedie.attackgraph.core.calculateProbabilitiesAndRisks
+import com.pobedie.attackgraph.core.calculateProbabilitiesSimple
 import com.pobedie.attackgraph.core.entity.Edge
 import com.pobedie.attackgraph.core.entity.EdgeState
 import com.pobedie.attackgraph.core.entity.Host
@@ -73,17 +73,24 @@ class ViewModel(
         }
         // Handle side effects from state change
         state.onEach { currentState ->
+            val isEdgeValueCalculationStageAvailable =
+                currentState.edges.size >= 3 &&
+                        state.value.targetTechnique != null &&
+                        state.value.edges.any { it.endNode.endsWith(state.value.targetTechnique!!) }
+
             val mitigationAndAttackStageAvailable: Boolean = (
-                    currentState.edges.size > 2 &&
-                            currentState.edges.none { it.risk == null || it.probability == null } &&
-                            state.value.edges.any { it.endNode == state.value.targetTechnique }
+                    currentState.edges.size >= 3 &&
+                            currentState.edges.none { it.probability == null } &&
+                            state.value.edges.any { it.endNode.endsWith(state.value.targetTechnique!!) } &&
+                            (currentState.stage == Stage.EdgeValueCalculation || currentState.stage == Stage.MitigationsAndAttacks)
                     )
             val isAttackVectorMappingStageAvailable =
                 currentState.hosts.count { it.techniques.isNotEmpty() } >= 3 && state.value.targetTechnique != null
             _state.update {
                 it.copy(
                     isMitigationsAndAttacksStageAvailable = mitigationAndAttackStageAvailable,
-                    isAttackVectorMappingStageAvailable = isAttackVectorMappingStageAvailable
+                    isAttackVectorMappingStageAvailable = isAttackVectorMappingStageAvailable,
+                    isEdgeValueCalculationStageAvailable = isEdgeValueCalculationStageAvailable
                 )
             }
         }.launchIn(scope)
@@ -183,53 +190,57 @@ class ViewModel(
         }
     }
 
-    fun showAlphaValueDialog() {
+    fun switchToEdgeValueCalculationStage() {
+        val updatedEdges = calculateProbabilitiesSimple(
+            edges = state.value.edges,
+            nodes = state.value.nodes,
+        )
         _state.update {
             it.copy(
-                alphaValueDialogVisible = true
+                stage = Stage.EdgeValueCalculation,
+                edges = updatedEdges
             )
         }
     }
 
     fun switchToMitigationsAndAttacks() {
-        val updatedEdges = calculateProbabilitiesAndRisks(
-            edges = state.value.edges,
-            nodes = state.value.nodes,
-            target = state.value.targetTechnique!!
-        )
         val rootNodes: List<String> =
                 state.value.nodes
                         .filter { _node ->
-                            updatedEdges.none { _edge -> _edge.endNode == _node.id }
+                            state.value.edges.none { _edge -> _edge.endNode == _node.id }
                         }
                         .map { it.id }
 
         val targetTechnique = state.value.targetTechnique
-        val allEdges = updatedEdges
+        val allEdges = state.value.edges
         val probablePaths: MutableList<Pair<List<Edge>, Double>> = mutableListOf()
         var optimalPath: Pair<List<Edge>, Double>? = null
 
         if (targetTechnique != null) {
+            val targetNodes = state.value.nodes.filter { it.techniqueId == targetTechnique }
             rootNodes.forEach { _rootNode ->
-                val pathResult = findOptimalPath(
-                    edges = allEdges,
-                    start = _rootNode,
-                    target = targetTechnique,
-                    alpha = state.value.alphaValue
-                )
-                if (pathResult != null) {
-                    probablePaths.add(pathResult)
-                    if (optimalPath == null || pathResult.second < optimalPath.second) {
-                        optimalPath = pathResult
+                targetNodes.forEach { targetNode ->
+                    val pathResult = findOptimalPath(
+                        edges = allEdges,
+                        start = _rootNode,
+                        target = targetNode.id
+                    )
+                    if (pathResult != null) {
+                        probablePaths.add(pathResult)
+                        val currentOptimal = optimalPath
+                        if (currentOptimal == null || pathResult.second < currentOptimal.second) {
+                            optimalPath = pathResult
+                        }
                     }
                 }
             }
         }
 
+        val finalOptimalPath = optimalPath
         val newEdges =
-            if (optimalPath != null) {
+            if (finalOptimalPath != null) {
                 allEdges.map { _edge ->
-                    if (optimalPath.first.contains(_edge)) {
+                    if (finalOptimalPath.first.contains(_edge)) {
                         _edge.copy( state = EdgeState.MostOptimal )
                     } else if (
                         probablePaths.any {
@@ -252,11 +263,11 @@ class ViewModel(
         }
         clearConsole()
         scope.launch {
-            if (optimalPath != null) {
+            if (finalOptimalPath != null) {
                 logToUiConsole(getString(Res.string.optimal_path_label), freezeDisplay = true)
-                logToUiConsole(formatPath(optimalPath!!), freezeDisplay = true)
+                logToUiConsole(formatPath(finalOptimalPath), freezeDisplay = true)
 
-                val otherProbablePaths = probablePaths.filter { it != optimalPath }
+                val otherProbablePaths = probablePaths.filter { it != finalOptimalPath }.take(4)
                 if (otherProbablePaths.isNotEmpty()) {
                     logToUiConsole("\n" + getString(Res.string.probable_paths_label), freezeDisplay = true)
                     otherProbablePaths.forEach {
@@ -545,34 +556,12 @@ class ViewModel(
         }
     }
 
-    fun changeEdgePunishment(startNode: String, endNode: String, value: Float) {
-        _state.update {
-            val newEdges = it.edges.map {
-                if (it.startNode == startNode && it.endNode == endNode) {
-                    it.copy(
-                        risk = value
-                    )
-                } else it
-            }
-            it.copy(edges = newEdges)
-        }
-    }
-
     fun toggleMitigationRelevance(mitigation: String) {
         _state.update {
             val newMitigations = it.mitigations.map {
                 if (it.id == mitigation) it.copy(isRelevant = !it.isRelevant) else it
             }
             it.copy( mitigations = newMitigations )
-        }
-    }
-
-    fun setAlphaValue(alpha: Float) {
-        _state.update {
-            it.copy(
-                alphaValue = alpha,
-                alphaValueDialogVisible = false
-                )
         }
     }
 
@@ -615,8 +604,13 @@ class ViewModel(
         }
         if (edges.isEmpty()) return getString(Res.string.path_cost_format, "", formattedCost)
         val nodes = mutableListOf<String>()
-        nodes.add(edges.first().startNode)
-        nodes.addAll(edges.map { it.endNode })
+        val firstTechnique = state.value.nodes.find { it.hostId+"_"+it.techniqueId == edges.first().startNode }
+        if (firstTechnique != null) nodes.add(firstTechnique.hostName + "_" + firstTechnique.techniqueId)
+        nodes.addAll(edges.mapNotNull { _edge ->
+            val hostTechnique = state.value.nodes.find { it.hostId+"_"+it.techniqueId == _edge.startNode }
+                ?: return@mapNotNull null
+            return@mapNotNull hostTechnique.hostName + "_" + hostTechnique.techniqueId
+        })
         return getString(Res.string.path_cost_format, nodes.joinToString(" -> "), formattedCost)
     }
 

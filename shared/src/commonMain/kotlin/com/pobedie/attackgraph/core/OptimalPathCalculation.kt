@@ -7,14 +7,13 @@ import kotlin.math.ln
 /**
  * Calculates the most optimal path using Dijkstra's algorithm.
  * 
- * Weights are calculated using probability (logarithmic) and risk (linear).
+ * Weights are calculated using probability (logarithmic).
  * @return A pair containing the list of edges in the path and the total cost, or null if no path exists.
  */
 fun findOptimalPath(
     edges: List<Edge>,
     start: String,
-    target: String,
-    alpha: Float = 0.0f
+    target: String
 ): Pair<List<Edge>, Double>? {
     val adj = edges.groupBy { it.startNode }
 
@@ -35,10 +34,9 @@ fun findOptimalPath(
 
         adj[currentNode]?.forEach { edge ->
             val prob = edge.probability
-            val risk = edge.risk
             
-            if (prob != null && risk != null) {
-                val weight = edgeWeight(prob, risk, alpha)
+            if (prob != null) {
+                val weight = edgeWeight(prob)
                 if (weight.isInfinite()) return@forEach
                 
                 val neighbor = edge.endNode
@@ -66,8 +64,7 @@ fun findOptimalPath(
     return path to dist.getValue(target)
 }
 
-fun edgeWeight(prob: Float, risk: Float, alpha: Float): Double {
+fun edgeWeight(prob: Float): Double {
     if (prob <= 0.0) return Double.POSITIVE_INFINITY
-    val riskPart = alpha * risk
-    return -ln(prob.toDouble()) + riskPart
+    return -ln(prob.toDouble())
 }
