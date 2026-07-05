@@ -119,9 +119,10 @@ class ViewModel(
 
     fun switchToAttackVectorBuildingStage() {
         clearConsole()
-        val nodes: List<Node> = state.value.hosts.flatMap { host ->
+        val currentState = state.value
+        val nodes: List<Node> = currentState.hosts.flatMap { host ->
             host.techniques.mapNotNull { technique ->
-                val tactic = state.value.tactics.findLast { it.id == technique.tacticId } ?: return@mapNotNull null
+                val tactic = currentState.tactics.findLast { it.id == technique.tacticId } ?: return@mapNotNull null
                 val color = generateColorFromId(technique.tacticId)
                 Node(
                     id = "${host.id}_${technique.id}",
@@ -141,35 +142,82 @@ class ViewModel(
                 )
             }
         }
-//        User might build the graph then go back to SelectTechnique stage and deselect nodes.
-//        If we don't handle this, we will have incorrect optimal path calculations
-        val newEdges = state.value.edges.mapNotNull { _edge ->
-            if (nodes.any { it.id == _edge.startNode } && nodes.any { it.id == _edge.endNode }) {
-                _edge
-            } else null
-        }
+
         val resolvedTargets = getResolvedTargetTechniques()
-        _state.update {
-            it.copy(
-                stage = Stage.AttackVectorsBuilding,
-                nodes = nodes,
-                edges = newEdges,
-                selectedNode = null,
-                targetTechniques = resolvedTargets
-            )
-        }
-        // Since we know the target technique, we can already start case-study fetching
-        if (resolvedTargets.isNotEmpty()) {
-            scope.launch {
-                val attackVectors = resolvedTargets.flatMap { mainRepository.getAttackVectors(it) }.distinct()
-                _state.update {
-                    it.copy(
-                        attackVectors = attackVectors
-                    )
+        val selectedTechniqueIds = currentState.hosts.flatMap { host -> host.techniques.map { it.id } }.distinct()
+
+        // Fetch case studies for all selected techniques to build possible paths
+        scope.launch {
+            val attackVectors = if (selectedTechniqueIds.isNotEmpty()) {
+                mainRepository.getAttackVectors(selectedTechniqueIds)
+            } else emptyList()
+
+            val autoEdges = mutableListOf<Edge>()
+            val avByCaseStudy = attackVectors.groupBy { it.caseStudyId }
+
+            for ((_, steps) in avByCaseStudy) {
+                val sortedSteps = steps.sortedBy { it.step }
+                for (j in sortedSteps.indices) {
+                    val currentStep = sortedSteps[j]
+
+                    // Option 1: Explicit leadsTo
+                    val targetStepIds = currentStep.leadsTo
+                    val targets = if (targetStepIds.isNotEmpty()) {
+                        steps.filter { it.stepId in targetStepIds }
+                    } else if (j + 1 < sortedSteps.size) {
+                        // Option 2: Next step in sequence (fallback)
+                        listOf(sortedSteps[j + 1])
+                    } else emptyList()
+
+                    for (targetStep in targets) {
+                        val sourceTechId = currentStep.targetTechnique
+                        val targetTechId = targetStep.targetTechnique
+
+                        val sourceNodes = nodes.filter { it.techniqueId == sourceTechId }
+                        val targetNodes = nodes.filter { it.techniqueId == targetTechId }
+
+                        for (u in sourceNodes) {
+                            for (v in targetNodes) {
+                                if (u.id == v.id) continue
+
+                                val hasRelevantMitigation = currentState.mitigations.any {
+                                    it.targetTechnique == v.techniqueId && it.isRelevant
+                                }
+
+                                if (!hasRelevantMitigation) {
+                                    autoEdges.add(
+                                        Edge(
+                                            startNode = u.id,
+                                            endNode = v.id,
+                                            state = EdgeState.CaseStudyProven
+                                        )
+                                    )
+                                }
+                            }
+                        }
+                    }
                 }
             }
-        } else {
-            scope.launch {
+
+            // Keep valid existing edges
+            val validExistingEdges = currentState.edges.filter { edge ->
+                nodes.any { it.id == edge.startNode } && nodes.any { it.id == edge.endNode }
+            }
+            val allEdges = (validExistingEdges + autoEdges).distinctBy { it.startNode to it.endNode }
+            val calculatedEdges = calculateProbabilitiesSimple(allEdges, nodes)
+
+            _state.update {
+                it.copy(
+                    stage = Stage.AttackVectorsBuilding,
+                    nodes = nodes,
+                    edges = calculatedEdges,
+                    selectedNode = null,
+                    targetTechniques = resolvedTargets,
+                    attackVectors = attackVectors
+                )
+            }
+
+            if (resolvedTargets.isEmpty()) {
                 logToUiConsole(getString(Res.string.target_not_selected_error))
             }
         }
@@ -221,20 +269,18 @@ class ViewModel(
         var optimalPath: Pair<List<Edge>, Double>? = null
 
         if (targetTechniques.isNotEmpty()) {
-            val targetNodes = state.value.nodes.filter { it.techniqueId in targetTechniques }
+            val targetNodes = state.value.nodes.filter { it.techniqueId in targetTechniques }.map { it.id }
             rootNodes.forEach { _rootNode ->
-                targetNodes.forEach { targetNode ->
-                    val pathResult = findOptimalPath(
-                        edges = allEdges,
-                        start = _rootNode,
-                        target = targetNode.id
-                    )
-                    if (pathResult != null) {
-                        probablePaths.add(pathResult)
-                        val currentOptimal = optimalPath
-                        if (currentOptimal == null || pathResult.second < currentOptimal.second) {
-                            optimalPath = pathResult
-                        }
+                val pathResult = findOptimalPath(
+                    edges = allEdges,
+                    start = _rootNode,
+                    targets = targetNodes
+                )
+                if (pathResult != null) {
+                    probablePaths.add(pathResult)
+                    val currentOptimal = optimalPath
+                    if (currentOptimal == null || pathResult.second < currentOptimal.second) {
+                        optimalPath = pathResult
                     }
                 }
             }

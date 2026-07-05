@@ -169,12 +169,15 @@ class MainRepository(
         return@withContext tactics
     }
 
-    suspend fun getAttackVectors(targetTechnique: String ): List<AttackVector> = withContext(Dispatchers.IO){
-        val relatedCaseStudies = database.relationshipsQueries.selectRelationshipsByTargetTechnique(targetTechnique)
-            .executeAsList()
-            .mapNotNull {
-                if (it.relationship_type == "employs") it.source_id else null
-            }
+    suspend fun getAttackVectors(techniques: List<String>): List<AttackVector> = withContext(Dispatchers.IO){
+        val relatedCaseStudies = techniques.flatMap { _techniqueId ->
+            database.relationshipsQueries.selectRelationshipsByTargetTechnique(_techniqueId)
+                .executeAsList()
+                .mapNotNull {
+                    if (it.relationship_type == "employs") it.source_id else null
+                }
+        }.distinct()
+
         val attackVectors = relatedCaseStudies.flatMap {
             database.relationshipsQueries.selectRelationshipsByCaseStudy(it)
                 .executeAsList()
@@ -182,7 +185,7 @@ class MainRepository(
                     _relationship.toAttackVector()
                 }
         }
-        println("For target technique: $targetTechnique found attack vectors :\n\t${attackVectors}")
+        println("For techniques: $techniques found attack vectors :\n\t${attackVectors.map { "${it.stepId} ${it.tactic}" }}")
         return@withContext attackVectors
     }
 

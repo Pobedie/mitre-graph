@@ -39,8 +39,10 @@ fun com.pobedie.attackgraph.database.Technique.toDomainModel(
 fun Relationship.toAttackVector(): AttackVector =
     AttackVector(
         caseStudyId = source_id,
-        step = step_id.removePrefix("S").toInt(),
+        step = try { step_id.removePrefix("S").toInt() } catch (e: Exception) { 0 },
+        stepId = step_id,
         tactic = tactic_id,
         targetTechnique = target_id,
-        description = description
+        description = description,
+        leadsTo = leads_to
     )
