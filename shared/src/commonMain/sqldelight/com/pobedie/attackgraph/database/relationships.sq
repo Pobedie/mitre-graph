@@ -57,6 +57,18 @@ SELECT
 FROM relationship
 WHERE target_id = ?;
 
+selectAllMitigationRelationships:
+SELECT
+    step_id,
+    source_id,
+    target_id,
+    relationship_type,
+    description,
+    tactic_id,
+    leads_to
+FROM relationship
+WHERE relationship_type = 'mitigates';
+
 updateRelationship:
 UPDATE relationship
 SET target_id = ?, relationship_type = ?, description = ?,

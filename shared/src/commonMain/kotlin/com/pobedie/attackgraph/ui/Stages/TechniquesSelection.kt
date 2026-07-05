@@ -10,6 +10,7 @@ import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -60,6 +61,7 @@ import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
 import com.pobedie.attackgraph.ui.theme.*
 import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.compose.ui.input.pointer.onPointerEvent
@@ -75,21 +77,27 @@ import attackgraph.shared.generated.resources.description_format
 import attackgraph.shared.generated.resources.description_maturity_format
 import attackgraph.shared.generated.resources.hosts_title
 import attackgraph.shared.generated.resources.ic_info
+import attackgraph.shared.generated.resources.ic_shield
 import attackgraph.shared.generated.resources.maturity_demonstrated
 import attackgraph.shared.generated.resources.maturity_feasible
 import attackgraph.shared.generated.resources.maturity_format
 import attackgraph.shared.generated.resources.maturity_realized
 import attackgraph.shared.generated.resources.maturity_unknown
+import attackgraph.shared.generated.resources.mitigation_full_description_format
 import attackgraph.shared.generated.resources.next_host_content_desc
 import attackgraph.shared.generated.resources.previous_host_content_desc
 import attackgraph.shared.generated.resources.select_target_button
 import attackgraph.shared.generated.resources.select_techniques_title
+import attackgraph.shared.generated.resources.set_as_irrelevant
+import attackgraph.shared.generated.resources.set_as_relevant
 import attackgraph.shared.generated.resources.severity_score_format
+import attackgraph.shared.generated.resources.show_mitigation_info_content_desc
 import attackgraph.shared.generated.resources.start_building_vectors_button
 import attackgraph.shared.generated.resources.tactic_description_content_desc
 import attackgraph.shared.generated.resources.technique_description_content_desc
 import com.pobedie.attackgraph.core.entity.Tactic
 import com.pobedie.attackgraph.core.entity.Technique
+import com.pobedie.attackgraph.core.entity.Mitigation
 import com.pobedie.attackgraph.core.entity.TechniqueMaturity
 import com.pobedie.attackgraph.ui.ViewModel
 import com.pobedie.attackgraph.ui.ViewState
@@ -278,12 +286,16 @@ fun TechniqueSelection(
                 HostItem(
                     name = currentHost.name,
                     techniques = currentHost.techniques,
+                    mitigations = state.mitigations,
                     onNameChange = { viewModel.updateHostName(currentHost.id, it) },
                     onSeverityScoreSet = { techId, score ->
                         viewModel.updateTechniqueSeverityScore(currentHost.id, techId, score)
                     },
                     onTechniqueDelete = { techId ->
                         viewModel.removeTechniqueFromHost(currentHost.id, techId)
+                    },
+                    onToggleMitigationRelevance = {
+                        viewModel.toggleMitigationRelevance(it)
                     },
                     modifier = Modifier.weight(1f)
                 )
@@ -498,9 +510,11 @@ private fun LazyItemScope.TacticColumn(
 private fun HostItem(
     name: String,
     techniques: List<Technique>,
+    mitigations: List<Mitigation>,
     onNameChange: (String) -> Unit,
     onSeverityScoreSet: (String, Int) -> Unit,
     onTechniqueDelete: (String) -> Unit,
+    onToggleMitigationRelevance: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
 
@@ -529,8 +543,10 @@ private fun HostItem(
             items(techniques) { _technique ->
                 TechniqueInHost(
                     technique = _technique,
+                    mitigations = mitigations.filter { it.targetTechnique == _technique.id },
                     onSeverityScoreSet = { onSeverityScoreSet(_technique.id, it) },
                     onDelete = { onTechniqueDelete(_technique.id) },
+                    onToggleMitigationRelevance = onToggleMitigationRelevance
                 )
             }
         }
@@ -540,8 +556,10 @@ private fun HostItem(
 @Composable
 private fun LazyItemScope.TechniqueInHost(
     technique: Technique,
+    mitigations: List<Mitigation>,
     onSeverityScoreSet: (Int) -> Unit,
     onDelete: () -> Unit,
+    onToggleMitigationRelevance: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -607,5 +625,92 @@ private fun LazyItemScope.TechniqueInHost(
             steps = 3,
             modifier = Modifier.fillMaxWidth()
         )
+
+        if (mitigations.isNotEmpty()) {
+            Spacer(Modifier.height(8.dp))
+            FlowRow(
+                modifier = Modifier
+                    .fillMaxWidth()
+            ) {
+                mitigations.forEach { mitigation ->
+                    val mitigationTooltipState = rememberTooltipState(isPersistent = true)
+                    var mitigationShowTooltip by remember { mutableStateOf("") }
+                    LaunchedEffect(mitigationShowTooltip) {
+                        if (mitigationShowTooltip == mitigation.id) {
+                            mitigationTooltipState.show()
+                        } else {
+                            mitigationTooltipState.dismiss()
+                        }
+                    }
+
+                    val backgroundColor = if (mitigation.isRelevant) {
+                        ErrorContainerColor
+                    } else {
+                        MitigationIrrelevant
+                    }
+                    TooltipBox(
+                        modifier = Modifier
+                            .padding(end = 4.dp, bottom = 4.dp)
+                            .size(24.dp)
+                            .clip(RoundedCornerShape(4.dp))
+                            .background(backgroundColor)
+                            .clickable(
+                                onClick = {
+                                    mitigationShowTooltip = mitigation.id
+                                }
+                            ),
+                        positionProvider = TooltipDefaults.rememberTooltipPositionProvider(
+                            positioning = TooltipAnchorPosition.Above,
+                            spacingBetweenTooltipAndAnchor = 0.dp
+                        ),
+                        enableUserInput = false,
+                        tooltip = {
+                            PlainTooltip(
+                                maxWidth = 400.dp,
+                            ) {
+                                val mitigationDescription = stringResource(
+                                    Res.string.mitigation_full_description_format,
+                                    mitigation.id,
+                                    mitigation.relationshipDescription,
+                                    mitigation.mitigationDescription
+                                )
+                                SelectionContainer {
+                                    Column {
+                                        Text(mitigationDescription)
+                                        Button(
+                                            onClick = { onToggleMitigationRelevance(mitigation.id) },
+                                            shape = RoundedCornerShape(4.dp)
+                                        ) {
+                                            Text(
+                                                text = if (mitigation.isRelevant)
+                                                    stringResource(Res.string.set_as_irrelevant)
+                                                else
+                                                    stringResource(Res.string.set_as_relevant)
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        state = mitigationTooltipState,
+                        onDismissRequest = { mitigationShowTooltip = "" }
+                    ) {
+                        val iconColor = if (mitigation.isRelevant) {
+                            OnErrorContainerColor
+                        } else {
+                            OnTertiaryColor
+                        }
+
+                        Icon(
+                            modifier = Modifier
+                                .scale(0.8f),
+                            painter = painterResource(Res.drawable.ic_shield),
+                            tint = iconColor,
+                            contentDescription = stringResource(Res.string.show_mitigation_info_content_desc)
+                        )
+                    }
+                }
+            }
+        }
     }
 }
