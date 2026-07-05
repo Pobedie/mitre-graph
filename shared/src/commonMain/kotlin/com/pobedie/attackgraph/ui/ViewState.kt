@@ -12,7 +12,8 @@ data class ViewState(
     val nodes: List<Node> = emptyList(),
     val edges: List<Edge> = emptyList(),
     val hosts: List<Host> = emptyList(),
-    val targetTechnique: String? = null,
+    val targetGoal: TargetGoal = TargetGoal.HighestSeverity,
+    val targetTechniques: List<String> = emptyList(),
 
     // Import stage
     val filePath: String = "",
@@ -46,6 +47,11 @@ data class ViewState(
 enum class Language(val code: String) {
     English("en"),
     Russian("ru")
+}
+
+enum class TargetGoal {
+    HighestSeverity,
+    Specific
 }
 
 enum class Stage {

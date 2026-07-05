@@ -18,4 +18,5 @@ data class NodeTactic(
     val id: String,
     val name: String,
     val color: Color,
+    val position: Int
 )

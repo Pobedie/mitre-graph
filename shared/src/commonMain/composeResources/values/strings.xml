@@ -14,6 +14,9 @@
     <string name="select_yaml_file_content_desc">Select yaml file</string>
     <string name="select_yaml_file_dialog_title">Select MITRE ATLAS yaml file</string>
     <string name="select_techniques_title">Select techniques for different tactics</string>
+    <string name="achieve_label">Achieve</string>
+    <string name="highest_severity_label">highest severity</string>
+    <string name="target_technique_label">target technique</string>
     <string name="select_target_button">Select target</string>
     <string name="clear_selections_button">Clear selections</string>
     <string name="start_building_vectors_button">Start building attack vectors</string>

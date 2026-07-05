@@ -62,6 +62,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.graphics.Color
 import com.pobedie.attackgraph.ui.theme.*
 import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.compose.ui.input.pointer.onPointerEvent
@@ -69,12 +70,14 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import kotlin.math.roundToInt
 import attackgraph.shared.generated.resources.Res
+import attackgraph.shared.generated.resources.achieve_label
 import attackgraph.shared.generated.resources.add_host_content_desc
 import attackgraph.shared.generated.resources.clear_selections_button
 import attackgraph.shared.generated.resources.delete_host_content_desc
 import attackgraph.shared.generated.resources.delete_technique_from_host_content_desc
 import attackgraph.shared.generated.resources.description_format
 import attackgraph.shared.generated.resources.description_maturity_format
+import attackgraph.shared.generated.resources.highest_severity_label
 import attackgraph.shared.generated.resources.hosts_title
 import attackgraph.shared.generated.resources.ic_info
 import attackgraph.shared.generated.resources.ic_shield
@@ -86,7 +89,6 @@ import attackgraph.shared.generated.resources.maturity_unknown
 import attackgraph.shared.generated.resources.mitigation_full_description_format
 import attackgraph.shared.generated.resources.next_host_content_desc
 import attackgraph.shared.generated.resources.previous_host_content_desc
-import attackgraph.shared.generated.resources.select_target_button
 import attackgraph.shared.generated.resources.select_techniques_title
 import attackgraph.shared.generated.resources.set_as_irrelevant
 import attackgraph.shared.generated.resources.set_as_relevant
@@ -94,11 +96,13 @@ import attackgraph.shared.generated.resources.severity_score_format
 import attackgraph.shared.generated.resources.show_mitigation_info_content_desc
 import attackgraph.shared.generated.resources.start_building_vectors_button
 import attackgraph.shared.generated.resources.tactic_description_content_desc
+import attackgraph.shared.generated.resources.target_technique_label
 import attackgraph.shared.generated.resources.technique_description_content_desc
 import com.pobedie.attackgraph.core.entity.Tactic
 import com.pobedie.attackgraph.core.entity.Technique
 import com.pobedie.attackgraph.core.entity.Mitigation
 import com.pobedie.attackgraph.core.entity.TechniqueMaturity
+import com.pobedie.attackgraph.ui.TargetGoal
 import com.pobedie.attackgraph.ui.ViewModel
 import com.pobedie.attackgraph.ui.ViewState
 import kotlinx.coroutines.launch
@@ -159,7 +163,7 @@ fun TechniqueSelection(
                         tactic = tactic,
                         selectedTechniques = state.selectedTechniquesId,
                         isTargetSelectionInProgress = state.isTargetSelectionInProgress,
-                        targetTechnique = state.targetTechnique,
+                        targetTechniques = state.targetTechniques,
                         onTechniqueClick = {
                             viewModel.selectTechnique(it)
                             if (state.isTargetSelectionInProgress) {
@@ -170,17 +174,37 @@ fun TechniqueSelection(
                 }
             }
 
-            Row(
+            FlowRow(
                 modifier = Modifier
                     .padding(vertical = 4.dp, horizontal = 8.dp)
                     .fillMaxWidth(),
-                verticalAlignment = Alignment.Bottom
+                verticalArrangement = Arrangement.Bottom,
+                itemVerticalAlignment = Alignment.CenterVertically
             ) {
-                Button(
-                    onClick = { viewModel.startTargetTechniqueSelection() },
-                    enabled = !state.isTargetSelectionInProgress
-                ) {
-                    Text(stringResource(Res.string.select_target_button))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = stringResource(Res.string.achieve_label) + ": ",
+                        color = PrimaryTextColor,
+                        style = MaterialTheme.typography.bodyLarge
+                    )
+                    Spacer(Modifier.width(8.dp))
+
+                    Row(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(DialogBackground),
+                    ) {
+                        TargetGoalOption(
+                            text = stringResource(Res.string.highest_severity_label),
+                            isSelected = state.targetGoal == TargetGoal.HighestSeverity,
+                            onClick = { viewModel.setTargetGoal(TargetGoal.HighestSeverity) }
+                        )
+                        TargetGoalOption(
+                            text = stringResource(Res.string.target_technique_label),
+                            isSelected = state.targetGoal == TargetGoal.Specific,
+                            onClick = { viewModel.setTargetGoal(TargetGoal.Specific) }
+                        )
+                    }
                 }
                 Spacer(Modifier.weight(1f))
                 AnimatedVisibility(
@@ -310,7 +334,7 @@ private fun LazyItemScope.TacticColumn(
     tactic: Tactic,
     isTargetSelectionInProgress: Boolean,
     selectedTechniques: List<String>,
-    targetTechnique: String?,
+    targetTechniques: List<String>,
     onTechniqueClick: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -403,7 +427,6 @@ private fun LazyItemScope.TacticColumn(
             val techniqueTooltipState = rememberTooltipState(isPersistent = true)
             var techniqueShowTooltip by remember{ mutableStateOf(false) }
             var isTechniqueInfoIconVisible by remember{ mutableStateOf(false) }
-            val isTarget = technique.id == targetTechnique
 
             LaunchedEffect(techniqueShowTooltip) {
                 if (techniqueShowTooltip) {
@@ -423,7 +446,7 @@ private fun LazyItemScope.TacticColumn(
                         isTechniqueInfoIconVisible = false
                     }
                     .then(
-                        if (isTarget)
+                        if (targetTechniques.contains(technique.id))
                             Modifier.background(NodeBorderTarget)
                         else if (selectedTechniques.contains(technique.id))
                             Modifier.background(SelectedTechniqueBackground)
@@ -712,5 +735,25 @@ private fun LazyItemScope.TechniqueInHost(
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun TargetGoalOption(
+    text: String,
+    isSelected: Boolean,
+    onClick: () -> Unit
+) {
+    Box(
+        modifier = Modifier
+            .clickable(onClick = onClick)
+            .background(if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent)
+            .padding(horizontal = 12.dp, vertical = 8.dp)
+    ) {
+        Text(
+            text = text,
+            color = if (isSelected) MaterialTheme.colorScheme.onPrimary else LabelColor,
+            style = MaterialTheme.typography.bodyMedium
+        )
     }
 }

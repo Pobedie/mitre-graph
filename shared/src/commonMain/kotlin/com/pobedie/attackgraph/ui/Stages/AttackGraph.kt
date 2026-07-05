@@ -130,7 +130,7 @@ fun AttackGraph(
     state: ViewState
 ) {
     val tactics = remember(state.nodes) {
-        state.nodes.map { it.tactic }.toSet().sortedBy { it.id }
+        state.nodes.map { it.tactic }.toSet().sortedBy { it.position }
     }
 
     val tacticToHosts = remember(state.nodes, tactics) {
@@ -334,7 +334,7 @@ fun AttackGraph(
                     modifier = Modifier.width(NODE_WIDTH.dp),
                     node = node,
                     isSelected = node.id == state.selectedNode,
-                    isTarget = state.targetTechnique == node.techniqueId,
+                    isTarget = state.targetTechniques.contains(node.techniqueId),
                     isEnabled = state.stage == Stage.AttackVectorsBuilding,
                     onClick = {
                         viewModel.setNodeConnection(node.id)
