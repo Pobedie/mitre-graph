@@ -1,7 +1,9 @@
 package com.pobedie.attackgraph.ui.Stages
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.snap
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
@@ -22,6 +24,7 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.selection.SelectionContainer
@@ -116,6 +119,7 @@ import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import kotlin.math.atan2
 import kotlin.math.cos
+import kotlin.math.round
 import kotlin.math.sin
 import kotlin.time.Duration.Companion.seconds
 
@@ -639,6 +643,7 @@ private fun TechniqueEdge(
                 .clip(RoundedCornerShape(2.dp))
                 .background(labelColor)
                 .padding(if (isSelected) 2.dp else 1.dp)
+                .animateContentSize(spring())
                 .clickable(
                     enabled = isEnabled,
                     onClick = onClick),
@@ -650,15 +655,18 @@ private fun TechniqueEdge(
                     onDismiss = onDismissed,
                     label = stringResource(Res.string.p_label),
                     enabled = true,
-                    modifier = Modifier.width(60.dp)
+                    modifier = Modifier.widthIn(max = 100.dp)
                 )
             } else {
+                val displayProbability = probability?.let {
+                    (round(it * 1000f) / 1000f).toString()
+                } ?: stringResource(Res.string.unknown_value)
                 Text(
                     modifier = Modifier
                         .padding(1.dp),
                     text = stringResource(
                         Res.string.edge_probability_risk_format,
-                        probability ?: stringResource(Res.string.unknown_value)
+                        displayProbability
                     )
                 )
             }
