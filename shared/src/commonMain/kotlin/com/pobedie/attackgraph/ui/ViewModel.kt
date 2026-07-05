@@ -73,19 +73,20 @@ class ViewModel(
         }
         // Handle side effects from state change
         state.onEach { currentState ->
+            val resolvedTargets = getResolvedTargetTechniques()
             val isEdgeValueCalculationStageAvailable =
                 currentState.edges.size >= 3 &&
-                        state.value.targetTechnique != null &&
-                        state.value.edges.any { it.endNode.endsWith(state.value.targetTechnique!!) }
+                        resolvedTargets.isNotEmpty() &&
+                        state.value.edges.any { edge -> resolvedTargets.any { target -> edge.endNode.endsWith(target) } }
 
             val mitigationAndAttackStageAvailable: Boolean = (
                     currentState.edges.size >= 3 &&
                             currentState.edges.none { it.probability == null } &&
-                            state.value.edges.any { it.endNode.endsWith(state.value.targetTechnique!!) } &&
+                            state.value.edges.any { edge -> resolvedTargets.any { target -> edge.endNode.endsWith(target) } } &&
                             (currentState.stage == Stage.EdgeValueCalculation || currentState.stage == Stage.MitigationsAndAttacks)
                     )
             val isAttackVectorMappingStageAvailable =
-                currentState.hosts.count { it.techniques.isNotEmpty() } >= 3 && state.value.targetTechnique != null
+                currentState.hosts.count { it.techniques.isNotEmpty() } >= 3 && resolvedTargets.isNotEmpty()
             _state.update {
                 it.copy(
                     isMitigationsAndAttacksStageAvailable = mitigationAndAttackStageAvailable,
@@ -119,8 +120,8 @@ class ViewModel(
     fun switchToAttackVectorBuildingStage() {
         clearConsole()
         val nodes: List<Node> = state.value.hosts.flatMap { host ->
-            host.techniques.map { technique ->
-                val tacticName = state.value.tactics.findLast { it.id == technique.tacticId }?.name.orEmpty()
+            host.techniques.mapNotNull { technique ->
+                val tactic = state.value.tactics.findLast { it.id == technique.tacticId } ?: return@mapNotNull null
                 val color = generateColorFromId(technique.tacticId)
                 Node(
                     id = "${host.id}_${technique.id}",
@@ -133,8 +134,9 @@ class ViewModel(
                     severityScore = technique.severityScore,
                     tactic = NodeTactic(
                         id = technique.tacticId,
-                        name = tacticName,
+                        name = tactic.name,
                         color = color,
+                        position = tactic.position
                     ),
                 )
             }
@@ -146,18 +148,20 @@ class ViewModel(
                 _edge
             } else null
         }
+        val resolvedTargets = getResolvedTargetTechniques()
         _state.update {
             it.copy(
                 stage = Stage.AttackVectorsBuilding,
                 nodes = nodes,
                 edges = newEdges,
                 selectedNode = null,
+                targetTechniques = resolvedTargets
             )
         }
         // Since we know the target technique, we can already start case-study fetching
-        if (state.value.targetTechnique != null) {
+        if (resolvedTargets.isNotEmpty()) {
             scope.launch {
-                val attackVectors = mainRepository.getAttackVectors(state.value.targetTechnique!!)
+                val attackVectors = resolvedTargets.flatMap { mainRepository.getAttackVectors(it) }.distinct()
                 _state.update {
                     it.copy(
                         attackVectors = attackVectors
@@ -171,10 +175,12 @@ class ViewModel(
         }
     }
 
-    fun startTargetTechniqueSelection() {
+    fun setTargetGoal(goal: TargetGoal) {
         _state.update {
             it.copy(
-                isTargetSelectionInProgress = true
+                targetGoal = goal,
+                targetTechniques = emptyList(),
+                isTargetSelectionInProgress = goal == TargetGoal.Specific
             )
         }
     }
@@ -182,7 +188,7 @@ class ViewModel(
     fun selectTargetTechnique(target: String) {
         _state.update {
             it.copy(
-                targetTechnique = target,
+                targetTechniques = listOf(target),
                 isTargetSelectionInProgress = false
             )
         }
@@ -209,13 +215,13 @@ class ViewModel(
                         }
                         .map { it.id }
 
-        val targetTechnique = state.value.targetTechnique
+        val targetTechniques = getResolvedTargetTechniques()
         val allEdges = state.value.edges
         val probablePaths: MutableList<Pair<List<Edge>, Double>> = mutableListOf()
         var optimalPath: Pair<List<Edge>, Double>? = null
 
-        if (targetTechnique != null) {
-            val targetNodes = state.value.nodes.filter { it.techniqueId == targetTechnique }
+        if (targetTechniques.isNotEmpty()) {
+            val targetNodes = state.value.nodes.filter { it.techniqueId in targetTechniques }
             rootNodes.forEach { _rootNode ->
                 targetNodes.forEach { targetNode ->
                     val pathResult = findOptimalPath(
@@ -470,7 +476,8 @@ class ViewModel(
             it.copy(
                 selectedTechniquesId = listOf(),
                 hosts = it.hosts.map { host -> host.copy(techniques = emptyList()) },
-                targetTechnique = null,
+                targetTechniques = emptyList(),
+                targetGoal = TargetGoal.HighestSeverity,
                 isTargetSelectionInProgress = false,
                 isAttackVectorMappingStageAvailable = false,
                 mitigations = emptyList()
@@ -597,6 +604,32 @@ class ViewModel(
     fun clearConsole() {
         _state.update {
             it.copy(consoleText = "")
+        }
+    }
+
+    private fun getResolvedTargetTechniques(): List<String> {
+        val currentState = state.value
+        return when (currentState.targetGoal) {
+            TargetGoal.Specific -> currentState.targetTechniques
+            TargetGoal.HighestSeverity -> {
+                val allTechniques = currentState.hosts.flatMap { it.techniques }
+                if (allTechniques.isEmpty()) return emptyList()
+
+                val tactics = currentState.tactics
+                val maxPos = allTechniques.maxOfOrNull { tech ->
+                    tactics.find { it.id == tech.tacticId }?.position ?: 0
+                } ?: 0
+
+                val techsInMaxTactic = allTechniques.filter { tech ->
+                    (tactics.find { it.id == tech.tacticId }?.position ?: 0) == maxPos
+                }
+
+                val maxSeverity = techsInMaxTactic.maxOfOrNull { it.severityScore } ?: 0
+
+                techsInMaxTactic.filter { it.severityScore == maxSeverity }
+                    .map { it.id }
+                    .distinct()
+            }
         }
     }
 
