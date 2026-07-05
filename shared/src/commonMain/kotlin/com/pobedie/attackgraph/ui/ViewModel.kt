@@ -112,6 +112,7 @@ class ViewModel(
                     tactics = tactics
                 )
             }
+            fetchMitigations()
         }
     }
 
@@ -157,12 +158,9 @@ class ViewModel(
         if (state.value.targetTechnique != null) {
             scope.launch {
                 val attackVectors = mainRepository.getAttackVectors(state.value.targetTechnique!!)
-                val uniqueTechniqueIds = nodes.map { it.techniqueId }.distinct()
-                val mitigations = mainRepository.getMittigations(uniqueTechniqueIds)
                 _state.update {
                     it.copy(
-                        attackVectors = attackVectors,
-                        mitigations = mitigations
+                        attackVectors = attackVectors
                     )
                 }
             }
@@ -474,7 +472,8 @@ class ViewModel(
                 hosts = it.hosts.map { host -> host.copy(techniques = emptyList()) },
                 targetTechnique = null,
                 isTargetSelectionInProgress = false,
-                isAttackVectorMappingStageAvailable = false
+                isAttackVectorMappingStageAvailable = false,
+                mitigations = emptyList()
             )
         }
     }
@@ -562,6 +561,13 @@ class ViewModel(
                 if (it.id == mitigation) it.copy(isRelevant = !it.isRelevant) else it
             }
             it.copy( mitigations = newMitigations )
+        }
+    }
+
+    private fun fetchMitigations() {
+        scope.launch {
+            val mitigations = mainRepository.getAllMitigations()
+            _state.update { it.copy(mitigations = mitigations) }
         }
     }
 

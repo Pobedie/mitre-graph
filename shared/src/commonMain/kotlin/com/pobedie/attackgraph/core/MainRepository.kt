@@ -210,5 +210,24 @@ class MainRepository(
         return@withContext mitigations
     }
 
+    suspend fun getAllMitigations(): List<Mitigation> = withContext(Dispatchers.IO) {
+        val relationships = database.relationshipsQueries.selectAllMitigationRelationships().executeAsList()
+        val mitigations = relationships.mapNotNull { _relationship ->
+            val mitigationData = database.mitigationQueries.selectMitigationById(_relationship.source_id)
+                .executeAsOneOrNull() ?: return@mapNotNull null
+            Mitigation(
+                id = _relationship.source_id,
+                name = mitigationData.name,
+                mitigationDescription = mitigationData.description,
+                relationshipDescription = _relationship.description,
+                targetTechnique = _relationship.target_id,
+                categories = mitigationData.categories,
+                lifecyclePhases = mitigationData.lifecycle_phases,
+                isRelevant = true
+            )
+        }
+        return@withContext mitigations
+    }
+
     val importState: Flow<Boolean> = _state.map { it.isImportSuccessful }
 }
