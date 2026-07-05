@@ -13,7 +13,7 @@ import kotlin.math.ln
 fun findOptimalPath(
     edges: List<Edge>,
     start: String,
-    target: String
+    targets: List<String>
 ): Pair<List<Edge>, Double>? {
     val adj = edges.groupBy { it.startNode }
 
@@ -25,10 +25,15 @@ fun findOptimalPath(
     val queue = PriorityQueue<Pair<Double, String>>(compareBy { it.first })
     queue.add(0.0 to start)
 
+    var reachedTarget: String? = null
+
     while (queue.isNotEmpty()) {
         val (currentDist, currentNode) = queue.poll()
         
-        if (currentNode == target) break
+        if (targets.contains(currentNode)) {
+            reachedTarget = currentNode
+            break
+        }
         if (currentNode in visited) continue
         visited.add(currentNode)
 
@@ -51,9 +56,9 @@ fun findOptimalPath(
         }
     }
 
-    if (dist.getValue(target) == Double.POSITIVE_INFINITY) return null
+    if (reachedTarget == null) return null
     val path = mutableListOf<Edge>()
-    var currentRebuildNode = target
+    var currentRebuildNode = reachedTarget
     while (currentRebuildNode != start) {
         val edge = prevEdge[currentRebuildNode] ?: break
         path.add(edge)
@@ -61,7 +66,7 @@ fun findOptimalPath(
     }
     if (currentRebuildNode != start) return null
     path.reverse()
-    return path to dist.getValue(target)
+    return path to dist.getValue(reachedTarget!!)
 }
 
 fun edgeWeight(prob: Float): Double {
