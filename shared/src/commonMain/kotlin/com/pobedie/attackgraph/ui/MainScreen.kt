@@ -35,6 +35,7 @@ import attackgraph.shared.generated.resources.edge_value_calculation_button
 import attackgraph.shared.generated.resources.edge_value_calculation_hint
 import attackgraph.shared.generated.resources.import_button
 import attackgraph.shared.generated.resources.import_hint
+import attackgraph.shared.generated.resources.import_tab
 import attackgraph.shared.generated.resources.mitigations_and_attacks_button
 import attackgraph.shared.generated.resources.mitigations_and_attacks_hint
 import attackgraph.shared.generated.resources.select_techniques_button
@@ -80,7 +81,7 @@ fun MainScreen(
                         viewModel.switchToImportStage()
                         viewModel.importAtlasData()
                               },
-                    buttonText = stringResource(Res.string.import_button),
+                    buttonText = stringResource(Res.string.import_tab),
                     hintText = stringResource(Res.string.import_hint),
                     isHighlighted = state.stage == Stage.Import,
                     isEnabled = true

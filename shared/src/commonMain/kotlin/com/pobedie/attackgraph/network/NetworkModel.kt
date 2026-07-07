@@ -5,14 +5,11 @@ import kotlinx.serialization.Serializable
 data class Request(
     val model: String,
     val messages: List<Message>,
-    val response_format: ResponseFormat? = null
+    val response_format: String = "json_schema"
 )
 
 @Serializable
 data class Message(val role: String,val content: String)
-
-@Serializable
-data class ResponseFormat(val type: String = "json_object")
 
 @Serializable
 data class DecisionOutput(

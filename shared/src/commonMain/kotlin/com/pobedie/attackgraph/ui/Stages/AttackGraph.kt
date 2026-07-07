@@ -31,7 +31,9 @@ import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.PlainTooltip
 import androidx.compose.material3.Text
 import androidx.compose.material3.TooltipAnchorPosition
@@ -110,6 +112,7 @@ import com.pobedie.attackgraph.core.entity.EdgeState
 import com.pobedie.attackgraph.core.entity.Mitigation
 import com.pobedie.attackgraph.core.entity.Node
 import com.pobedie.attackgraph.core.entity.TechniqueMaturity
+import com.pobedie.attackgraph.ui.LlmConnectionStatus
 import com.pobedie.attackgraph.ui.Stage
 import com.pobedie.attackgraph.ui.ViewModel
 import com.pobedie.attackgraph.ui.ViewState
@@ -335,7 +338,7 @@ fun AttackGraph(
                     node = node,
                     isSelected = node.id == state.selectedNode,
                     isTarget = state.targetTechniques.contains(node.techniqueId),
-                    isEnabled = state.stage == Stage.AttackVectorsBuilding,
+                    isEnabled = state.stage == Stage.AttackVectorsBuilding && !state.isGenerationInProgress,
                     onClick = {
                         viewModel.setNodeConnection(node.id)
                     },
@@ -349,14 +352,15 @@ fun AttackGraph(
             edgeContent = { libEdge, from, to ->
                 // Customize edge appearance
                 val _edge = state.edges.find { it.startNode == libEdge.fromId && it.endNode == libEdge.toId }
-                val edgeColor =
+                val (edgeColor, edgeWidth) =
                     when {
                         state.stage == Stage.AttackVectorsBuilding ||
-                        state.stage == Stage.EdgeValueCalculation ||
-                        _edge == null -> EdgeDefault
-                        _edge.state == EdgeState.MostOptimal -> EdgeOptimal
-                        _edge.state == EdgeState.Probable -> EdgeProbable
-                        else -> EdgeDefault
+                                state.stage == Stage.EdgeValueCalculation ||
+                                _edge == null -> Pair(EdgeDefault, 2)
+
+                        _edge.state == EdgeState.MostOptimal -> Pair(EdgeOptimal, 4)
+                        _edge.state == EdgeState.Probable -> Pair(EdgeProbable, 3)
+                        else -> Pair(EdgeDefault, 2)
                     }
                 val isSelected = state.selectedEdge?.let {
                     _edge != null && _edge.startNode == it.first && _edge.endNode == it.second
@@ -376,7 +380,9 @@ fun AttackGraph(
                                 TechniqueEdge(
                                     probability = _edge.probability,
                                     isSelected = isSelected,
-                                    isEnabled = state.stage == Stage.AttackVectorsBuilding || state.stage == Stage.EdgeValueCalculation,
+                                    isEnabled = (state.stage == Stage.AttackVectorsBuilding ||
+                                            state.stage == Stage.EdgeValueCalculation) &&
+                                            !state.isGenerationInProgress,
                                     onClick = { viewModel.selectEdge(_edge.startNode, _edge.endNode) },
                                     onDismissed = { viewModel.clearEdgeSelection() },
                                     onDelete = { viewModel.deleteEdge(_edge.startNode, _edge.endNode) },
@@ -391,15 +397,60 @@ fun AttackGraph(
             }
         )
 
-        AnimatedVisibility(
-            visible = state.stage == Stage.AttackVectorsBuilding || state.stage == Stage.EdgeValueCalculation,
+        Column(
             modifier = Modifier.align(Alignment.BottomStart)
         ) {
-            Text(
-                modifier = Modifier.padding(4.dp),
-                text = stringResource(Res.string.deselect_hint),
-                color = DeselectHint
-            )
+            AnimatedVisibility(
+                visible = state.stage == Stage.AttackVectorsBuilding && state.llmConnectionStatus == LlmConnectionStatus.Connected,
+                enter = fadeIn(),
+                exit = fadeOut()
+            ) {
+                Button(
+                    enabled = state.llmConnectionStatus == LlmConnectionStatus.Connected && !state.isGenerationInProgress,
+                    modifier = Modifier.padding(horizontal = 4.dp),
+                    onClick = { viewModel.findAttackVectorsViaLLM() }
+
+                ) {
+                    if (state.isGenerationInProgress) {
+                        Text("Generating vector attacks")
+                    } else {
+                        Text("Let LLM find vector attacks")
+                    }
+                }
+            }
+
+            AnimatedVisibility(
+                visible = state.stage == Stage.AttackVectorsBuilding || state.stage == Stage.EdgeValueCalculation,
+                enter = fadeIn(),
+                exit = fadeOut()
+            ) {
+                Text(
+                    modifier = Modifier.padding(4.dp),
+                    text = stringResource(Res.string.deselect_hint),
+                    color = DeselectHint
+                )
+            }
+        }
+
+        AnimatedVisibility(
+            visible = state.isGenerationInProgress,
+            enter = fadeIn(),
+            exit = fadeOut()
+        ) {
+            Column (
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.White.copy(alpha = 0.5f)),
+                verticalArrangement = Arrangement.Center,
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    text = "Generating vector attacks",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+                CircularProgressIndicator(modifier = Modifier.padding(16.dp))
+            }
         }
     }
 }
@@ -631,9 +682,9 @@ private fun TechniqueEdge(
     val labelColor = if (probability == null) {
         ErrorColor.copy(alpha = 0.8f)
     } else if (!isEnabled){
-        EdgeLabelDisabled
-    } else {
         SecondaryContainerColor.copy(alpha = 0.8f)
+    } else {
+        EdgeLabelEnabled
     }
     Column(
         verticalArrangement = Arrangement.Top

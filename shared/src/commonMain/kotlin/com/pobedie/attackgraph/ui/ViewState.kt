@@ -41,8 +41,23 @@ data class ViewState(
     // App settings
     val language: Language = Language.English,
     val consoleText: String = "",
-    val isConsoleFrozen: Boolean = false
+    val isConsoleFrozen: Boolean = false,
+
+    // LLM settings
+    val llmUrl: String = "",
+    val llmApiKey: String = "",
+    val llmModel: String = "",
+    val llmConnectionStatus: LlmConnectionStatus = LlmConnectionStatus.None,
+    val isGenerationInProgress: Boolean = false,
+    val isLlmAdded: Boolean = false
 )
+
+enum class LlmConnectionStatus {
+    None,
+    Connecting,
+    Connected,
+    Failed
+}
 
 enum class Language(val code: String) {
     English("en"),

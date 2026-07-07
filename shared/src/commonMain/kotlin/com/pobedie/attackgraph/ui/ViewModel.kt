@@ -19,7 +19,14 @@ import com.pobedie.attackgraph.core.entity.Host
 import com.pobedie.attackgraph.core.entity.Node
 import com.pobedie.attackgraph.core.entity.NodeTactic
 import com.pobedie.attackgraph.core.entity.Tactic
+import com.pobedie.attackgraph.core.entity.UserSettings
 import com.pobedie.attackgraph.core.findOptimalPath
+import com.pobedie.attackgraph.network.LlmService
+import io.ktor.client.HttpClient
+import io.ktor.client.plugins.HttpTimeout
+import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
+import io.ktor.client.request.get
+import io.ktor.serialization.kotlinx.json.json
 import java.io.File
 import kotlin.math.absoluteValue
 import kotlinx.coroutines.CoroutineScope
@@ -32,9 +39,11 @@ import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.json.Json
 import org.jetbrains.compose.resources.getString
 import java.util.Locale
 import java.util.UUID
+import kotlin.collections.mutableSetOf
 
 
 class ViewModel(
@@ -45,9 +54,26 @@ class ViewModel(
     private val _state = MutableStateFlow<ViewState>(ViewState())
     val state = _state.asStateFlow()
 
+    private val httpClient = HttpClient {
+        install(HttpTimeout) {
+            connectTimeoutMillis = 20_000 // 20 seconds
+            socketTimeoutMillis = 6000_000 // 60 seconds
+            requestTimeoutMillis = 3000_000 // 5 minutes
+        }
+        install(ContentNegotiation) {
+            json(Json {
+                prettyPrint = true
+                isLenient = true
+                ignoreUnknownKeys = true
+            })
+        }
+    }
+    private val llmClient = LlmService(httpClient)
+
     init {
         scope.launch {
             val initialHostName = getString(Res.string.host_name_format, 1)
+            val savedSettings = mainRepository.getUserSettings()
             _state.update {
                 it.copy(
                     hosts = listOf(
@@ -56,7 +82,11 @@ class ViewModel(
                             id = UUID.randomUUID().toString(),
                             techniques = emptyList()
                         )
-                    )
+                    ),
+                    llmUrl = savedSettings?.llmUrl ?: "",
+                    llmApiKey = savedSettings?.llmApiKey ?: "",
+                    llmModel = savedSettings?.llmModel ?: "",
+                    isLlmAdded = savedSettings != null
                 )
             }
         }
@@ -86,7 +116,9 @@ class ViewModel(
                             (currentState.stage == Stage.EdgeValueCalculation || currentState.stage == Stage.MitigationsAndAttacks)
                     )
             val isAttackVectorMappingStageAvailable =
-                currentState.hosts.count { it.techniques.isNotEmpty() } >= 3 && resolvedTargets.isNotEmpty()
+                currentState.hosts.count { it.techniques.isNotEmpty() } >= 3 && 
+                        resolvedTargets.isNotEmpty() &&
+                        currentState.llmConnectionStatus != LlmConnectionStatus.Connecting
             _state.update {
                 it.copy(
                     isMitigationsAndAttacksStageAvailable = mitigationAndAttackStageAvailable,
@@ -95,6 +127,96 @@ class ViewModel(
                 )
             }
         }.launchIn(scope)
+    }
+
+    fun updateLlmUrl(url: String) {
+        _state.update { it.copy(llmUrl = url, llmConnectionStatus = LlmConnectionStatus.None) }
+    }
+
+    fun updateLlmApiKey(key: String) {
+        _state.update { it.copy(llmApiKey = key, llmConnectionStatus = LlmConnectionStatus.None) }
+    }
+
+    fun updateLlmModel(model: String) {
+        _state.update { it.copy(llmModel = model, llmConnectionStatus = LlmConnectionStatus.None) }
+    }
+
+    fun checkLlmConnection() {
+        val currentState = state.value
+        val settings = UserSettings(
+            llmUrl = currentState.llmUrl,
+            llmApiKey = currentState.llmApiKey,
+            llmModel = currentState.llmModel
+        )
+
+        _state.update { it.copy(llmConnectionStatus = LlmConnectionStatus.Connecting) }
+
+        scope.launch {
+            mainRepository.saveUserSettings(settings)
+            try {
+                // todo: call to /v1/models to allow user to select models
+                val response = httpClient.get(settings.llmUrl)
+                _state.update { 
+                    it.copy(
+                        llmConnectionStatus = LlmConnectionStatus.Connected,
+                        isLlmAdded = true
+                    ) 
+                }
+            } catch (e: Exception) {
+                _state.update { it.copy(llmConnectionStatus = LlmConnectionStatus.Failed) }
+                e.printStackTrace()
+            }
+        }
+    }
+
+    fun findAttackVectorsViaLLM() {
+
+        scope.launch {
+            _state.update { it.copy(isGenerationInProgress = true) }
+            try {
+                val response = llmClient.fetchDecision(
+                    url = state.value.llmUrl,
+                    apiKey = state.value.llmApiKey,
+                    model = state.value.llmModel,
+                    techniques = state.value.nodes,
+                    mitigations = state.value.mitigations,
+                    attackVectors = state.value.attackVectors
+                )
+
+                val llmEdges = response.flatMapTo(mutableSetOf()) { _decision ->
+                    val startHosts = state.value.hosts.mapNotNull { _host ->
+                        if (_host.techniques.any { it.id == _decision.sourceId }) _host.id else null
+                    }
+                    val endHosts = state.value.hosts.mapNotNull { _host ->
+                        if (_host.techniques.any { it.id == _decision.targetId }) _host.id else null
+                    }
+                    val edges: MutableList<Edge> = mutableListOf()
+                    startHosts.forEach { _start ->
+                        endHosts.forEach { _end ->
+                            edges.add(Edge(
+                                startNode = _start + "_" + _decision.sourceId,
+                                endNode = _end + "_" + _decision.targetId,
+                                llmConfidence = _decision.confidence
+                            )
+                            )
+                        }
+                    }
+                    return@flatMapTo edges.toSet()
+                }
+                llmEdges.addAll(state.value.edges)
+                val newEdges = calculateProbabilitiesSimple(llmEdges.toList(), state.value.nodes)
+
+                _state.update {
+                    it.copy(
+                        edges = newEdges
+                    )
+                }
+            } catch (e: Throwable) {
+                _state.update { it.copy(llmConnectionStatus = LlmConnectionStatus.Failed) }
+                e.printStackTrace()
+            }
+            _state.update { it.copy(isGenerationInProgress = false) }
+        }
     }
 
     fun switchToImportStage() {
