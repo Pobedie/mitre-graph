@@ -161,7 +161,7 @@ class ViewModel(
                     val currentStep = sortedSteps[j]
 
                     // Option 1: Explicit leadsTo
-                    val targetStepIds = currentStep.leadsTo
+                    val targetStepIds = currentStep.leadsToStep
                     val targets = if (targetStepIds.isNotEmpty()) {
                         steps.filter { it.stepId in targetStepIds }
                     } else if (j + 1 < sortedSteps.size) {

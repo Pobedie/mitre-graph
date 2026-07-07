@@ -7,5 +7,5 @@ data class AttackVector(
     val tactic: String,
     val targetTechnique: String,
     val description: String,
-    val leadsTo: List<String>
+    val leadsToStep: List<String>
 )

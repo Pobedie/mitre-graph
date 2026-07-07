@@ -44,5 +44,5 @@ fun Relationship.toAttackVector(): AttackVector =
         tactic = tactic_id,
         targetTechnique = target_id,
         description = description,
-        leadsTo = leads_to
+        leadsToStep = leads_to
     )
