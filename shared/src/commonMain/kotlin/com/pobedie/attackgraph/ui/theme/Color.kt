@@ -10,7 +10,7 @@ val EdgeDefault = Color.Gray
 val DeselectHint = Color.White.copy(alpha = 0.5f)
 val NodeBorderTarget = Color(255, 103, 76)
 val MitigationIrrelevant = Color.LightGray
-val EdgeLabelDisabled = Color(208, 208, 208, 160)
+val EdgeLabelEnabled = Color(208, 208, 208, 160)
 val InfoIconColor = Color.White.copy(alpha = 0.6f)
 val MainBackground = Color(20, 20, 20)
 val TacticLabelColor = Color.White.copy(alpha = 0.5f)

@@ -1,6 +1,7 @@
 <resources>
+    <string name="import_tab">Импорт и настройки</string>
     <string name="import_button">Импорт</string>
-    <string name="import_hint">Импорт YAML файла с данными MITRE ATLAS.\n\nВы можете найти этот файл по адресу https://github.com/mitre-atlas/atlas-data/blob/main/dist/ или использовать включенный (он может быть неактуальным)</string>
+    <string name="import_hint">Импорт YAML файла с данными MITRE ATLAS и настройка параметров LLM.\n\nВы можете найти этот файл по адресу https://github.com/mitre-atlas/atlas-data/blob/main/dist/ или использовать включенный (он может быть неактуальным)</string>
     <string name="select_techniques_button">Выбрать техники</string>
     <string name="select_techniques_hint">Выберите техники атак из каждой тактики</string>
     <string name="build_attack_vectors_button">Построить векторы атаки</string>
@@ -8,6 +9,14 @@
     <string name="mitigations_and_attacks_button">Векторы атаки и меры защиты</string>
     <string name="mitigations_and_attacks_hint">Показать подтвержденные тематическими исследованиями (case-studies) векторы атаки и меры защиты</string>
     <string name="import_from_file_title">Импорт из файла</string>
+    <string name="llm_settings_title">Настройки LLM</string>
+    <string name="llm_url_label">URL</string>
+    <string name="llm_api_key_label">API Ключ</string>
+    <string name="llm_model_label">Название модели</string>
+    <string name="connect_button">Подключиться</string>
+    <string name="connecting_status">Подключение...</string>
+    <string name="connection_success">Подключено</string>
+    <string name="connection_failed">Ошибка подключения</string>
     <string name="or_use_included_data">или использовать включенные данные</string>
     <string name="use_included_data_checkbox">Использовать включенные данные MITRE ATLAS (ATLAS-2026.05. Могут быть неактуальными)</string>
     <string name="select_yaml_file_placeholder">Выберите yaml файл из MITRE ATLAS</string>

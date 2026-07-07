@@ -52,8 +52,9 @@ fun calculateProbabilitiesSimple(
         val nodeJ = nodeMap[j]
         val mj = nodeJ?.maturity?.probabilityMult ?: 0.0f
         val ej = mapSeverityToEase(nodeJ?.severityScore ?: 3)
+        val cj = edge.llmConfidence ?: 1f
 
-        val pij =  (mj * ej)
+        val pij = (mj * ej * cj)
 
         edge.copy(probability = pij)
     }

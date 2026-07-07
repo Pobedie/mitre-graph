@@ -20,6 +20,8 @@ import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -32,15 +34,24 @@ import androidx.compose.ui.draw.clip
 import com.pobedie.attackgraph.ui.theme.*
 import androidx.compose.ui.unit.dp
 import attackgraph.shared.generated.resources.Res
+import attackgraph.shared.generated.resources.connect_button
+import attackgraph.shared.generated.resources.connecting_status
+import attackgraph.shared.generated.resources.connection_failed
+import attackgraph.shared.generated.resources.connection_success
 import attackgraph.shared.generated.resources.ic_floder
 import attackgraph.shared.generated.resources.import_button
 import attackgraph.shared.generated.resources.import_from_file_title
+import attackgraph.shared.generated.resources.llm_api_key_label
+import attackgraph.shared.generated.resources.llm_model_label
+import attackgraph.shared.generated.resources.llm_settings_title
+import attackgraph.shared.generated.resources.llm_url_label
 import attackgraph.shared.generated.resources.or_use_included_data
 import attackgraph.shared.generated.resources.select_yaml_file_content_desc
 import attackgraph.shared.generated.resources.select_yaml_file_dialog_title
 import attackgraph.shared.generated.resources.select_yaml_file_placeholder
 import attackgraph.shared.generated.resources.use_included_data_checkbox
 import com.pobedie.attackgraph.ui.Language
+import com.pobedie.attackgraph.ui.LlmConnectionStatus
 import com.pobedie.attackgraph.ui.ViewModel
 import com.pobedie.attackgraph.ui.ViewState
 import kotlinx.coroutines.runBlocking
@@ -51,7 +62,9 @@ import java.awt.FileDialog
 import java.awt.Frame
 import java.io.File
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
 
 
 @Composable
@@ -67,6 +80,7 @@ fun ImportStage(
                 .background(DialogBackground)
                 .widthIn(max = 600.dp)
                 .heightIn(max = 800.dp)
+                .padding(bottom = 16.dp)
             ,
             horizontalAlignment = Alignment.Start
         ) {
@@ -94,7 +108,8 @@ fun ImportStage(
             ) {
                 Text(
                     text = state.fileError.orEmpty(),
-                    color = ErrorColor
+                    color = ErrorColor,
+                    modifier = Modifier.padding(horizontal = 22.dp)
                 )
             }
 
@@ -120,7 +135,7 @@ fun ImportStage(
             val isImportAvailable = (state.filePath.isNotBlank() || state.isProvidedAtlasDateSelected)
             Button(
                 modifier = Modifier
-                    .padding(horizontal = 22.dp, vertical = 16.dp)
+                    .padding(horizontal = 22.dp, vertical = 8.dp)
                     .align(Alignment.End),
                 onClick = { viewModel.importAtlasData() },
                 enabled = isImportAvailable
@@ -128,6 +143,66 @@ fun ImportStage(
                 Text(stringResource(Res.string.import_button))
             }
 
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Text(
+                modifier = Modifier.padding(vertical = 8.dp, horizontal = 16.dp),
+                text = stringResource(Res.string.llm_settings_title),
+                style = MaterialTheme.typography.titleLarge
+            )
+
+            LlmSettingsField(
+                label = stringResource(Res.string.llm_url_label),
+                value = state.llmUrl,
+                onValueChange = { viewModel.updateLlmUrl(it) },
+                modifier = Modifier.padding(horizontal = 22.dp, vertical = 4.dp)
+            )
+
+            LlmSettingsField(
+                label = stringResource(Res.string.llm_api_key_label),
+                value = state.llmApiKey,
+                onValueChange = { viewModel.updateLlmApiKey(it) },
+                modifier = Modifier.padding(horizontal = 22.dp, vertical = 4.dp)
+            )
+
+            LlmSettingsField(
+                label = stringResource(Res.string.llm_model_label),
+                value = state.llmModel,
+                onValueChange = { viewModel.updateLlmModel(it) },
+                modifier = Modifier.padding(horizontal = 22.dp, vertical = 4.dp)
+            )
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 22.dp, vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                val statusText = when (state.llmConnectionStatus) {
+                    LlmConnectionStatus.None -> ""
+                    LlmConnectionStatus.Connecting -> stringResource(Res.string.connecting_status)
+                    LlmConnectionStatus.Connected -> stringResource(Res.string.connection_success)
+                    LlmConnectionStatus.Failed -> stringResource(Res.string.connection_failed)
+                }
+                val statusColor = when (state.llmConnectionStatus) {
+                    LlmConnectionStatus.Connected -> EdgeOptimal
+                    LlmConnectionStatus.Failed -> ErrorColor
+                    else -> PrimaryTextColor
+                }
+                Text(
+                    text = statusText,
+                    color = statusColor,
+                    style = MaterialTheme.typography.bodyMedium
+                )
+
+                Button(
+                    onClick = { viewModel.checkLlmConnection() },
+                    enabled = state.llmUrl.isNotBlank() && state.llmConnectionStatus != LlmConnectionStatus.Connecting
+                ) {
+                    Text(stringResource(Res.string.connect_button))
+                }
+            }
         }
 
         // Language selector
@@ -247,4 +322,30 @@ fun openFilePicker(
     } else {
         null // User cancelled
     }
+}
+
+@Composable
+private fun LlmSettingsField(
+    label: String,
+    value: String,
+    onValueChange: (String) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    OutlinedTextField(
+        value = value,
+        onValueChange = onValueChange,
+        label = { Text(label) },
+        modifier = modifier.fillMaxWidth(),
+        singleLine = true,
+        colors = OutlinedTextFieldDefaults.colors(
+            focusedContainerColor = FileSelectionBackground,
+            unfocusedContainerColor = FileSelectionBackground,
+            focusedTextColor = PrimaryTextColor,
+            unfocusedTextColor = PrimaryTextColor,
+            focusedLabelColor = TacticLabelColor,
+            unfocusedLabelColor = TacticLabelColor,
+            focusedBorderColor = SelectedBorderColor,
+            unfocusedBorderColor = TransparentColor
+        )
+    )
 }
