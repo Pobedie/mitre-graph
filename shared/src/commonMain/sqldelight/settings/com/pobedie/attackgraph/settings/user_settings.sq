@@ -1,0 +1,16 @@
+CREATE TABLE user_settings (
+    id INTEGER PRIMARY KEY NOT NULL DEFAULT 0,
+    llm_url TEXT NOT NULL,
+    llm_api_key TEXT NOT NULL,
+    llm_model TEXT NOT NULL,
+    CONSTRAINT one_row CHECK (id = 0)
+);
+
+saveUserSettings:
+INSERT OR REPLACE INTO user_settings(id, llm_url, llm_api_key, llm_model)
+VALUES (0, ?, ?, ?);
+
+getUserSettings:
+SELECT llm_url, llm_api_key, llm_model
+FROM user_settings
+WHERE id = 0;

@@ -38,6 +38,12 @@ sqldelight {
     databases {
         register("Atlas") {
             packageName.set("com.pobedie.attackgraph.database")
+            srcDirs.setFrom("src/commonMain/sqldelight/atlas")
+            verifyMigrations.set(false)
+        }
+        register("UserSettingsDb") {
+            packageName.set("com.pobedie.attackgraph.settings")
+            srcDirs.setFrom("src/commonMain/sqldelight/settings")
             verifyMigrations.set(false)
         }
     }
