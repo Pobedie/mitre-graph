@@ -10,6 +10,7 @@ sqldelight = "2.0.1"
 kuiver = "0.3.0"
 kaml = "0.104.0"
 kotlinx-serialization-json = "1.6.3"
+ktor = "3.5.1"
 
 [libraries]
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
@@ -35,6 +36,8 @@ kotlinx-serialization-core = { module = "org.jetbrains.kotlinx:kotlinx-serializa
 kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinx-serialization-json" }
 
 kuiver = { module = "io.github.justdeko:kuiver", version.ref = "kuiver"}
+
+ktor-client-core = { module = "io.ktor:ktor-client-core", version.ref = "ktor" }
 
 [plugins]
 composeMultiplatform = { id = "org.jetbrains.compose", version.ref = "composeMultiplatform" }
