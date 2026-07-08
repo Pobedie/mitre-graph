@@ -65,6 +65,9 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
+import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 
 
 @Composable
@@ -132,16 +135,6 @@ fun ImportStage(
                     text = stringResource(Res.string.use_included_data_checkbox),
                 )
             }
-            val isImportAvailable = (state.filePath.isNotBlank() || state.isProvidedAtlasDateSelected)
-            Button(
-                modifier = Modifier
-                    .padding(horizontal = 22.dp, vertical = 8.dp)
-                    .align(Alignment.End),
-                onClick = { viewModel.importAtlasData() },
-                enabled = isImportAvailable
-            ) {
-                Text(stringResource(Res.string.import_button))
-            }
 
             Spacer(modifier = Modifier.height(16.dp))
 
@@ -161,6 +154,7 @@ fun ImportStage(
             LlmSettingsField(
                 label = stringResource(Res.string.llm_api_key_label),
                 value = state.llmApiKey,
+                isApiField = true,
                 onValueChange = { viewModel.updateLlmApiKey(it) },
                 modifier = Modifier.padding(horizontal = 22.dp, vertical = 4.dp)
             )
@@ -186,7 +180,7 @@ fun ImportStage(
                     LlmConnectionStatus.Failed -> stringResource(Res.string.connection_failed)
                 }
                 val statusColor = when (state.llmConnectionStatus) {
-                    LlmConnectionStatus.Connected -> EdgeOptimal
+                    LlmConnectionStatus.Connected -> StatusSuccess
                     LlmConnectionStatus.Failed -> ErrorColor
                     else -> PrimaryTextColor
                 }
@@ -207,10 +201,13 @@ fun ImportStage(
 
         // Language selector
         var isMenuExpanded by remember { mutableStateOf(false) }
-        Box(
+        Row(
             modifier = Modifier
-                .align(Alignment.BottomStart)
-                .padding(16.dp)
+                .fillMaxWidth()
+                .align(Alignment.BottomCenter)
+                .padding(16.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.Bottom
         ) {
             Button(
                 onClick = { isMenuExpanded = true },
@@ -250,6 +247,14 @@ fun ImportStage(
                         }
                     )
                 }
+            }
+
+            val isImportAvailable = (state.filePath.isNotBlank() || state.isProvidedAtlasDateSelected)
+            Button(
+                onClick = { viewModel.importAtlasData() },
+                enabled = isImportAvailable
+            ) {
+                Text(stringResource(Res.string.import_button))
             }
         }
     }
@@ -328,22 +333,30 @@ fun openFilePicker(
 private fun LlmSettingsField(
     label: String,
     value: String,
+    isApiField: Boolean = false,
     onValueChange: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    var isFocused by remember { mutableStateOf(false) }
+    val showText = !isApiField || isFocused
     OutlinedTextField(
         value = value,
         onValueChange = onValueChange,
-        label = { Text(label) },
-        modifier = modifier.fillMaxWidth(),
+        label = { Text(text = label) },
+        modifier = modifier
+            .fillMaxWidth()
+            .onFocusChanged { focusState ->
+                isFocused = focusState.isFocused
+            },
         singleLine = true,
+        visualTransformation = if (showText) VisualTransformation.None else PasswordVisualTransformation(),
         colors = OutlinedTextFieldDefaults.colors(
             focusedContainerColor = FileSelectionBackground,
             unfocusedContainerColor = FileSelectionBackground,
             focusedTextColor = PrimaryTextColor,
             unfocusedTextColor = PrimaryTextColor,
-            focusedLabelColor = TacticLabelColor,
-            unfocusedLabelColor = TacticLabelColor,
+            focusedLabelColor = FocusedLabelColor,
+            unfocusedLabelColor = UnfocusedLabelColor,
             focusedBorderColor = SelectedBorderColor,
             unfocusedBorderColor = TransparentColor
         )

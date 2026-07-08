@@ -13,7 +13,6 @@ val MitigationIrrelevant = Color.LightGray
 val EdgeLabelEnabled = Color(208, 208, 208, 160)
 val InfoIconColor = Color.White.copy(alpha = 0.6f)
 val MainBackground = Color(20, 20, 20)
-val TacticLabelColor = Color.White.copy(alpha = 0.5f)
 val ConsoleTextColor = Color.LightGray
 val DialogBackground = Color.LightGray
 val DropdownMenuBackground = Color.Gray
@@ -36,6 +35,11 @@ val SecondaryTextColor = Color.LightGray
 
 val LabelColor = Color.Black
 val DisabledLabelColor = Color.Gray
+
+val FocusedLabelColor = Color.Black
+val UnfocusedLabelColor = Color.DarkGray
+val StatusSuccess = Color(82, 118, 18, 255)
+val StatusFail = Color(134, 43, 14, 255)
 
 // Theme colors
 val ErrorColor = Color(0xFFF2B8B5)

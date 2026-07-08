@@ -779,7 +779,7 @@ private fun TacticColumn(
 
 val ArrowStyle: ArrowDrawer = { arrowTip, direction, color ->
     val angle = atan2(direction.y.toDouble(), direction.x.toDouble()).toFloat()
-    val arrowSize = 10f
+    val arrowSize = 16f
     val arrowOffset = 8f
     val arrowAngleSpread = 0.5f
     val arrowBasePoint = Offset(
