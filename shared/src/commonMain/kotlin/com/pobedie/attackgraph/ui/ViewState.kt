@@ -39,6 +39,7 @@ data class ViewState(
     val mitigations: List<Mitigation> = emptyList(),
 
     // App settings
+    val isDarkMode: Boolean = false,
     val language: Language = Language.English,
     val consoleText: String = "",
     val isConsoleFrozen: Boolean = false,

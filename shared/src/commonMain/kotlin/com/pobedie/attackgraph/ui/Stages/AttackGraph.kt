@@ -270,6 +270,9 @@ fun AttackGraph(
         }
 
         // Render the host containers behind the graph
+        val hostContainerBackground = HostContainerBackground
+        val hostContainerBorder = HostContainerBorder
+        val primaryTextColor = PrimaryTextColor
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -297,13 +300,13 @@ fun AttackGraph(
                         )
 
                         drawRoundRect(
-                            color = HostContainerBackground,
+                            color = hostContainerBackground,
                             topLeft = translatedRect.topLeft,
                             size = translatedRect.size,
                             cornerRadius = androidx.compose.ui.geometry.CornerRadius(8f * vsScale)
                         )
                         drawRoundRect(
-                            color = HostContainerBorder,
+                            color = hostContainerBorder,
                             topLeft = translatedRect.topLeft,
                             size = translatedRect.size,
                             cornerRadius = androidx.compose.ui.geometry.CornerRadius(8f * vsScale),
@@ -315,7 +318,7 @@ fun AttackGraph(
                             text = container.name,
                             topLeft = translatedRect.topLeft + Offset(8f * vsScale, 4f * vsScale),
                             style = TextStyle(
-                                color = PrimaryTextColor,
+                                color = primaryTextColor,
                                 fontSize = 12.sp * vsScale,
                                 fontWeight = FontWeight.Bold
                             )
@@ -352,15 +355,18 @@ fun AttackGraph(
             edgeContent = { libEdge, from, to ->
                 // Customize edge appearance
                 val _edge = state.edges.find { it.startNode == libEdge.fromId && it.endNode == libEdge.toId }
+                val edgeDefault = EdgeDefault
+                val edgeOptimal = EdgeOptimal
+                val edgeProbable = EdgeProbable
                 val (edgeColor, edgeWidth) =
                     when {
                         state.stage == Stage.AttackVectorsBuilding ||
                                 state.stage == Stage.EdgeValueCalculation ||
-                                _edge == null -> Pair(EdgeDefault, 2)
+                                _edge == null -> Pair(edgeDefault, 2)
 
-                        _edge.state == EdgeState.MostOptimal -> Pair(EdgeOptimal, 4)
-                        _edge.state == EdgeState.Probable -> Pair(EdgeProbable, 3)
-                        else -> Pair(EdgeDefault, 2)
+                        _edge.state == EdgeState.MostOptimal -> Pair(edgeOptimal, 4)
+                        _edge.state == EdgeState.Probable -> Pair(edgeProbable, 3)
+                        else -> Pair(edgeDefault, 2)
                     }
                 val isSelected = state.selectedEdge?.let {
                     _edge != null && _edge.startNode == it.first && _edge.endNode == it.second
@@ -501,14 +507,14 @@ private fun TechniqueNode(
                 when {
                     isTarget && isSelected ->
                         Modifier
-                            .border(1.dp, SelectedBorderColor, RoundedCornerShape(4.dp))
+                            .border(2.dp, SelectedBorderColor, RoundedCornerShape(4.dp))
                             .border(3.dp, NodeBorderTarget, RoundedCornerShape(4.dp))
 
                     isTarget ->
                         Modifier.border(3.dp, NodeBorderTarget, RoundedCornerShape(4.dp))
 
                     isSelected ->
-                        Modifier.border(1.dp, SelectedBorderColor, RoundedCornerShape(4.dp))
+                        Modifier.border(2.dp, SelectedBorderColor, RoundedCornerShape(4.dp))
 
                     else -> Modifier
                 }
@@ -524,7 +530,7 @@ private fun TechniqueNode(
                     .fillMaxWidth()
                     .padding(vertical = 8.dp, horizontal = 8.dp),
                 text = node.name,
-                color = PrimaryTextColor,
+                color = NodeTextColor,
             )
 
             if (areMitigationsShown && mitigations.isNotEmpty()) {
@@ -624,6 +630,8 @@ private fun TechniqueNode(
             tooltip = {
                 PlainTooltip(
                     maxWidth = 400.dp,
+                    containerColor = TooltipBackgroundColor,
+                    contentColor = TooltipContentColor
                 ) {
                     SelectionContainer {
                         val maturityString = stringResource(
@@ -718,7 +726,8 @@ private fun TechniqueEdge(
                     text = stringResource(
                         Res.string.edge_probability_risk_format,
                         displayProbability
-                    )
+                    ),
+                    color = NodeTextColor
                 )
             }
         }

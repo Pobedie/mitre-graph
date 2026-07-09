@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
@@ -209,21 +210,39 @@ fun ImportStage(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.Bottom
         ) {
-            Button(
-                onClick = { isMenuExpanded = true },
-                shape = RoundedCornerShape(8.dp),
-                interactionSource = MutableInteractionSource(),
-                colors = ButtonDefaults.buttonColors(containerColor = SecondaryButtonBackground)
+            Row(
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                val currentLangLabel = when (state.language) {
-                    Language.English -> "ENGLISH"
-                    Language.Russian -> "РУССКИЙ"
+                Button(
+                    onClick = { isMenuExpanded = true },
+                    shape = RoundedCornerShape(8.dp),
+                    interactionSource = MutableInteractionSource(),
+                    colors = ButtonDefaults.buttonColors(containerColor = SecondaryButtonBackground)
+                ) {
+                    val currentLangLabel = when (state.language) {
+                        Language.English -> "ENGLISH"
+                        Language.Russian -> "РУССКИЙ"
+                    }
+                    Text(
+                        text = currentLangLabel,
+                        color = PrimaryTextColor
+                    )
                 }
-                Text(
-                    text = currentLangLabel,
-                    color = PrimaryTextColor
-                )
+
+                Spacer(modifier = Modifier.width(8.dp))
+
+                Button(
+                    onClick = { viewModel.toggleTheme() },
+                    shape = RoundedCornerShape(8.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = SecondaryButtonBackground)
+                ) {
+                    Text(
+                        text = if (state.isDarkMode) "DARK" else "LIGHT",
+                        color = PrimaryTextColor
+                    )
+                }
             }
+
             DropdownMenu(
                 expanded = isMenuExpanded,
                 onDismissRequest = { isMenuExpanded = false },
@@ -270,7 +289,7 @@ private fun FileSelectionField(
 ){
     val contentColor = when {
         isFileError -> OnErrorColor
-        !isEnabled -> BackgroundColor.copy(alpha =  0.4f)
+        !isEnabled -> InputFieldDisabledText
         else -> OnBackgroundColor
     }
 
@@ -279,7 +298,7 @@ private fun FileSelectionField(
             .fillMaxWidth()
             .heightIn(min = 40.dp, max = 80.dp)
             .clip(RoundedCornerShape(4.dp))
-            .background(FileSelectionBackground)
+            .background(InputFieldBackground)
             .clickable(
                 enabled = true,
                 onClick = onClick
@@ -351,8 +370,8 @@ private fun LlmSettingsField(
         singleLine = true,
         visualTransformation = if (showText) VisualTransformation.None else PasswordVisualTransformation(),
         colors = OutlinedTextFieldDefaults.colors(
-            focusedContainerColor = FileSelectionBackground,
-            unfocusedContainerColor = FileSelectionBackground,
+            focusedContainerColor = InputFieldBackground,
+            unfocusedContainerColor = InputFieldBackground,
             focusedTextColor = PrimaryTextColor,
             unfocusedTextColor = PrimaryTextColor,
             focusedLabelColor = FocusedLabelColor,

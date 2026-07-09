@@ -386,7 +386,7 @@ class ViewModel(
                         .map { it.id }
 
         val targetTechniques = getResolvedTargetTechniques()
-        val allEdges = state.value.edges
+        val allEdges = state.value.edges.map { it.copy(state = EdgeState.Idle) }
         val probablePaths: MutableList<Pair<List<Edge>, Double>> = mutableListOf()
         var optimalPath: Pair<List<Edge>, Double>? = null
 
@@ -756,6 +756,12 @@ class ViewModel(
             Locale.setDefault(locale)
         } catch (e: Exception) {
             e.printStackTrace()
+        }
+    }
+
+    fun toggleTheme() {
+        _state.update {
+            it.copy(isDarkMode = !it.isDarkMode)
         }
     }
 
