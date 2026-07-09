@@ -49,7 +49,7 @@ fun StageButton(
             .then(
                 if (isHighlighted) {
                     Modifier.border(
-                        width = 1.dp,
+                        width = 2.dp,
                         color = SelectedBorderColor,
                         shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp, bottomStart = 0.dp, bottomEnd = 0.dp),
                     )
@@ -68,7 +68,7 @@ fun StageButton(
             Text(
                 modifier = Modifier.weight(1f, true),
                 text = buttonText,
-                textAlign = TextAlign.Center,
+                textAlign = TextAlign.Start,
                 color = contentColor
             )
 
@@ -79,7 +79,10 @@ fun StageButton(
                     spacingBetweenTooltipAndAnchor = 8.dp
                 ),
                 tooltip = {
-                    PlainTooltip {
+                    PlainTooltip(
+                        contentColor = TooltipContentColor,
+                        containerColor = TooltipBackgroundColor
+                    ) {
                         SelectionContainer {
                             Text(hintText)
                         }

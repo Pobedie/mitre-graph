@@ -4,6 +4,8 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.ScrollbarStyle
+import androidx.compose.foundation.VerticalScrollbar
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.scrollBy
@@ -28,9 +30,12 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.onClick
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.rememberScrollbarAdapter
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.selection.SelectionContainer
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
@@ -121,7 +126,7 @@ fun TechniqueSelection(
     ) {
         Column(
             modifier = Modifier
-                .weight(2f)
+                .weight(1f)
                 .fillMaxHeight(),
             verticalArrangement = Arrangement.Top,
             horizontalAlignment = Alignment.CenterHorizontally
@@ -140,38 +145,55 @@ fun TechniqueSelection(
             }
 
             val scrollState = rememberLazyListState()
+            val verticalScrollState = rememberScrollState()
             val coroutineScope = rememberCoroutineScope()
-            LazyRow(
-                state = scrollState,
-                modifier = Modifier
-                    .weight(1f)
-                    // by default to scroll horizontaly you need to use Shift+MouseWheel which is a bad UX in this case
-                    .onPointerEvent(PointerEventType.Scroll) {
-                        val delta = it.changes.first().scrollDelta
-                        coroutineScope.launch {
-                            scrollState.scrollBy(delta.y * 40f)
-                        }
-                    },
-                contentPadding = PaddingValues(vertical = 8.dp, horizontal = 30.dp)
-            ) {
-                items(
-                    items = state.tactics,
-                    key = { tactic -> tactic.id }
-                ) { tactic ->
-                    TacticColumn(
-                        modifier = Modifier.padding(horizontal = 4.dp),
-                        tactic = tactic,
-                        selectedTechniques = state.selectedTechniquesId,
-                        isTargetSelectionInProgress = state.isTargetSelectionInProgress,
-                        targetTechniques = state.targetTechniques,
-                        onTechniqueClick = {
-                            viewModel.selectTechnique(it)
-                            if (state.isTargetSelectionInProgress) {
-                                viewModel.selectTargetTechnique(it)
+            Box(modifier = Modifier.weight(1f)) {
+                LazyRow(
+                    state = scrollState,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .verticalScroll(verticalScrollState)
+                        // by default to scroll horizontaly you need to use Shift+MouseWheel which is a bad UX in this case
+                        .onPointerEvent(PointerEventType.Scroll) {
+                            val delta = it.changes.first().scrollDelta
+                            coroutineScope.launch {
+                                scrollState.scrollBy(delta.y * 40f)
                             }
-                        }
-                    )
+                            it.changes.first().consume()
+                        },
+                    contentPadding = PaddingValues(vertical = 8.dp, horizontal = 30.dp)
+                ) {
+                    items(
+                        items = state.tactics,
+                        key = { tactic -> tactic.id }
+                    ) { tactic ->
+                        TacticColumn(
+                            modifier = Modifier.padding(horizontal = 4.dp),
+                            tactic = tactic,
+                            selectedTechniques = state.selectedTechniquesId,
+                            isTargetSelectionInProgress = state.isTargetSelectionInProgress,
+                            targetTechniques = state.targetTechniques,
+                            onTechniqueClick = {
+                                viewModel.selectTechnique(it)
+                                if (state.isTargetSelectionInProgress) {
+                                    viewModel.selectTargetTechnique(it)
+                                }
+                            }
+                        )
+                    }
                 }
+                VerticalScrollbar(
+                    modifier = Modifier.align(Alignment.CenterStart).fillMaxHeight().padding(start = 2.dp),
+                    adapter = rememberScrollbarAdapter(verticalScrollState),
+                    style = ScrollbarStyle(
+                        minimalHeight = 16.dp,
+                        thickness = 8.dp,
+                        shape = RoundedCornerShape(4.dp),
+                        hoverDurationMillis = 300,
+                        unhoverColor = PrimaryTextColor.copy(alpha = 0.3f),
+                        hoverColor = PrimaryTextColor.copy(alpha = 0.7f)
+                    )
+                )
             }
 
             FlowRow(
@@ -230,11 +252,10 @@ fun TechniqueSelection(
             }
         }
 
-        // Host zone (1/3)
+        // Host zone
         Column(
             modifier = Modifier
-                .weight(1f)
-                .fillMaxHeight()
+                .widthIn(min = 150.dp, max = 400.dp)
                 .background(HostZoneBackground)
                 .padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
@@ -330,7 +351,7 @@ fun TechniqueSelection(
 
 @OptIn(ExperimentalComposeUiApi::class, ExperimentalFoundationApi::class)
 @Composable
-private fun LazyItemScope.TacticColumn(
+private fun TacticColumn(
     tactic: Tactic,
     isTargetSelectionInProgress: Boolean,
     selectedTechniques: List<String>,
@@ -354,7 +375,7 @@ private fun LazyItemScope.TacticColumn(
 
     Column(
         modifier = modifier
-            .widthIn(min = 100.dp, max = 150.dp)
+            .widthIn(min = 100.dp, max = 200.dp)
             .clip(RoundedCornerShape(8.dp))
             .background(columnColor)
     ) {
@@ -367,6 +388,8 @@ private fun LazyItemScope.TacticColumn(
             tooltip = {
                 PlainTooltip(
                     maxWidth = 400.dp,
+                    contentColor = TooltipContentColor,
+                    containerColor = TooltipBackgroundColor
                 ) {
                     SelectionContainer {
                         Text(stringResource(Res.string.description_format, tactic.id, tactic.description))
@@ -374,12 +397,12 @@ private fun LazyItemScope.TacticColumn(
                 }
             },
             state = tacticTooltipState,
-            onDismissRequest = {tacticShowTooltip = false}
+            onDismissRequest = { tacticShowTooltip = false }
         ) {
             Text(
                 modifier = Modifier
                     .padding(8.dp)
-                    .height(50.dp)
+                    .height(30.dp)
                     .onPointerEvent(PointerEventType.Enter) {
                         isTacticInfoIconVisible = true
                     }
@@ -409,24 +432,23 @@ private fun LazyItemScope.TacticColumn(
                         .fillMaxWidth()
                         .alpha(if (isTacticInfoIconVisible) 1f else 0f)
                         .onClick(
-                            onClick = {tacticShowTooltip = true}
-                        )
-                    ,
+                            onClick = { tacticShowTooltip = true }
+                        ),
                     painter = painterResource(Res.drawable.ic_info),
-                    tint = InfoIconSecondaryColor,
+                    tint = InfoIconSecondaryDarkColor,
                     contentDescription = stringResource(Res.string.tactic_description_content_desc)
                 )
             }
         }
         HorizontalDivider(
-            modifier = Modifier.weight(1f, false),
             thickness = 3.dp,
             color = BackgroundColor
         )
+
         tactic.techniques.forEachIndexed { index, technique ->
             val techniqueTooltipState = rememberTooltipState(isPersistent = true)
-            var techniqueShowTooltip by remember{ mutableStateOf(false) }
-            var isTechniqueInfoIconVisible by remember{ mutableStateOf(false) }
+            var techniqueShowTooltip by remember { mutableStateOf(false) }
+            var isTechniqueInfoIconVisible by remember { mutableStateOf(false) }
 
             LaunchedEffect(techniqueShowTooltip) {
                 if (techniqueShowTooltip) {
@@ -475,6 +497,8 @@ private fun LazyItemScope.TacticColumn(
                     tooltip = {
                         PlainTooltip(
                             maxWidth = 400.dp,
+                            contentColor = TooltipContentColor,
+                            containerColor = TooltipBackgroundColor
                         ) {
                             SelectionContainer {
                                 val maturityString = stringResource(
@@ -509,7 +533,7 @@ private fun LazyItemScope.TacticColumn(
                                 onClick = { techniqueShowTooltip = true }
                             ),
                         painter = painterResource(Res.drawable.ic_info),
-                        tint = InfoIconSecondaryColor,
+                        tint = InfoIconSecondaryDarkColor,
                         contentDescription = stringResource(Res.string.technique_description_content_desc)
                     )
 
@@ -517,7 +541,6 @@ private fun LazyItemScope.TacticColumn(
             }
             if (index != tactic.techniques.size - 1) {
                 HorizontalDivider(
-                    modifier = Modifier.weight(1f, false),
                     thickness = 1.dp,
                     color = BackgroundColor
                 )
@@ -667,10 +690,16 @@ private fun LazyItemScope.TechniqueInHost(
                     }
 
                     val backgroundColor = if (mitigation.isRelevant) {
-                        ErrorContainerColor
+                        MitigationRelevantBackground
                     } else {
                         MitigationIrrelevant
                     }
+                    val iconColor = if (mitigation.isRelevant) {
+                        MitigationRelevantIcon
+                    } else {
+                        OnTertiaryColor
+                    }
+
                     TooltipBox(
                         modifier = Modifier
                             .padding(end = 4.dp, bottom = 4.dp)
@@ -690,6 +719,8 @@ private fun LazyItemScope.TechniqueInHost(
                         tooltip = {
                             PlainTooltip(
                                 maxWidth = 400.dp,
+                                contentColor = TooltipContentColor,
+                                containerColor = TooltipBackgroundColor
                             ) {
                                 val mitigationDescription = stringResource(
                                     Res.string.mitigation_full_description_format,
@@ -718,12 +749,6 @@ private fun LazyItemScope.TechniqueInHost(
                         state = mitigationTooltipState,
                         onDismissRequest = { mitigationShowTooltip = "" }
                     ) {
-                        val iconColor = if (mitigation.isRelevant) {
-                            OnErrorContainerColor
-                        } else {
-                            OnTertiaryColor
-                        }
-
                         Icon(
                             modifier = Modifier
                                 .scale(0.8f),
