@@ -18,3 +18,4 @@ captures
 **/xcshareddata/WorkspaceSettings.xcsettings
 node_modules/
 /desktopApp/atlas.db
+/desktopApp/user_settings.db
