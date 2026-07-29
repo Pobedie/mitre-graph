@@ -2,6 +2,7 @@ package com.pobedie.attackgraph.ui
 
 import com.pobedie.attackgraph.core.entity.AttackVector
 import com.pobedie.attackgraph.core.entity.Edge
+import com.pobedie.attackgraph.core.entity.FirewallRule
 import com.pobedie.attackgraph.core.entity.Host
 import com.pobedie.attackgraph.core.entity.Mitigation
 import com.pobedie.attackgraph.core.entity.Node
@@ -20,12 +21,16 @@ data class ViewState(
     val fileError: String? = null,
     val isProvidedAtlasDateSelected: Boolean = false,
 
-    // Technique selectoin stage
+    // Technique selection stage
     val isTechniqueSelectionStageAvailable: Boolean = false,
     val tactics: List<Tactic> = listOf(),
     val selectedTechniquesId: List<String> = listOf(),
     val isTargetSelectionInProgress: Boolean = false,
     val currentHostIndex: Int = 0,
+
+    //Firewall mapping
+    val isFirewallMappingStageAvailable: Boolean = false,
+    val firewallRules: List<FirewallRule> = emptyList(),
 
     // Attack vector mapping stage
     val isAttackVectorMappingStageAvailable: Boolean = false,
@@ -73,6 +78,7 @@ enum class TargetGoal {
 enum class Stage {
     Import,
     TechniqueSelection, // User selects techniques from tactics. Similar to MITRE ATLAS site
+    FirewallMapping, // User maps allowed routes between hosts
     AttackVectorsBuilding, // User draws edges between nodes and sets risk and penalty values
     EdgeValueCalculation, // The program calculates the values of the edges
     MitigationsAndAttacks, // The program shows nodes that will be mitigated and edges that form a proven attack vector

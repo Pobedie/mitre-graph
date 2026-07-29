@@ -4,6 +4,7 @@ import androidx.compose.ui.graphics.Color
 import attackgraph.shared.generated.resources.Res
 import attackgraph.shared.generated.resources.file_blank_error
 import attackgraph.shared.generated.resources.file_not_found_error
+import attackgraph.shared.generated.resources.firewall_host_rule_exists_error
 import attackgraph.shared.generated.resources.no_optimal_path_found
 import attackgraph.shared.generated.resources.optimal_path_label
 import attackgraph.shared.generated.resources.path_cost_format
@@ -15,6 +16,7 @@ import com.pobedie.attackgraph.core.MainRepository
 import com.pobedie.attackgraph.core.calculateProbabilitiesSimple
 import com.pobedie.attackgraph.core.entity.Edge
 import com.pobedie.attackgraph.core.entity.EdgeState
+import com.pobedie.attackgraph.core.entity.FirewallRule
 import com.pobedie.attackgraph.core.entity.Host
 import com.pobedie.attackgraph.core.entity.Node
 import com.pobedie.attackgraph.core.entity.NodeTactic
@@ -119,11 +121,13 @@ class ViewModel(
                 currentState.hosts.count { it.techniques.isNotEmpty() } >= 3 && 
                         resolvedTargets.isNotEmpty() &&
                         currentState.llmConnectionStatus != LlmConnectionStatus.Connecting
+            val isFirewallMappingStageAvailable = currentState.hosts.count { it.techniques.isNotEmpty() } >= 3
             _state.update {
                 it.copy(
                     isMitigationsAndAttacksStageAvailable = mitigationAndAttackStageAvailable,
                     isAttackVectorMappingStageAvailable = isAttackVectorMappingStageAvailable,
-                    isEdgeValueCalculationStageAvailable = isEdgeValueCalculationStageAvailable
+                    isEdgeValueCalculationStageAvailable = isEdgeValueCalculationStageAvailable,
+                    isFirewallMappingStageAvailable = isFirewallMappingStageAvailable
                 )
             }
         }.launchIn(scope)
@@ -236,6 +240,17 @@ class ViewModel(
                 )
             }
             fetchMitigations()
+        }
+    }
+
+    fun switchToFirewallMappingStage() {
+        clearConsole()
+        _state.update {
+            it.copy(
+                stage = Stage.FirewallMapping,
+                selectedNode = null,
+                selectedEdge = null
+            )
         }
     }
 
@@ -684,6 +699,46 @@ class ViewModel(
         }
     }
 
+    fun setFirewallConnection(
+        sourceHostId: String,
+        sourceTechniqueId: String?,
+        targetHostId: String
+    ) {
+        val isHostSource = sourceTechniqueId == null
+        val newRule = FirewallRule(sourceHostId, sourceTechniqueId, targetHostId)
+
+        if (!isHostSource) {
+            val hostRuleExists = state.value.firewallRules.any {
+                it.sourceHostId == sourceHostId && it.sourceTechniqueId == null && it.targetHostId == targetHostId
+            }
+            if (hostRuleExists) {
+                val sourceHostName = state.value.hosts.find { it.id == sourceHostId }?.name ?: sourceHostId
+                val targetHostName = state.value.hosts.find { it.id == targetHostId }?.name ?: targetHostId
+                scope.launch {
+                    logToUiConsole(getString(Res.string.firewall_host_rule_exists_error, sourceHostName, targetHostName))
+                }
+                return
+            }
+        }
+
+        _state.update { state ->
+            val existingRule = state.firewallRules.find { it == newRule }
+            val newRules = if (existingRule != null) {
+                state.firewallRules.filter { it != existingRule }
+            } else {
+                val baseRules = state.firewallRules + newRule
+                if (isHostSource) {
+                    baseRules.filter { rule ->
+                        !(rule.sourceHostId == sourceHostId && rule.sourceTechniqueId != null && rule.targetHostId == targetHostId)
+                    }
+                } else {
+                    baseRules
+                }
+            }
+            state.copy(firewallRules = newRules)
+        }
+    }
+
     fun selectEdge(startNode: String, endNode: String) {
         _state.update {
             it.copy(
@@ -706,6 +761,10 @@ class ViewModel(
                 selectedNode = null
             )
         }
+    }
+
+    fun selectSourceNode(id: String) {
+        _state.update { it.copy(selectedNode = id) }
     }
 
     fun deleteEdge(startNode: String, endNode: String) {
