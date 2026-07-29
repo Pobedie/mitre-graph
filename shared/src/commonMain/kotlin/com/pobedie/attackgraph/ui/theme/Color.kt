@@ -58,7 +58,16 @@ data class AttackGraphColors(
     val surfaceColor: Color,
     val onBackgroundColor: Color,
     val backgroundColor: Color,
-    val onSecondaryContainerColor: Color
+    val onSecondaryContainerColor: Color,
+
+    // Firewall mapping specific
+    val firewallHostBackground: Color,
+    val firewallHostBorder: Color,
+    val firewallHostHeaderBorder: Color,
+    val firewallHostHeaderText: Color,
+    val firewallTechniqueText: Color,
+    val firewallTechniqueSelectedText: Color,
+    val firewallTechniqueSelectedBackground: Color
 )
 
 val DarkAppColors = AttackGraphColors(
@@ -110,7 +119,15 @@ val DarkAppColors = AttackGraphColors(
     surfaceColor = Color(0xFF1C1B1F),
     onBackgroundColor = Color(0xFFE6E1E5),
     backgroundColor = Color(0xFF141414),
-    onSecondaryContainerColor = Color(0xFFDEE4F8)
+    onSecondaryContainerColor = Color(0xFFDEE4F8),
+
+    firewallHostBackground = Color.White,
+    firewallHostBorder = Color(0xFFCCCCCC),
+    firewallHostHeaderBorder = Color(0xFFDDDDDD),
+    firewallHostHeaderText = Color.Black,
+    firewallTechniqueText = Color(0xFF444444),
+    firewallTechniqueSelectedText = Color(0xFF1A3D63),
+    firewallTechniqueSelectedBackground = Color(0x1A1A3D63)
 )
 
 val LightAppColors = AttackGraphColors(
@@ -162,7 +179,15 @@ val LightAppColors = AttackGraphColors(
     surfaceColor = Color(0xFFFFFFFF),
     onBackgroundColor = Color(0xFF000000),
     backgroundColor = Color(0xFFCFCDCA),
-    onSecondaryContainerColor = Color(0xFF1D192B)
+    onSecondaryContainerColor = Color(0xFF1D192B),
+
+    firewallHostBackground = Color.White,
+    firewallHostBorder = Color(0xFFCCCCCC),
+    firewallHostHeaderBorder = Color(0xFFDDDDDD),
+    firewallHostHeaderText = Color.Black,
+    firewallTechniqueText = Color(0xFF444444),
+    firewallTechniqueSelectedText = Color(0xFF1A3D63),
+    firewallTechniqueSelectedBackground = Color(0x1A1A3D63)
 )
 
 val LocalAppColors = staticCompositionLocalOf { LightAppColors }
@@ -281,3 +306,12 @@ val SurfaceColor: Color @Composable @ReadOnlyComposable get() = LocalAppColors.c
 val OnBackgroundColor: Color @Composable @ReadOnlyComposable get() = LocalAppColors.current.onBackgroundColor
 val BackgroundColor: Color @Composable @ReadOnlyComposable get() = LocalAppColors.current.backgroundColor
 val OnSecondaryContainerColor: Color @Composable @ReadOnlyComposable get() = LocalAppColors.current.onSecondaryContainerColor
+
+// Firewall mapping specific
+val FirewallHostBackground: Color @Composable @ReadOnlyComposable get() = LocalAppColors.current.firewallHostBackground
+val FirewallHostBorder: Color @Composable @ReadOnlyComposable get() = LocalAppColors.current.firewallHostBorder
+val FirewallHostHeaderBorder: Color @Composable @ReadOnlyComposable get() = LocalAppColors.current.firewallHostHeaderBorder
+val FirewallHostHeaderText: Color @Composable @ReadOnlyComposable get() = LocalAppColors.current.firewallHostHeaderText
+val FirewallTechniqueText: Color @Composable @ReadOnlyComposable get() = LocalAppColors.current.firewallTechniqueText
+val FirewallTechniqueSelectedText: Color @Composable @ReadOnlyComposable get() = LocalAppColors.current.firewallTechniqueSelectedText
+val FirewallTechniqueSelectedBackground: Color @Composable @ReadOnlyComposable get() = LocalAppColors.current.firewallTechniqueSelectedBackground

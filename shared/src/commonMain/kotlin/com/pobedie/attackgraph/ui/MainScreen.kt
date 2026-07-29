@@ -22,9 +22,9 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.pobedie.attackgraph.ui.theme.MainBackground
 import com.pobedie.attackgraph.ui.theme.StageBarBackground
-import com.pobedie.attackgraph.ui.Stages.AttackGraph
-import com.pobedie.attackgraph.ui.Stages.ImportStage
-import com.pobedie.attackgraph.ui.Stages.TechniqueSelection
+import com.pobedie.attackgraph.ui.stages.AttackGraph
+import com.pobedie.attackgraph.ui.stages.ImportStage
+import com.pobedie.attackgraph.ui.stages.TechniqueSelection
 import com.pobedie.attackgraph.ui.components.Console
 import com.pobedie.attackgraph.ui.components.StageArrow
 import com.pobedie.attackgraph.ui.components.StageButton
@@ -33,13 +33,15 @@ import attackgraph.shared.generated.resources.build_attack_vectors_button
 import attackgraph.shared.generated.resources.build_attack_vectors_hint
 import attackgraph.shared.generated.resources.edge_value_calculation_button
 import attackgraph.shared.generated.resources.edge_value_calculation_hint
-import attackgraph.shared.generated.resources.import_button
+import attackgraph.shared.generated.resources.firewall_mapping_hint
+import attackgraph.shared.generated.resources.firewall_mapping_title
 import attackgraph.shared.generated.resources.import_hint
 import attackgraph.shared.generated.resources.import_tab
 import attackgraph.shared.generated.resources.mitigations_and_attacks_button
 import attackgraph.shared.generated.resources.mitigations_and_attacks_hint
 import attackgraph.shared.generated.resources.select_techniques_button
 import attackgraph.shared.generated.resources.select_techniques_hint
+import com.pobedie.attackgraph.ui.stages.FirewallMapping
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.stringResource
 
@@ -103,6 +105,18 @@ fun MainScreen(
             item {
                 StageButton(
                     onClick = {
+                        viewModel.switchToFirewallMappingStage()
+                    },
+                    buttonText = stringResource(Res.string.firewall_mapping_title),
+                    hintText = stringResource(Res.string.firewall_mapping_hint),
+                    isHighlighted = state.stage == Stage.FirewallMapping,
+                    isEnabled = state.isFirewallMappingStageAvailable
+                )
+            }
+            StageArrow()
+            item {
+                StageButton(
+                    onClick = {
                         viewModel.switchToAttackVectorBuildingStage()
                     },
                     buttonText = stringResource(Res.string.build_attack_vectors_button),
@@ -146,6 +160,7 @@ fun MainScreen(
             when (state.stage) {
                 Stage.Import -> ImportStage(viewModel, state)
                 Stage.TechniqueSelection -> TechniqueSelection(viewModel, state)
+                Stage.FirewallMapping -> FirewallMapping(viewModel, state)
                 Stage.AttackVectorsBuilding,
                 Stage.EdgeValueCalculation,
                 Stage.MitigationsAndAttacks,

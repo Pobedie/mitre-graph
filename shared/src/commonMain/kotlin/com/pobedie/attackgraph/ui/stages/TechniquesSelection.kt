@@ -1,4 +1,4 @@
-package com.pobedie.attackgraph.ui.Stages
+package com.pobedie.attackgraph.ui.stages
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn

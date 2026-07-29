@@ -9,6 +9,8 @@
     <string name="mitigations_and_attacks_button">Possible attack vectors</string>
     <string name="mitigations_and_attacks_hint">Show proven by case-studies attack vectors and mitigations</string>
     <string name="import_from_file_title">Import from file</string>
+    <string name="firewall_mapping_title">Allowed routes</string>
+    <string name="firewall_mapping_hint">Set allowed routes between hosts</string>
     <string name="llm_settings_title">LLM Settings</string>
     <string name="llm_url_label">URL</string>
     <string name="llm_api_key_label">API Key</string>
@@ -61,6 +63,7 @@
     <string name="probable_paths_label">OTHER PROBABLE PATHS:</string>
     <string name="no_optimal_path_found">INFO: no optimal path found</string>
     <string name="target_not_selected_error">ERROR: target technique is not selected</string>
+    <string name="firewall_host_rule_exists_error">All traffic from host %1$s to %2$s is already allowed. To set a rule from a specific technique, first delete the allow-all-traffic rule.</string>
     <string name="imported_nodes_info">INFO: imported %1$d nodes</string>
     <string name="path_cost_format">%1$s | cost: %2$s</string>
 

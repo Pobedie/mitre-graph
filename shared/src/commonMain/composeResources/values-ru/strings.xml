@@ -9,6 +9,8 @@
     <string name="mitigations_and_attacks_button">Вероятные векторы атак</string>
     <string name="mitigations_and_attacks_hint">Показать подтвержденные тематическими исследованиями (case-studies) векторы атаки и меры защиты</string>
     <string name="import_from_file_title">Импорт из файла</string>
+    <string name="firewall_mapping_title">Разрешенные маршруты</string>
+    <string name="firewall_mapping_hint">Настройка разрешенных маршрутов между хостами</string>
     <string name="llm_settings_title">Настройки LLM</string>
     <string name="llm_url_label">URL</string>
     <string name="llm_api_key_label">API Ключ</string>
@@ -61,6 +63,7 @@
     <string name="probable_paths_label">ДРУГИЕ ВЕРОЯТНЫЕ ПУТИ:</string>
     <string name="no_optimal_path_found">ИНФО: оптимальный путь не найден</string>
     <string name="target_not_selected_error">ОШИБКА: целевая техника не выбрана</string>
+    <string name="firewall_host_rule_exists_error">Весь трафик от хоста %1$s к %2$s уже разрешен. Чтобы установить правило для конкретной техники, сначала удалите общее разрешающее правило.</string>
     <string name="imported_nodes_info">ИНФО: импортировано %1$d узлов</string>
     <string name="path_cost_format">%1$s | стоимость: %2$s</string>
 
