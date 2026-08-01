@@ -371,18 +371,24 @@ fun AttackGraph(
                 val isSelected = state.selectedEdge?.let {
                     _edge != null && _edge.startNode == it.first && _edge.endNode == it.second
                 } ?: false
-                Box(modifier = Modifier.zIndex(if (isSelected) 1000f else 0f)) {
+                val isDisallowed = _edge?.state == EdgeState.BlockedByFirewall
+                Box(
+                    modifier = Modifier
+                        .zIndex(if (isSelected) 1000f else 0f)
+                        .alpha(if (isDisallowed) 0.5f else 1.0f)
+                ) {
                     EdgeContentWithLabel(
                         from,
                         to,
-                        color = edgeColor,
-                        strokeWidth = 2f,
+                        color = if (isDisallowed) ErrorColor else edgeColor,
+                        strokeWidth = if (isDisallowed) 1f else 2f,
                         arrowDrawer = ArrowStyle,
                         enableCurve = true,
+                        dashed = isDisallowed,
                         labelPlacement = LabelPlacement.END,
-                        label = "there must be anything for the lable to show up, even if it's not being used",
+                        label = if (isDisallowed) null else "label",
                         labelContent = { _ ->
-                            if (_edge != null) {
+                            if (_edge != null && !isDisallowed) {
                                 TechniqueEdge(
                                     probability = _edge.probability,
                                     isSelected = isSelected,
@@ -695,7 +701,8 @@ private fun TechniqueEdge(
         EdgeLabelEnabled
     }
     Column(
-        verticalArrangement = Arrangement.Top
+        verticalArrangement = Arrangement.Top,
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Row(
             modifier = Modifier
@@ -727,7 +734,9 @@ private fun TechniqueEdge(
                         Res.string.edge_probability_risk_format,
                         displayProbability
                     ),
-                    color = NodeTextColor
+                    color = NodeTextColor,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Normal
                 )
             }
         }

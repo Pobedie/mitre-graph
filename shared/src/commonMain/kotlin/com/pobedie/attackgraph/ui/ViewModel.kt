@@ -2,6 +2,7 @@ package com.pobedie.attackgraph.ui
 
 import androidx.compose.ui.graphics.Color
 import attackgraph.shared.generated.resources.Res
+import attackgraph.shared.generated.resources.dashed_edges_firewall_hint
 import attackgraph.shared.generated.resources.file_blank_error
 import attackgraph.shared.generated.resources.file_not_found_error
 import attackgraph.shared.generated.resources.firewall_host_rule_exists_error
@@ -12,8 +13,8 @@ import attackgraph.shared.generated.resources.probable_paths_label
 import attackgraph.shared.generated.resources.target_not_selected_error
 import attackgraph.shared.generated.resources.unexpected_error
 import attackgraph.shared.generated.resources.host_name_format
-import com.pobedie.attackgraph.core.MainRepository
 import com.pobedie.attackgraph.core.calculateProbabilitiesSimple
+import com.pobedie.attackgraph.core.MainRepository
 import com.pobedie.attackgraph.core.entity.Edge
 import com.pobedie.attackgraph.core.entity.EdgeState
 import com.pobedie.attackgraph.core.entity.FirewallRule
@@ -208,7 +209,7 @@ class ViewModel(
                     return@flatMapTo edges.toSet()
                 }
                 llmEdges.addAll(state.value.edges)
-                val newEdges = calculateProbabilitiesSimple(llmEdges.toList(), state.value.nodes)
+                val newEdges = calculateProbabilitiesSimple(llmEdges.toList(), state.value.nodes, state.value.firewallRules)
 
                 _state.update {
                     it.copy(
@@ -341,7 +342,7 @@ class ViewModel(
                 nodes.any { it.id == edge.startNode } && nodes.any { it.id == edge.endNode }
             }
             val allEdges = (validExistingEdges + autoEdges).distinctBy { it.startNode to it.endNode }
-            val calculatedEdges = calculateProbabilitiesSimple(allEdges, nodes)
+            val calculatedEdges = calculateProbabilitiesSimple(allEdges, nodes, currentState.firewallRules)
 
             _state.update {
                 it.copy(
@@ -356,6 +357,9 @@ class ViewModel(
 
             if (resolvedTargets.isEmpty()) {
                 logToUiConsole(getString(Res.string.target_not_selected_error))
+            }
+            if (calculatedEdges.any { it.state == EdgeState.BlockedByFirewall }) {
+                logToUiConsole(getString(Res.string.dashed_edges_firewall_hint))
             }
         }
     }
@@ -383,6 +387,7 @@ class ViewModel(
         val updatedEdges = calculateProbabilitiesSimple(
             edges = state.value.edges,
             nodes = state.value.nodes,
+            firewallRules = state.value.firewallRules
         )
         _state.update {
             it.copy(
@@ -691,8 +696,9 @@ class ViewModel(
                         endNode = selectedNode,
                     )
                 )
+                val updatedEdges = calculateProbabilitiesSimple(newEdges, state.nodes, state.firewallRules)
                 state.copy(
-                    edges = newEdges,
+                    edges = updatedEdges,
                     selectedNode = null
                 )
             }
