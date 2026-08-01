@@ -1,6 +1,8 @@
 package com.pobedie.attackgraph.core
 
 import com.pobedie.attackgraph.core.entity.Edge
+import com.pobedie.attackgraph.core.entity.EdgeState
+import com.pobedie.attackgraph.core.entity.FirewallRule
 import com.pobedie.attackgraph.core.entity.Node
 
 /**
@@ -10,7 +12,8 @@ import com.pobedie.attackgraph.core.entity.Node
  */
 fun calculateProbabilities(
     edges: List<Edge>,
-    nodes: List<Node>
+    nodes: List<Node>,
+    firewallRules: List<FirewallRule>
 ): List<Edge> {
     val omega = 0.5f
     val nodeMap = nodes.associateBy { it.id }
@@ -20,6 +23,10 @@ fun calculateProbabilities(
     return edges.map { edge ->
         val i = edge.startNode
         val j = edge.endNode
+
+        if (!isEdgeAllowed(edge, firewallRules, nodes)) {
+            return@map edge.copy(probability = 0f, state = EdgeState.BlockedByFirewall)
+        }
 
         val nodeJ = nodeMap[j]
         val mj = nodeJ?.maturity?.probabilityMult ?: 0.0f
@@ -42,12 +49,18 @@ fun calculateProbabilities(
 
 fun calculateProbabilitiesSimple(
     edges: List<Edge>,
-    nodes: List<Node>
+    nodes: List<Node>,
+    firewallRules: List<FirewallRule>
 ): List<Edge> {
     val nodeMap = nodes.associateBy { it.id }
 
     return edges.map { edge ->
         val j = edge.endNode
+
+        // todo: move this logic to view model
+        if (!isEdgeAllowed(edge, firewallRules, nodes)) {
+            return@map edge.copy(probability = 0f, state = EdgeState.BlockedByFirewall)
+        }
 
         val nodeJ = nodeMap[j]
         val mj = nodeJ?.maturity?.probabilityMult ?: 0.0f
@@ -57,6 +70,21 @@ fun calculateProbabilitiesSimple(
         val pij = (mj * ej * cj)
 
         edge.copy(probability = pij)
+    }
+}
+
+fun isEdgeAllowed(
+    edge: Edge,
+    firewallRules: List<FirewallRule>,
+    nodes: List<Node>
+): Boolean {
+    val sourceNode = nodes.find { it.id == edge.startNode } ?: return false
+    val targetNode = nodes.find { it.id == edge.endNode } ?: return false
+
+    return firewallRules.any { rule ->
+        rule.sourceHostId == sourceNode.hostId &&
+                rule.targetHostId == targetNode.hostId &&
+                (rule.sourceTechniqueId == null || rule.sourceTechniqueId == sourceNode.techniqueId)
     }
 }
 

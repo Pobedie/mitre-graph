@@ -9,5 +9,5 @@ data class Edge(
 )
 
 enum class EdgeState{
-    Idle, CaseStudyProven, Unsuccessful, Probable, MostOptimal
+    Idle, CaseStudyProven, BlockedByFirewall, Probable, MostOptimal
 }

@@ -64,6 +64,7 @@
     <string name="no_optimal_path_found">INFO: no optimal path found</string>
     <string name="target_not_selected_error">ERROR: target technique is not selected</string>
     <string name="firewall_host_rule_exists_error">All traffic from host %1$s to %2$s is already allowed. To set a rule from a specific technique, first delete the allow-all-traffic rule.</string>
+    <string name="dashed_edges_firewall_hint">INFO: red-dashed edges are not valid because of firewall rules</string>
     <string name="imported_nodes_info">INFO: imported %1$d nodes</string>
     <string name="path_cost_format">%1$s | cost: %2$s</string>
 

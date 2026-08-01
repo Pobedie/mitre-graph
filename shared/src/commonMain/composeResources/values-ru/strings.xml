@@ -64,6 +64,7 @@
     <string name="no_optimal_path_found">ИНФО: оптимальный путь не найден</string>
     <string name="target_not_selected_error">ОШИБКА: целевая техника не выбрана</string>
     <string name="firewall_host_rule_exists_error">Весь трафик от хоста %1$s к %2$s уже разрешен. Чтобы установить правило для конкретной техники, сначала удалите общее разрешающее правило.</string>
+    <string name="dashed_edges_firewall_hint">ИНФО: красные пунктирные ребра недействительны из-за правил разрешенных маршрутов</string>
     <string name="imported_nodes_info">ИНФО: импортировано %1$d узлов</string>
     <string name="path_cost_format">%1$s | стоимость: %2$s</string>
 
