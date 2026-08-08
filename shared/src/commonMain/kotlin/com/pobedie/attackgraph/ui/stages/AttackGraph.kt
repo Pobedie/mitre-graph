@@ -371,7 +371,7 @@ fun AttackGraph(
                 val isSelected = state.selectedEdge?.let {
                     _edge != null && _edge.startNode == it.first && _edge.endNode == it.second
                 } ?: false
-                val isDisallowed = _edge?.state == EdgeState.BlockedByFirewall
+                val isDisallowed = _edge?.state == EdgeState.Blocked
                 Box(
                     modifier = Modifier
                         .zIndex(if (isSelected) 1000f else 0f)

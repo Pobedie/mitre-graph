@@ -125,6 +125,7 @@ fun MainScreen(
                     isEnabled = state.isAttackVectorMappingStageAvailable
                 )
             }
+            // todo: remove edge calc stage
             StageArrow()
             item {
                 StageButton(

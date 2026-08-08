@@ -36,16 +36,17 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.PointerEventType
+import androidx.compose.ui.input.pointer.onPointerEvent
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
@@ -67,9 +68,9 @@ import com.pobedie.attackgraph.ui.ViewModel
 import com.pobedie.attackgraph.ui.ViewState
 import com.pobedie.attackgraph.ui.theme.*
 import org.jetbrains.compose.resources.stringResource
-import kotlin.collections.emptyList
 import kotlin.collections.mutableSetOf
 
+@OptIn(ExperimentalComposeUiApi::class)
 @Composable
 fun FirewallMapping(
     viewModel: ViewModel,
@@ -159,7 +160,10 @@ fun FirewallMapping(
             nodeContent = { libNode ->
                 val host = state.hosts.find { it.id == libNode.id } ?: return@KuiverViewer
                 val selectedNode = state.selectedNode
-                val isSelectedSource = selectedNode == host.id
+                val isMouseHovering = remember { mutableStateOf(false) }
+                val isHostSelected = selectedNode == host.id
+                val isTechniqueSelected = selectedNode?.startsWith("${host.id}_") == true
+                val isSelectedSource = isHostSelected || (isMouseHovering.value && selectedNode != null && !isTechniqueSelected)
                 val selectedSourceTechId = if (selectedNode?.startsWith("${host.id}_") == true)
                     selectedNode.substringAfter("${host.id}_")
                 else null
@@ -206,7 +210,10 @@ fun FirewallMapping(
                                 _node.copy(second = _node.second + _offset)
                             } else _node
                         }
-                    }
+                    },
+                    modifier = Modifier
+                        .onPointerEvent(PointerEventType.Enter) { isMouseHovering.value = true }
+                        .onPointerEvent(PointerEventType.Exit) { isMouseHovering.value = false }
                 )
             },
             edgeContent = { libEdge, from, to ->
