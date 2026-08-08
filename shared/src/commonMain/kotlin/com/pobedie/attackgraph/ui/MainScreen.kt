@@ -31,14 +31,12 @@ import com.pobedie.attackgraph.ui.components.StageButton
 import attackgraph.shared.generated.resources.Res
 import attackgraph.shared.generated.resources.build_attack_vectors_button
 import attackgraph.shared.generated.resources.build_attack_vectors_hint
-import attackgraph.shared.generated.resources.edge_value_calculation_button
-import attackgraph.shared.generated.resources.edge_value_calculation_hint
 import attackgraph.shared.generated.resources.firewall_mapping_hint
 import attackgraph.shared.generated.resources.firewall_mapping_title
 import attackgraph.shared.generated.resources.import_hint
 import attackgraph.shared.generated.resources.import_tab
-import attackgraph.shared.generated.resources.mitigations_and_attacks_button
-import attackgraph.shared.generated.resources.mitigations_and_attacks_hint
+import attackgraph.shared.generated.resources.possible_attack_vectors_button
+import attackgraph.shared.generated.resources.possible_attack_vectors_hint
 import attackgraph.shared.generated.resources.select_techniques_button
 import attackgraph.shared.generated.resources.select_techniques_hint
 import com.pobedie.attackgraph.ui.stages.FirewallMapping
@@ -125,29 +123,16 @@ fun MainScreen(
                     isEnabled = state.isAttackVectorMappingStageAvailable
                 )
             }
-            // todo: remove edge calc stage
             StageArrow()
             item {
                 StageButton(
                     onClick = {
-                        viewModel.switchToEdgeValueCalculationStage()
+                        viewModel.switchToPossibleAttackVectors()
                     },
-                    buttonText = stringResource(Res.string.edge_value_calculation_button),
-                    hintText = stringResource(Res.string.edge_value_calculation_hint),
-                    isHighlighted = state.stage == Stage.EdgeValueCalculation,
-                    isEnabled = state.isEdgeValueCalculationStageAvailable
-                )
-            }
-            StageArrow()
-            item {
-                StageButton(
-                    onClick = {
-                        viewModel.switchToMitigationsAndAttacks()
-                    },
-                    buttonText = stringResource(Res.string.mitigations_and_attacks_button),
-                    hintText = stringResource(Res.string.mitigations_and_attacks_hint),
-                    isHighlighted = state.stage == Stage.MitigationsAndAttacks,
-                    isEnabled = state.isMitigationsAndAttacksStageAvailable
+                    buttonText = stringResource(Res.string.possible_attack_vectors_button),
+                    hintText = stringResource(Res.string.possible_attack_vectors_hint),
+                    isHighlighted = state.stage == Stage.PossibleAttackVectors,
+                    isEnabled = state.isPossibleAttackVectorsStageAvailable
                 )
             }
 
@@ -164,8 +149,7 @@ fun MainScreen(
                 Stage.FirewallMapping -> FirewallMapping(viewModel, state)
                 Stage.AttackVectorsBuilding,
                 Stage.EdgeValueCalculation,
-                Stage.MitigationsAndAttacks,
-                Stage.BestPath -> AttackGraph(viewModel, state)
+                Stage.PossibleAttackVectors -> AttackGraph(viewModel, state)
             }
 
             Console(
