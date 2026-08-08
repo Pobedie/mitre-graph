@@ -236,7 +236,7 @@ fun TechniqueSelection(
             ) {
                     Row {
                         Button(
-                            onClick = { viewModel.clearTechniqueSelectoins() },
+                            onClick = { viewModel.clearTechniqueSelections() },
                             colors = ButtonDefaults.filledTonalButtonColors()
                         ) {
                             Text(stringResource(Res.string.clear_selections_button))

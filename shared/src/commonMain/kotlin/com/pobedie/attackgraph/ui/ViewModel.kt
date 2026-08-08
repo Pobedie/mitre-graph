@@ -59,9 +59,9 @@ class ViewModel(
 
     private val httpClient = HttpClient {
         install(HttpTimeout) {
-            connectTimeoutMillis = 20_000 // 20 seconds
-            socketTimeoutMillis = 6000_000 // 60 seconds
-            requestTimeoutMillis = 3000_000 // 5 minutes
+            connectTimeoutMillis = 20_000
+            socketTimeoutMillis = 6000_000
+            requestTimeoutMillis = 3000_000
         }
         install(ContentNegotiation) {
             json(Json {
@@ -175,7 +175,6 @@ class ViewModel(
     }
 
     fun findAttackVectorsViaLLM() {
-
         scope.launch {
             _state.update { it.copy(isGenerationInProgress = true) }
             try {
@@ -209,7 +208,7 @@ class ViewModel(
                     return@flatMapTo edges.toSet()
                 }
                 llmEdges.addAll(state.value.edges)
-                val newEdges = calculateProbabilitiesSimple(llmEdges.toList(), state.value.nodes, state.value.firewallRules)
+                val newEdges = calculateProbabilitiesSimple(llmEdges.toList(), state.value.nodes)
 
                 _state.update {
                     it.copy(
@@ -330,6 +329,14 @@ class ViewModel(
                                             state = EdgeState.CaseStudyProven
                                         )
                                     )
+                                } else {
+                                    autoEdges.add(
+                                        Edge(
+                                            startNode = u.id,
+                                            endNode = v.id,
+                                            state = EdgeState.Blocked
+                                        )
+                                    )
                                 }
                             }
                         }
@@ -341,8 +348,16 @@ class ViewModel(
             val validExistingEdges = currentState.edges.filter { edge ->
                 nodes.any { it.id == edge.startNode } && nodes.any { it.id == edge.endNode }
             }
-            val allEdges = (validExistingEdges + autoEdges).distinctBy { it.startNode to it.endNode }
-            val calculatedEdges = calculateProbabilitiesSimple(allEdges, nodes, currentState.firewallRules)
+            val allEdges = (validExistingEdges + autoEdges)
+                .distinctBy { it.startNode to it.endNode }
+                .map {
+                    if(it.isAllowed(state.value.firewallRules, state.value.nodes)) {
+                        it.copy(state = EdgeState.Idle)
+                    } else {
+                        it.copy(state = EdgeState.Blocked)
+                    }
+                }
+            val calculatedEdges = calculateProbabilitiesSimple(allEdges, nodes)
 
             _state.update {
                 it.copy(
@@ -358,7 +373,7 @@ class ViewModel(
             if (resolvedTargets.isEmpty()) {
                 logToUiConsole(getString(Res.string.target_not_selected_error))
             }
-            if (calculatedEdges.any { it.state == EdgeState.BlockedByFirewall }) {
+            if (calculatedEdges.any { it.state == EdgeState.Blocked }) {
                 logToUiConsole(getString(Res.string.dashed_edges_firewall_hint))
             }
         }
@@ -387,7 +402,6 @@ class ViewModel(
         val updatedEdges = calculateProbabilitiesSimple(
             edges = state.value.edges,
             nodes = state.value.nodes,
-            firewallRules = state.value.firewallRules
         )
         _state.update {
             it.copy(
@@ -659,7 +673,7 @@ class ViewModel(
         }
     }
 
-    fun clearTechniqueSelectoins(){
+    fun clearTechniqueSelections(){
         _state.update {
             it.copy(
                 selectedTechniquesId = listOf(),
@@ -690,13 +704,20 @@ class ViewModel(
                 )
             } else {
                 val newEdges = state.edges.toMutableList()
-                newEdges.add(
+                val edge =
                     Edge(
                         startNode = state.selectedNode,
                         endNode = selectedNode,
-                    )
+                        )
+                val edgeState = if (edge.isAllowed(state.firewallRules, state.nodes)) {
+                    EdgeState.Idle
+                } else {
+                    EdgeState.Blocked
+                }
+                newEdges.add(
+                    edge.copy(state = edgeState)
                 )
-                val updatedEdges = calculateProbabilitiesSimple(newEdges, state.nodes, state.firewallRules)
+                val updatedEdges = calculateProbabilitiesSimple(newEdges, state.nodes)
                 state.copy(
                     edges = updatedEdges,
                     selectedNode = null
@@ -710,6 +731,7 @@ class ViewModel(
         sourceTechniqueId: String?,
         targetHostId: String
     ) {
+
         val isHostSource = sourceTechniqueId == null
         val newRule = FirewallRule(sourceHostId, sourceTechniqueId, targetHostId)
 
@@ -869,6 +891,22 @@ class ViewModel(
                     .map { it.id }
                     .distinct()
             }
+        }
+    }
+
+    private fun Edge.isAllowed(
+        firewallRules: List<FirewallRule>,
+        nodes: List<Node>
+    ): Boolean {
+        val edge = this
+        val sourceNode = nodes.find { it.id == edge.startNode } ?: return false
+        val targetNode = nodes.find { it.id == edge.endNode } ?: return false
+
+        if (sourceNode.hostId == targetNode.hostId) return true
+        return firewallRules.any { rule ->
+            rule.sourceHostId == sourceNode.hostId &&
+                    rule.targetHostId == targetNode.hostId &&
+                    (rule.sourceTechniqueId == null || rule.sourceTechniqueId == sourceNode.techniqueId)
         }
     }
 

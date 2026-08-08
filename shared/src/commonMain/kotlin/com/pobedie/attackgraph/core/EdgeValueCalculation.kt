@@ -25,7 +25,7 @@ fun calculateProbabilities(
         val j = edge.endNode
 
         if (!isEdgeAllowed(edge, firewallRules, nodes)) {
-            return@map edge.copy(probability = 0f, state = EdgeState.BlockedByFirewall)
+            return@map edge.copy(probability = 0f, state = EdgeState.Blocked)
         }
 
         val nodeJ = nodeMap[j]
@@ -50,16 +50,14 @@ fun calculateProbabilities(
 fun calculateProbabilitiesSimple(
     edges: List<Edge>,
     nodes: List<Node>,
-    firewallRules: List<FirewallRule>
 ): List<Edge> {
     val nodeMap = nodes.associateBy { it.id }
 
     return edges.map { edge ->
         val j = edge.endNode
 
-        // todo: move this logic to view model
-        if (!isEdgeAllowed(edge, firewallRules, nodes)) {
-            return@map edge.copy(probability = 0f, state = EdgeState.BlockedByFirewall)
+        if (edge.state == EdgeState.Blocked) {
+            return@map edge.copy(probability = 0f)
         }
 
         val nodeJ = nodeMap[j]
