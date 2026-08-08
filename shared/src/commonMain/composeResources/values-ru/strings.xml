@@ -6,8 +6,8 @@
     <string name="select_techniques_hint">Выберите техники атак из каждой тактики</string>
     <string name="build_attack_vectors_button">Построить векторы атаки</string>
     <string name="build_attack_vectors_hint">Показать векторы атаки, рисуя ребра между узлами, затем установите значения вероятности (0.0-1.0)</string>
-    <string name="mitigations_and_attacks_button">Вероятные векторы атак</string>
-    <string name="mitigations_and_attacks_hint">Показать подтвержденные тематическими исследованиями (case-studies) векторы атаки и меры защиты</string>
+    <string name="possible_attack_vectors_button">Вероятные векторы атак</string>
+    <string name="possible_attack_vectors_hint">Показать подтвержденные тематическими исследованиями (case-studies) векторы атаки и меры защиты</string>
     <string name="import_from_file_title">Импорт из файла</string>
     <string name="firewall_mapping_title">Разрешенные маршруты</string>
     <string name="firewall_mapping_hint">Настройка разрешенных маршрутов между хостами</string>

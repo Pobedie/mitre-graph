@@ -107,16 +107,10 @@ class ViewModel(
         // Handle side effects from state change
         state.onEach { currentState ->
             val resolvedTargets = getResolvedTargetTechniques()
-            val isEdgeValueCalculationStageAvailable =
-                currentState.edges.size >= 3 &&
-                        resolvedTargets.isNotEmpty() &&
-                        state.value.edges.any { edge -> resolvedTargets.any { target -> edge.endNode.endsWith(target) } }
-
-            val mitigationAndAttackStageAvailable: Boolean = (
+            val possibleAttackVectorsStageAvailable: Boolean = (
                     currentState.edges.size >= 3 &&
                             currentState.edges.none { it.probability == null } &&
-                            state.value.edges.any { edge -> resolvedTargets.any { target -> edge.endNode.endsWith(target) } } &&
-                            (currentState.stage == Stage.EdgeValueCalculation || currentState.stage == Stage.MitigationsAndAttacks)
+                            state.value.edges.any { edge -> resolvedTargets.any { target -> edge.endNode.endsWith(target) } }
                     )
             val isAttackVectorMappingStageAvailable =
                 currentState.hosts.count { it.techniques.isNotEmpty() } >= 3 && 
@@ -125,9 +119,8 @@ class ViewModel(
             val isFirewallMappingStageAvailable = currentState.hosts.count { it.techniques.isNotEmpty() } >= 3
             _state.update {
                 it.copy(
-                    isMitigationsAndAttacksStageAvailable = mitigationAndAttackStageAvailable,
+                    isPossibleAttackVectorsStageAvailable = possibleAttackVectorsStageAvailable,
                     isAttackVectorMappingStageAvailable = isAttackVectorMappingStageAvailable,
-                    isEdgeValueCalculationStageAvailable = isEdgeValueCalculationStageAvailable,
                     isFirewallMappingStageAvailable = isFirewallMappingStageAvailable
                 )
             }
@@ -398,20 +391,7 @@ class ViewModel(
         }
     }
 
-    fun switchToEdgeValueCalculationStage() {
-        val updatedEdges = calculateProbabilitiesSimple(
-            edges = state.value.edges,
-            nodes = state.value.nodes,
-        )
-        _state.update {
-            it.copy(
-                stage = Stage.EdgeValueCalculation,
-                edges = updatedEdges
-            )
-        }
-    }
-
-    fun switchToMitigationsAndAttacks() {
+    fun switchToPossibleAttackVectors() {
         val rootNodes: List<String> =
                 state.value.nodes
                         .filter { _node ->
@@ -463,7 +443,7 @@ class ViewModel(
 
         _state.update {
             it.copy(
-                    stage = Stage.MitigationsAndAttacks,
+                    stage = Stage.PossibleAttackVectors,
                     edges = newEdges
             )
         }

@@ -345,7 +345,7 @@ fun AttackGraph(
                     onClick = {
                         viewModel.setNodeConnection(node.id)
                     },
-                    areMitigationsShown = state.stage == Stage.MitigationsAndAttacks,
+                    areMitigationsShown = state.stage == Stage.PossibleAttackVectors,
                     mitigations = state.mitigations.filter { it.targetTechnique == node.techniqueId },
                     onToggleMitigationRelevance = {
                         viewModel.toggleMitigationRelevance(it)
