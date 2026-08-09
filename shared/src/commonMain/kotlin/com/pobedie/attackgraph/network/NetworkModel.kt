@@ -17,3 +17,13 @@ data class DecisionOutput(
     val targetId: String,
     val confidence: Float,
 )
+
+@Serializable
+data class ModelsResponse(
+    val data: List<ModelData>
+)
+
+@Serializable
+data class ModelData(
+    val id: String
+)

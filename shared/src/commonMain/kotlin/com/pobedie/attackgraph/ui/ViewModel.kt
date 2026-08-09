@@ -136,7 +136,29 @@ class ViewModel(
     }
 
     fun updateLlmModel(model: String) {
-        _state.update { it.copy(llmModel = model, llmConnectionStatus = LlmConnectionStatus.None) }
+        _state.update { it.copy(llmModel = model) }
+    }
+
+    fun fetchLlmModels() {
+        val currentState = state.value
+        if (currentState.llmUrl.isBlank()) return
+
+        _state.update { it.copy(isLlmModelsLoading = true) }
+
+        scope.launch {
+            try {
+                val models = llmClient.fetchModels(currentState.llmUrl, currentState.llmApiKey)
+                _state.update {
+                    it.copy(
+                        availableLlmModels = models,
+                        isLlmModelsLoading = false
+                    )
+                }
+            } catch (e: Exception) {
+                _state.update { it.copy(isLlmModelsLoading = false) }
+                e.printStackTrace()
+            }
+        }
     }
 
     fun checkLlmConnection() {

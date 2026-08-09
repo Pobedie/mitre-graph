@@ -4,12 +4,26 @@ import com.pobedie.attackgraph.core.entity.AttackVector
 import com.pobedie.attackgraph.core.entity.Mitigation
 import com.pobedie.attackgraph.core.entity.Node
 import io.ktor.client.HttpClient
+import io.ktor.client.call.body
+import io.ktor.client.request.get
 import io.ktor.client.request.header
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
 import io.ktor.client.statement.bodyAsText
 
 class LlmService(private val client: HttpClient) {
+
+    suspend fun fetchModels(
+        url: String,
+        apiKey: String?
+    ): List<String> {
+        val fullUrl = if (url.endsWith("/models")) url else "${url.removeSuffix("/")}/models"
+        val response = client.get(fullUrl) {
+            header("Authorization", "Bearer ${apiKey ?: "DUMMY_KEY"}")
+        }
+        val responseBody = response.body<ModelsResponse>()
+        return responseBody.data.map { it.id }
+    }
 
     suspend fun fetchDecision(
         url: String,
