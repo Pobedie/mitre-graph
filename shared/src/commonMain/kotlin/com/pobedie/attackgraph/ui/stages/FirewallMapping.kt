@@ -20,13 +20,9 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -50,8 +46,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
-import attackgraph.shared.generated.resources.Res
-import attackgraph.shared.generated.resources.delete_connection_content_desc
 import com.dk.kuiver.model.buildKuiver
 import com.dk.kuiver.model.buildKuiverWithClassifiedEdges
 import com.dk.kuiver.model.edges
@@ -66,8 +60,8 @@ import com.dk.kuiver.ui.LabelPlacement
 import com.pobedie.attackgraph.core.entity.Host
 import com.pobedie.attackgraph.ui.ViewModel
 import com.pobedie.attackgraph.ui.ViewState
+import com.pobedie.attackgraph.ui.components.DeleteButton
 import com.pobedie.attackgraph.ui.theme.*
-import org.jetbrains.compose.resources.stringResource
 import kotlin.collections.mutableSetOf
 
 @OptIn(ExperimentalComposeUiApi::class)
@@ -370,22 +364,11 @@ private fun FirewallEdge(
             enter = slideInVertically() + fadeIn(),
             exit = shrinkVertically() + fadeOut()
         ) {
-            Box(
-                modifier = Modifier
-                    .padding(top = 2.dp)
-                    .size(20.dp)
-                    .clip(RoundedCornerShape(4.dp))
-                    .background(ErrorContainerColor)
-                    .clickable(onClick = onDelete),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    modifier = Modifier.size(16.dp),
-                    imageVector = Icons.Default.Delete,
-                    contentDescription = stringResource(Res.string.delete_connection_content_desc),
-                    tint = OnErrorContainerColor
-                )
-            }
+            DeleteButton(
+                onClick = onDelete,
+                modifier = Modifier.padding(top = 2.dp),
+                size = 20.dp
+            )
         }
     }
 }
