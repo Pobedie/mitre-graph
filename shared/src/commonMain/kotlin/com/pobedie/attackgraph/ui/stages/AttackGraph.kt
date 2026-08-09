@@ -28,8 +28,6 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.selection.SelectionContainer
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
@@ -77,7 +75,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import attackgraph.shared.generated.resources.Res
-import attackgraph.shared.generated.resources.delete_connection_content_desc
 import attackgraph.shared.generated.resources.description_maturity_severity_format
 import attackgraph.shared.generated.resources.deselect_hint
 import attackgraph.shared.generated.resources.edge_probability_risk_format
@@ -116,6 +113,7 @@ import com.pobedie.attackgraph.ui.LlmConnectionStatus
 import com.pobedie.attackgraph.ui.Stage
 import com.pobedie.attackgraph.ui.ViewModel
 import com.pobedie.attackgraph.ui.ViewState
+import com.pobedie.attackgraph.ui.components.DeleteButton
 import com.pobedie.attackgraph.ui.components.FloatInputField
 import kotlinx.coroutines.delay
 import org.jetbrains.compose.resources.painterResource
@@ -386,22 +384,29 @@ fun AttackGraph(
                         enableCurve = true,
                         dashed = isDisallowed,
                         labelPlacement = LabelPlacement.END,
-                        label = if (isDisallowed) null else "label",
+                        label = "label",
                         labelContent = { _ ->
-                            if (_edge != null && !isDisallowed) {
-                                TechniqueEdge(
-                                    probability = _edge.probability,
-                                    isSelected = isSelected,
-                                    isEnabled = (state.stage == Stage.AttackVectorsBuilding ||
-                                            state.stage == Stage.EdgeValueCalculation) &&
-                                            !state.isGenerationInProgress,
-                                    onClick = { viewModel.selectEdge(_edge.startNode, _edge.endNode) },
-                                    onDismissed = { viewModel.clearEdgeSelection() },
-                                    onDelete = { viewModel.deleteEdge(_edge.startNode, _edge.endNode) },
-                                    onProbabilityChange = {
-                                        viewModel.changeEdgeProbability(_edge.startNode, _edge.endNode, it)
-                                    },
-                                )
+                            if (_edge != null) {
+                                if (isDisallowed) {
+                                    DeleteButton(
+                                        onClick = { viewModel.deleteEdge(_edge.startNode, _edge.endNode) },
+                                        tint = Color.Black
+                                    )
+                                } else {
+                                    TechniqueEdge(
+                                        probability = _edge.probability,
+                                        isSelected = isSelected,
+                                        isEnabled = (state.stage == Stage.AttackVectorsBuilding ||
+                                                state.stage == Stage.EdgeValueCalculation) &&
+                                                !state.isGenerationInProgress,
+                                        onClick = { viewModel.selectEdge(_edge.startNode, _edge.endNode) },
+                                        onDismissed = { viewModel.clearEdgeSelection() },
+                                        onDelete = { viewModel.deleteEdge(_edge.startNode, _edge.endNode) },
+                                        onProbabilityChange = {
+                                            viewModel.changeEdgeProbability(_edge.startNode, _edge.endNode, it)
+                                        },
+                                    )
+                                }
                             }
                         }
                     )
@@ -745,20 +750,10 @@ private fun TechniqueEdge(
             enter = slideInVertically() + fadeIn(),
             exit = shrinkVertically() + fadeOut()
         ) {
-            Box(
-                modifier = Modifier
-                    .padding(top = 2.dp)
-                    .size(24.dp)
-                    .clip(RoundedCornerShape(4.dp))
-                    .background(ErrorContainerColor)
-                    .clickable(onClick = onDelete),
-            ) {
-                Icon(
-                    modifier = Modifier.padding(2.dp),
-                    imageVector = Icons.Default.Delete,
-                    contentDescription = stringResource(Res.string.delete_connection_content_desc)
-                )
-            }
+            DeleteButton(
+                onClick = onDelete,
+                modifier = Modifier.padding(top = 2.dp)
+            )
         }
     }
 }
