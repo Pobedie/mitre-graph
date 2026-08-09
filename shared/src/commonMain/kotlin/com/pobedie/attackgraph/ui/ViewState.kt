@@ -52,6 +52,8 @@ data class ViewState(
     val llmUrl: String = "",
     val llmApiKey: String = "",
     val llmModel: String = "",
+    val availableLlmModels: List<String> = emptyList(),
+    val isLlmModelsLoading: Boolean = false,
     val llmConnectionStatus: LlmConnectionStatus = LlmConnectionStatus.None,
     val isGenerationInProgress: Boolean = false,
     val isLlmAdded: Boolean = false

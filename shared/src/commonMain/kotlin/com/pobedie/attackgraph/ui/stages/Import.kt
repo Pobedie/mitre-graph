@@ -14,9 +14,13 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Checkbox
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
@@ -32,6 +36,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.window.PopupProperties
 import com.pobedie.attackgraph.ui.theme.*
 import androidx.compose.ui.unit.dp
 import attackgraph.shared.generated.resources.Res
@@ -160,10 +165,13 @@ fun ImportStage(
                 modifier = Modifier.padding(horizontal = 22.dp, vertical = 4.dp)
             )
 
-            LlmSettingsField(
+            LlmModelSelectionField(
                 label = stringResource(Res.string.llm_model_label),
                 value = state.llmModel,
+                options = state.availableLlmModels,
+                isLoading = state.isLlmModelsLoading,
                 onValueChange = { viewModel.updateLlmModel(it) },
+                onExpanded = {viewModel.fetchLlmModels()},
                 modifier = Modifier.padding(horizontal = 22.dp, vertical = 4.dp)
             )
 
@@ -380,4 +388,72 @@ private fun LlmSettingsField(
             unfocusedBorderColor = TransparentColor
         )
     )
+}
+
+@Composable
+private fun LlmModelSelectionField(
+    label: String,
+    value: String,
+    options: List<String>,
+    isLoading: Boolean,
+    onValueChange: (String) -> Unit,
+    onExpanded: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    var expanded by remember { mutableStateOf(false) }
+
+    Box(modifier = modifier.fillMaxWidth()) {
+        OutlinedTextField(
+            value = value,
+            onValueChange = onValueChange,
+            label = { Text(text = label) },
+            modifier = Modifier
+                .fillMaxWidth()
+                .onFocusChanged { if (it.isFocused) expanded = true },
+            trailingIcon = {
+                if (isLoading) {
+                    CircularProgressIndicator(modifier = Modifier.size(24.dp))
+                } else {
+                    Icon(
+                        imageVector = if (expanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
+                        contentDescription = null,
+                        modifier = Modifier.clickable {
+                            onExpanded()
+                            expanded = !expanded
+                        }
+                    )
+                }
+            },
+            singleLine = true,
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedContainerColor = InputFieldBackground,
+                unfocusedContainerColor = InputFieldBackground,
+                focusedTextColor = PrimaryTextColor,
+                unfocusedTextColor = PrimaryTextColor,
+                focusedLabelColor = FocusedLabelColor,
+                unfocusedLabelColor = UnfocusedLabelColor,
+                focusedBorderColor = SelectedBorderColor,
+                unfocusedBorderColor = TransparentColor
+            )
+        )
+
+        DropdownMenu(
+            expanded = expanded && options.isNotEmpty(),
+            onDismissRequest = { expanded = false },
+            properties = PopupProperties(focusable = false), // Keep focus on TextField to allow typing
+            modifier = Modifier
+                .width(556.dp) // Match the width of the dialog's content (600 - 22*2)
+                .background(DropdownMenuBackground)
+        ) {
+            options.forEach { option ->
+                DropdownMenuItem(
+                    text = { Text(text = option, color = PrimaryTextColor) },
+                    onClick = {
+                        onValueChange(option)
+                        expanded = false
+                    }
+                )
+            }
+        }
+    }
 }
