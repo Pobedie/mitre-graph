@@ -19,6 +19,7 @@
     <string name="connecting_status">Подключение...</string>
     <string name="connection_success">Подключено</string>
     <string name="connection_failed">Ошибка подключения</string>
+    <string name="embedding_settings_title">Настройки эмбеддингов</string>
     <string name="or_use_included_data">или использовать включенные данные</string>
     <string name="use_included_data_checkbox">Использовать включенные данные MITRE ATLAS (ATLAS-2026.05. Могут быть неактуальными)</string>
     <string name="select_yaml_file_placeholder">Выберите yaml файл из MITRE ATLAS</string>

@@ -36,24 +36,25 @@ class LlmService(private val client: HttpClient) {
 
         val fullUrl = if (url.endsWith("/chat/completions")) url else "${url.removeSuffix("/")}/chat/completions"
 
+        // Context Compression: Only send full descriptions for non-standard or highly critical nodes
         val techniquesPrompt: List<String> = techniques.map {
-            "\nID: ${it.techniqueId}\nNAME: ${it.name}\nMATURITY:${it.maturity.name}" +
-                    "\nSEVERITY SCORE:${it.severityScore}\nDESCRIPTION:${it.description}"
+            val base = "ID:${it.techniqueId}|NAME:${it.name}|MAT:${it.maturity.name}|SEV:${it.severityScore}"
+            if (it.techniqueId.startsWith("AML.T")) base else "$base|DESC:${it.description}"
         }
+        
         val mitigationsPrompt: List<String> = mitigations.filter { it.isRelevant }.map {
-            "\nTARGET TECHNIQUE: ${it.targetTechnique}\nNAME: ${it.name}\nRELATIONSHIP WITH TECHNIQUE: ${it.relationshipDescription}" +
-                    "\nCATEGORIES: ${it.categories}\nLIFECYCLE PHASES: ${it.lifecyclePhases}" +
-                    "\nMITIGATION DESCRIPTION: ${it.mitigationDescription}"
+            "ID:${it.id}|TARGET:${it.targetTechnique}|DESC:${it.mitigationDescription.take(300)}"
         }
+        
         val csAttackVectorsPrompt: List<String> = attackVectors.map {
-            "\nLEADS FROM TACTIC: ${it.tactic}\nLEADS TO TECHNIQUES: ${it.targetTechnique}" +
-                    "\nBELONGS TO CASE-STUDY: ${it.stepId}\nSTEP ID: ${it.stepId}\nLEADS TO STEP: ${it.leadsToStep}" +
-                    "\nDESCRIPTION: ${it.description}"
+            "FROM:${it.tactic}|TO:${it.targetTechnique}|CS:${it.stepId}|LEADS:${it.leadsToStep}"
         }
+        
         val userPrompt: String =
-            "\nHere is the list of techniques: $techniquesPrompt" +
-                    "\nHere is the list of mitigations: $mitigationsPrompt" +
-                    "\nHere is the list of case-study proven attack vectors: ${csAttackVectorsPrompt}"
+            "TECHNIQUES:\n${techniquesPrompt.joinToString("\n")}\n" +
+            "MITIGATIONS:\n${mitigationsPrompt.joinToString("\n")}\n" +
+            "CASE-STUDIES:\n${csAttackVectorsPrompt.joinToString("\n")}"
+            
         val response = client.post(fullUrl) {
             header("Authorization", "Bearer ${apiKey ?: "DUMMY_KEY"}")
             header("Content-Type", "application/json")
@@ -71,6 +72,27 @@ class LlmService(private val client: HttpClient) {
         val responseBody = response.bodyAsText()
         println("INFO LLM API response :  ${responseBody.trim()}")
         return DecisionParser.parse(responseBody)
+    }
+
+    suspend fun fetchEmbedding(
+        url: String,
+        apiKey: String?,
+        model: String,
+        input: String
+    ): FloatArray {
+        val fullUrl = if (url.endsWith("/embeddings")) url else "${url.removeSuffix("/")}/embeddings"
+        val response = client.post(fullUrl) {
+            header("Authorization", "Bearer ${apiKey ?: "DUMMY_KEY"}")
+            header("Content-Type", "application/json")
+            setBody(
+                EmbeddingRequest(
+                    model = model,
+                    input = input
+                )
+            )
+        }
+        val responseBody = response.body<EmbeddingResponse>()
+        return responseBody.data.first().embedding.toFloatArray()
     }
 }
 

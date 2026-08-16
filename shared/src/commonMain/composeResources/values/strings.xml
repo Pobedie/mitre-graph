@@ -19,6 +19,7 @@
     <string name="connecting_status">Connecting...</string>
     <string name="connection_success">Connected</string>
     <string name="connection_failed">Connection Failed</string>
+    <string name="embedding_settings_title">Embedding Settings</string>
     <string name="or_use_included_data">or use included data</string>
     <string name="use_included_data_checkbox">Use included MITRE ATLAS data (ATLAS-2026.05. Might not be relevant)</string>
     <string name="select_yaml_file_placeholder">Select yaml file from MITRE ATLAS</string>

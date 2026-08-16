@@ -18,6 +18,7 @@ fun main() = application {
     val driverFactory = remember { DriverFactory() }
     val database = remember { createAtlasDatabase(driverFactory) }
     val settingsDatabase = remember { createSettingsDatabase(driverFactory) }
+    
     val repository = remember { MainRepository(database, settingsDatabase) }
 
     Window(

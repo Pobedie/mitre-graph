@@ -1,0 +1,29 @@
+CREATE TABLE technique_embeddings (
+    technique_id TEXT NOT NULL PRIMARY KEY,
+    embedding BLOB NOT NULL
+);
+
+CREATE TABLE mitigation_embeddings (
+    mitigation_id TEXT NOT NULL PRIMARY KEY,
+    embedding BLOB NOT NULL
+);
+
+insertTechniqueEmbedding:
+INSERT OR REPLACE INTO technique_embeddings(technique_id, embedding)
+VALUES (?, ?);
+
+insertMitigationEmbedding:
+INSERT OR REPLACE INTO mitigation_embeddings(mitigation_id, embedding)
+VALUES (?, ?);
+
+getTechniqueEmbedding:
+SELECT embedding FROM technique_embeddings WHERE technique_id = ?;
+
+getMitigationEmbedding:
+SELECT embedding FROM mitigation_embeddings WHERE mitigation_id = ?;
+
+getAllTechniqueEmbeddings:
+SELECT * FROM technique_embeddings;
+
+getAllMitigationEmbeddings:
+SELECT * FROM mitigation_embeddings;

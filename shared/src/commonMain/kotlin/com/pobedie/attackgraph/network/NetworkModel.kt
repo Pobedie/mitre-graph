@@ -27,3 +27,19 @@ data class ModelsResponse(
 data class ModelData(
     val id: String
 )
+
+@Serializable
+data class EmbeddingRequest(
+    val model: String,
+    val input: String
+)
+
+@Serializable
+data class EmbeddingResponse(
+    val data: List<EmbeddingData>
+)
+
+@Serializable
+data class EmbeddingData(
+    val embedding: List<Float>
+)

@@ -17,6 +17,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.withContext
+import java.nio.ByteBuffer
 
 class MainRepository(
     val atlasDatabase: Atlas,
@@ -256,4 +257,89 @@ class MainRepository(
     }
 
     val importState: Flow<Boolean> = _state.map { it.isImportSuccessful }
+
+    suspend fun saveTechniqueEmbedding(techniqueId: String, embedding: FloatArray) = withContext(Dispatchers.IO) {
+        atlasDatabase.embeddingsQueries.insertTechniqueEmbedding(
+            technique_id = techniqueId,
+            embedding = embedding.toByteArray()
+        )
+    }
+
+    suspend fun saveMitigationEmbedding(mitigationId: String, embedding: FloatArray) = withContext(Dispatchers.IO) {
+        atlasDatabase.embeddingsQueries.insertMitigationEmbedding(
+            mitigation_id = mitigationId,
+            embedding = embedding.toByteArray()
+        )
+    }
+
+    suspend fun getTechniqueEmbedding(techniqueId: String): FloatArray? = withContext(Dispatchers.IO) {
+        val blob = atlasDatabase.embeddingsQueries.getTechniqueEmbedding(techniqueId).executeAsOneOrNull()
+            ?: return@withContext null
+        return@withContext blob.toFloatArray()
+    }
+
+    suspend fun getMitigationEmbedding(mitigationId: String): FloatArray? = withContext(Dispatchers.IO) {
+        val blob = atlasDatabase.embeddingsQueries.getMitigationEmbedding(mitigationId).executeAsOneOrNull()
+            ?: return@withContext null
+        return@withContext blob.toFloatArray()
+    }
+
+    suspend fun getRelevantMitigations(
+        targetTechniqueIds: List<String>,
+        graphCentroid: FloatArray?,
+        topK: Int = 20
+    ): List<Mitigation> = withContext(Dispatchers.IO) {
+        val directMitigations = getMittigations(targetTechniqueIds)
+
+        if (graphCentroid == null) return@withContext directMitigations
+
+        val allMitigationData = atlasDatabase.mitigationQueries.selectAllMitigations().executeAsList()
+        val allEmbeddings = atlasDatabase.embeddingsQueries.getAllMitigationEmbeddings().executeAsList()
+
+        val scoredMitigations = allEmbeddings.mapNotNull { emb ->
+            val mitigation = allMitigationData.find { it.id == emb.mitigation_id } ?: return@mapNotNull null
+            val similarity = calculateCosineSimilarity(graphCentroid, emb.embedding.toFloatArray())
+            mitigation to similarity
+        }.sortedByDescending { it.second }.take(topK)
+
+        val result = (directMitigations + scoredMitigations.map { (m, _) ->
+            Mitigation(
+                id = m.id,
+                name = m.name,
+                mitigationDescription = m.description,
+                relationshipDescription = "Semantically relevant to the attack path",
+                targetTechnique = "Semantic Match",
+                categories = m.categories,
+                lifecyclePhases = m.lifecycle_phases,
+                isRelevant = true
+            )
+        }).distinctBy { it.id }
+
+        return@withContext result
+    }
+
+    private fun calculateCosineSimilarity(a: FloatArray, b: FloatArray): Float {
+        var dotProduct = 0.0f
+        var normA = 0.0f
+        var normB = 0.0f
+        for (i in a.indices) {
+            dotProduct += a[i] * b[i]
+            normA += a[i] * a[i]
+            normB += b[i] * b[i]
+        }
+        val denominator = kotlin.math.sqrt(normA) * kotlin.math.sqrt(normB)
+        return if (denominator > 0) dotProduct / denominator else 0f
+    }
+
+    private fun FloatArray.toByteArray(): ByteArray {
+        val bytes = ByteArray(size * 4)
+        ByteBuffer.wrap(bytes).asFloatBuffer().put(this)
+        return bytes
+    }
+
+    private fun ByteArray.toFloatArray(): FloatArray {
+        val floats = FloatArray(size / 4)
+        ByteBuffer.wrap(this).asFloatBuffer().get(floats)
+        return floats
+    }
 }

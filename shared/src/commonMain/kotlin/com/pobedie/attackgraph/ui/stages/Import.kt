@@ -44,6 +44,7 @@ import attackgraph.shared.generated.resources.connect_button
 import attackgraph.shared.generated.resources.connecting_status
 import attackgraph.shared.generated.resources.connection_failed
 import attackgraph.shared.generated.resources.connection_success
+import attackgraph.shared.generated.resources.embedding_settings_title
 import attackgraph.shared.generated.resources.ic_floder
 import attackgraph.shared.generated.resources.import_button
 import attackgraph.shared.generated.resources.import_from_file_title
@@ -175,6 +176,71 @@ fun ImportStage(
                 modifier = Modifier.padding(horizontal = 22.dp, vertical = 4.dp)
             )
 
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Text(
+                modifier = Modifier.padding(vertical = 8.dp, horizontal = 16.dp),
+                text = stringResource(Res.string.embedding_settings_title),
+                style = MaterialTheme.typography.titleLarge
+            )
+
+            LlmSettingsField(
+                label = stringResource(Res.string.llm_url_label),
+                value = state.embeddingLlmUrl,
+                onValueChange = { viewModel.updateEmbeddingLlmUrl(it) },
+                modifier = Modifier.padding(horizontal = 22.dp, vertical = 4.dp)
+            )
+
+            LlmSettingsField(
+                label = stringResource(Res.string.llm_api_key_label),
+                value = state.embeddingLlmApiKey,
+                isApiField = true,
+                onValueChange = { viewModel.updateEmbeddingLlmApiKey(it) },
+                modifier = Modifier.padding(horizontal = 22.dp, vertical = 4.dp)
+            )
+
+            LlmModelSelectionField(
+                label = stringResource(Res.string.llm_model_label),
+                value = state.embeddingLlmModel,
+                options = state.availableEmbeddingLlmModels,
+                isLoading = state.isEmbeddingLlmModelsLoading,
+                onValueChange = { viewModel.updateEmbeddingLlmModel(it) },
+                onExpanded = { viewModel.fetchEmbeddingLlmModels() },
+                modifier = Modifier.padding(horizontal = 22.dp, vertical = 4.dp)
+            )
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 22.dp, vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                val statusText = when (state.embeddingLlmConnectionStatus) {
+                    LlmConnectionStatus.None -> ""
+                    LlmConnectionStatus.Connecting -> stringResource(Res.string.connecting_status)
+                    LlmConnectionStatus.Connected -> stringResource(Res.string.connection_success)
+                    LlmConnectionStatus.Failed -> stringResource(Res.string.connection_failed)
+                }
+                val statusColor = when (state.embeddingLlmConnectionStatus) {
+                    LlmConnectionStatus.Connected -> StatusSuccess
+                    LlmConnectionStatus.Failed -> ErrorColor
+                    else -> PrimaryTextColor
+                }
+                Text(
+                    text = statusText,
+                    color = statusColor,
+                    style = MaterialTheme.typography.bodyMedium
+                )
+
+                Button(
+                    onClick = { viewModel.checkEmbeddingLlmConnection() },
+                    enabled = state.embeddingLlmUrl.isNotBlank() && state.embeddingLlmConnectionStatus != LlmConnectionStatus.Connecting
+                ) {
+                    Text(stringResource(Res.string.connect_button))
+                }
+            }
+
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -293,7 +359,8 @@ private fun FileSelectionField(
     onClick: () -> Unit,
     isFileError: Boolean,
     isEnabled: Boolean,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    placeholder: String = stringResource(Res.string.select_yaml_file_placeholder)
 ){
     val contentColor = when {
         isFileError -> OnErrorColor
@@ -316,7 +383,7 @@ private fun FileSelectionField(
     ) {
         Text(
             modifier = Modifier.padding(horizontal = 8.dp),
-            text = filePath.takeUnless{it.isBlank()} ?: stringResource(Res.string.select_yaml_file_placeholder),
+            text = filePath.takeUnless{it.isBlank()} ?: placeholder,
             color = contentColor
         )
         Icon(
@@ -332,14 +399,14 @@ private fun FileSelectionField(
 }
 
 fun openFilePicker(
-    title: String? = null
+    title: String? = null,
+    allowedExtensions: List<String> = listOf(".yaml")
 ): String? {
     val resolvedTitle = title ?: runBlocking { getString(Res.string.select_yaml_file_dialog_title) }
     val window = Frame(resolvedTitle)
     val dialog = FileDialog(window, resolvedTitle, FileDialog.LOAD)
     window.setSize(800, 600)
     window.setLocationRelativeTo(null)
-    val allowedExtensions = listOf(".yaml")
 
     if (allowedExtensions.isNotEmpty()) {
         dialog.setFilenameFilter { _, name ->

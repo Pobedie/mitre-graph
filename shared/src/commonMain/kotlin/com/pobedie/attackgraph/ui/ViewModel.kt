@@ -139,6 +139,18 @@ class ViewModel(
         _state.update { it.copy(llmModel = model) }
     }
 
+    fun updateEmbeddingLlmUrl(url: String) {
+        _state.update { it.copy(embeddingLlmUrl = url, embeddingLlmConnectionStatus = LlmConnectionStatus.None) }
+    }
+
+    fun updateEmbeddingLlmApiKey(key: String) {
+        _state.update { it.copy(embeddingLlmApiKey = key, embeddingLlmConnectionStatus = LlmConnectionStatus.None) }
+    }
+
+    fun updateEmbeddingLlmModel(model: String) {
+        _state.update { it.copy(embeddingLlmModel = model) }
+    }
+
     fun fetchLlmModels() {
         val currentState = state.value
         if (currentState.llmUrl.isBlank()) return
@@ -156,6 +168,28 @@ class ViewModel(
                 }
             } catch (e: Exception) {
                 _state.update { it.copy(isLlmModelsLoading = false) }
+                e.printStackTrace()
+            }
+        }
+    }
+
+    fun fetchEmbeddingLlmModels() {
+        val currentState = state.value
+        if (currentState.embeddingLlmUrl.isBlank()) return
+
+        _state.update { it.copy(isEmbeddingLlmModelsLoading = true) }
+
+        scope.launch {
+            try {
+                val models = llmClient.fetchModels(currentState.embeddingLlmUrl, currentState.embeddingLlmApiKey)
+                _state.update {
+                    it.copy(
+                        availableEmbeddingLlmModels = models,
+                        isEmbeddingLlmModelsLoading = false
+                    )
+                }
+            } catch (e: Exception) {
+                _state.update { it.copy(isEmbeddingLlmModelsLoading = false) }
                 e.printStackTrace()
             }
         }
@@ -189,16 +223,58 @@ class ViewModel(
         }
     }
 
+    fun checkEmbeddingLlmConnection() {
+        val currentState = state.value
+        if (currentState.embeddingLlmUrl.isBlank()) return
+
+        _state.update { it.copy(embeddingLlmConnectionStatus = LlmConnectionStatus.Connecting) }
+
+        scope.launch {
+            try {
+                val response = httpClient.get(currentState.embeddingLlmUrl)
+                _state.update { 
+                    it.copy(
+                        embeddingLlmConnectionStatus = LlmConnectionStatus.Connected
+                    ) 
+                }
+            } catch (e: Exception) {
+                _state.update { it.copy(embeddingLlmConnectionStatus = LlmConnectionStatus.Failed) }
+                e.printStackTrace()
+            }
+        }
+    }
+
     fun findAttackVectorsViaLLM() {
         scope.launch {
             _state.update { it.copy(isGenerationInProgress = true) }
             try {
+                val currentTechniqueIds = state.value.nodes.map { it.techniqueId }.distinct()
+                val graphEmbeddings = currentTechniqueIds.mapNotNull {
+                    mainRepository.getTechniqueEmbedding(it)
+                }
+
+                val centroid = if (graphEmbeddings.isNotEmpty()) {
+                    val dim = graphEmbeddings[0].size
+                    val center = FloatArray(dim)
+                    for (emb in graphEmbeddings) {
+                        for (i in 0 until dim) center[i] += emb[i]
+                    }
+                    for (i in 0 until dim) center[i] /= graphEmbeddings.size.toFloat()
+                    center
+                } else null
+
+                val relevantMitigations = mainRepository.getRelevantMitigations(
+                    targetTechniqueIds = currentTechniqueIds,
+                    graphCentroid = centroid,
+                    topK = 20
+                )
+
                 val response = llmClient.fetchDecision(
                     url = state.value.llmUrl,
                     apiKey = state.value.llmApiKey,
                     model = state.value.llmModel,
                     techniques = state.value.nodes,
-                    mitigations = state.value.mitigations,
+                    mitigations = relevantMitigations,
                     attackVectors = state.value.attackVectors
                 )
 
@@ -512,6 +588,7 @@ class ViewModel(
                     val fileContent = fileBinary.decodeToString()
                     if (fileContent.isNotBlank()) {
                         mainRepository.importMitreAtlasData(fileContent)
+                        indexAtlasData()
                     } else {
                         val error = getString(Res.string.file_blank_error, state.value.filePath)
                         _state.update { it.copy(fileError = error) }
@@ -521,6 +598,57 @@ class ViewModel(
             } catch (e: Exception) {
                 val error = getString(Res.string.unexpected_error, e.localizedMessage ?: "")
                 _state.update { it.copy(fileError = error) }
+                e.printStackTrace()
+            }
+        }
+    }
+
+    private fun indexAtlasData() {
+        scope.launch {
+            val currentState = state.value
+            if (currentState.embeddingLlmUrl.isBlank()) {
+                logToUiConsole("WARNING: Embedding LLM URL is not configured. Indexing skipped.")
+                return@launch
+            }
+
+            logToUiConsole("INFO: Starting embedding indexing...")
+
+            try {
+                val tactics = mainRepository.getTacticsWithTechniques()
+                val mitigations = mainRepository.getAllMitigations()
+
+                val techniquesToIndex = tactics.flatMap { it.techniques }.filter {
+                    mainRepository.getTechniqueEmbedding(it.id) == null
+                }
+
+                techniquesToIndex.forEach { tech ->
+                    val embedding = llmClient.fetchEmbedding(
+                        url = currentState.embeddingLlmUrl,
+                        apiKey = currentState.embeddingLlmApiKey,
+                        model = currentState.embeddingLlmModel,
+                        input = "${tech.name} ${tech.description}"
+                    )
+                    mainRepository.saveTechniqueEmbedding(tech.id, embedding)
+                }
+
+                // Deduplicate mitigations by ID for indexing
+                val uniqueMitigations = mitigations.distinctBy { it.id }.filter {
+                    mainRepository.getMitigationEmbedding(it.id) == null
+                }
+
+                uniqueMitigations.forEach { mit ->
+                    val embedding = llmClient.fetchEmbedding(
+                        url = currentState.embeddingLlmUrl,
+                        apiKey = currentState.embeddingLlmApiKey,
+                        model = currentState.embeddingLlmModel,
+                        input = "${mit.name} ${mit.mitigationDescription}"
+                    )
+                    mainRepository.saveMitigationEmbedding(mit.id, embedding)
+                }
+
+                logToUiConsole("INFO: Embedding indexing completed.")
+            } catch (e: Exception) {
+                logToUiConsole("WARNING: Embedding indexing failed: ${e.message}")
                 e.printStackTrace()
             }
         }

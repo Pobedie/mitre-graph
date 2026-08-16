@@ -56,7 +56,15 @@ data class ViewState(
     val isLlmModelsLoading: Boolean = false,
     val llmConnectionStatus: LlmConnectionStatus = LlmConnectionStatus.None,
     val isGenerationInProgress: Boolean = false,
-    val isLlmAdded: Boolean = false
+    val isLlmAdded: Boolean = false,
+
+    // Embedding settings
+    val embeddingLlmUrl: String = "",
+    val embeddingLlmApiKey: String = "",
+    val embeddingLlmModel: String = "",
+    val availableEmbeddingLlmModels: List<String> = emptyList(),
+    val isEmbeddingLlmModelsLoading: Boolean = false,
+    val embeddingLlmConnectionStatus: LlmConnectionStatus = LlmConnectionStatus.None
 )
 
 enum class LlmConnectionStatus {
