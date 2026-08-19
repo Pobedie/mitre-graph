@@ -1,6 +1,7 @@
 package com.pobedie.attackgraph.core
 
 import com.pobedie.attackgraph.core.entity.Edge
+import com.pobedie.attackgraph.core.entity.EdgeState
 import java.util.PriorityQueue
 import kotlin.math.ln
 
@@ -38,6 +39,8 @@ fun findOptimalPath(
         visited.add(currentNode)
 
         adj[currentNode]?.forEach { edge ->
+            if (edge.state == EdgeState.Blocked) return@forEach
+            
             val prob = edge.probability
             
             if (prob != null) {

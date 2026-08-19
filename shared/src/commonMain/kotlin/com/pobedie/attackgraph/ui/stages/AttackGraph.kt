@@ -359,33 +359,28 @@ fun AttackGraph(
             edgeContent = { libEdge, from, to ->
                 // Customize edge appearance
                 val _edge = state.edges.find { it.startNode == libEdge.fromId && it.endNode == libEdge.toId }
-                val edgeDefault = EdgeDefault
-                val edgeOptimal = EdgeOptimal
-                val edgeProbable = EdgeProbable
                 val (edgeColor, edgeWidth) =
                     when {
+                        _edge?.state == EdgeState.Blocked -> Pair(ErrorColor.copy(alpha = 0.5f), 1f)
                         state.stage == Stage.AttackVectorsBuilding ||
                                 state.stage == Stage.EdgeValueCalculation ||
-                                _edge == null -> Pair(edgeDefault, 2)
-
-                        _edge.state == EdgeState.MostOptimal -> Pair(edgeOptimal, 4)
-                        _edge.state == EdgeState.Probable -> Pair(edgeProbable, 3)
-                        else -> Pair(edgeDefault, 2)
+                                _edge == null -> Pair(EdgeDefault, 2f)
+                        _edge.state == EdgeState.MostOptimal -> Pair(EdgeOptimal, 4f)
+                        _edge.state == EdgeState.Probable -> Pair(EdgeProbable, 3f)
+                        else -> Pair(EdgeDefault, 2f)
                     }
                 val isSelected = state.selectedEdge?.let {
                     _edge != null && _edge.startNode == it.first && _edge.endNode == it.second
                 } ?: false
                 val isDisallowed = _edge?.state == EdgeState.Blocked
                 Box(
-                    modifier = Modifier
-                        .zIndex(if (isSelected) 1000f else 0f)
-                        .alpha(if (isDisallowed) 0.5f else 1.0f)
+                    modifier = Modifier.zIndex(if (isSelected) 1000f else 0f)
                 ) {
                     EdgeContentWithLabel(
                         from,
                         to,
-                        color = if (isDisallowed) ErrorColor else edgeColor,
-                        strokeWidth = if (isDisallowed) 1f else 2f,
+                        color = edgeColor,
+                        strokeWidth = edgeWidth,
                         arrowDrawer = ArrowStyle,
                         enableCurve = true,
                         dashed = isDisallowed,
@@ -395,7 +390,12 @@ fun AttackGraph(
                             if (_edge != null) {
                                 if (isDisallowed) {
                                     DeleteButton(
-                                        onClick = { viewModel.deleteEdge(_edge.startNode, _edge.endNode) },
+                                        onClick = {
+                                            viewModel.deleteEdge(
+                                                _edge.startNode,
+                                                _edge.endNode
+                                            )
+                                        },
                                         tint = Color.Black
                                     )
                                 } else {
@@ -405,11 +405,25 @@ fun AttackGraph(
                                         isEnabled = (state.stage == Stage.AttackVectorsBuilding ||
                                                 state.stage == Stage.EdgeValueCalculation) &&
                                                 !state.isGenerationInProgress,
-                                        onClick = { viewModel.selectEdge(_edge.startNode, _edge.endNode) },
+                                        onClick = {
+                                            viewModel.selectEdge(
+                                                _edge.startNode,
+                                                _edge.endNode
+                                            )
+                                        },
                                         onDismissed = { viewModel.clearEdgeSelection() },
-                                        onDelete = { viewModel.deleteEdge(_edge.startNode, _edge.endNode) },
+                                        onDelete = {
+                                            viewModel.deleteEdge(
+                                                _edge.startNode,
+                                                _edge.endNode
+                                            )
+                                        },
                                         onProbabilityChange = {
-                                            viewModel.changeEdgeProbability(_edge.startNode, _edge.endNode, it)
+                                            viewModel.changeEdgeProbability(
+                                                _edge.startNode,
+                                                _edge.endNode,
+                                                it
+                                            )
                                         },
                                     )
                                 }

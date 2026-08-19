@@ -510,7 +510,9 @@ class ViewModel(
         }
 
         val targetTechniques = getResolvedTargetTechniques()
-        val allEdges = state.value.edges.map { it.copy(state = EdgeState.Idle) }
+        val allEdges = state.value.edges.map { 
+            if (it.state == EdgeState.Blocked) it else it.copy(state = EdgeState.Idle) 
+        }
         val allFoundPaths: MutableList<Pair<List<Edge>, Double>> = mutableListOf()
 
         if (targetTechniques.isNotEmpty()) {
@@ -540,15 +542,10 @@ class ViewModel(
             if (optimalPaths.isNotEmpty()) {
                 allEdges.map { _edge ->
                     if (optimalPaths.any { it.first.contains(_edge) }) {
-                        _edge.copy( state = EdgeState.MostOptimal )
-                    } else if (
-                        probablePaths.any {
-                            it.first.contains(_edge)
-                        }
-                    ) {
-                        _edge.copy( state = EdgeState.Probable )
-                    }
-                    else _edge
+                        _edge.copy(state = EdgeState.MostOptimal)
+                    } else if (probablePaths.any { it.first.contains(_edge) }) {
+                        _edge.copy(state = EdgeState.Probable)
+                    } else _edge
                 }
             } else {
                 allEdges
@@ -567,7 +564,6 @@ class ViewModel(
                 optimalPaths.forEach {
                     logToUiConsole(formatPath(it), freezeDisplay = true)
                 }
-
                 val otherProbablePaths = probablePaths.take(4)
                 if (otherProbablePaths.isNotEmpty()) {
                     logToUiConsole("\n" + getString(Res.string.probable_paths_label), freezeDisplay = true)
