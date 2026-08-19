@@ -39,6 +39,7 @@ data class AttackGraphColors(
     val infoIconSecondaryColor: Color,
     val infoIconSecondaryDarkColor: Color,
     val selectedTechniqueBackground: Color,
+    val rootTechniqueBackground: Color,
     val hostItemSelectionBackground: Color,
     val techniqueInHostBackground: Color,
     val secondaryTextColor: Color,
@@ -48,6 +49,7 @@ data class AttackGraphColors(
     val unfocusedLabelColor: Color,
     val statusSuccess: Color,
     val statusFail: Color,
+    val nodeBorderRoot: Color,
     val errorColor: Color,
     val onErrorColor: Color,
     val errorContainerColor: Color,
@@ -100,6 +102,7 @@ val DarkAppColors = AttackGraphColors(
     infoIconSecondaryColor = Color(0xCC444444),
     infoIconSecondaryDarkColor = Color(0xCC444444),
     selectedTechniqueBackground = Color(0xFFAADAFF),
+    rootTechniqueBackground = Color(0xFFC8E6C9),
     hostItemSelectionBackground = Color(0xFF323232),
     techniqueInHostBackground = Color(0xFF414141),
     secondaryTextColor = Color(0xFFD3D3D3),
@@ -109,6 +112,7 @@ val DarkAppColors = AttackGraphColors(
     unfocusedLabelColor = Color(0xFF363636),
     statusSuccess = Color(0xFF527612),
     statusFail = Color(0xFF862B0E),
+    nodeBorderRoot = Color(0xFF81C709),
     errorColor = Color(0xFFF2B8B5),
     onErrorColor = Color(0xFF601410),
     errorContainerColor = Color(0xFF8C1D18),
@@ -160,6 +164,7 @@ val LightAppColors = AttackGraphColors(
     infoIconSecondaryColor = Color(0xCCB3B3B3),
     infoIconSecondaryDarkColor = Color(0xCC282828),
     selectedTechniqueBackground = Color(0xFFAADAFF),
+    rootTechniqueBackground = Color(0xFFA5D6A7),
     hostItemSelectionBackground = Color(0xFFFFFFFF),
     techniqueInHostBackground = Color(0xFFF5F5F5),
     secondaryTextColor = Color(0xFF444444),
@@ -169,6 +174,7 @@ val LightAppColors = AttackGraphColors(
     unfocusedLabelColor = Color(0xFF535353),
     statusSuccess = Color(0xFF527612),
     statusFail = Color(0xFF862B0E),
+    nodeBorderRoot = Color(0xFF689F38),
     errorColor = Color(0xFFB3261E),
     onErrorColor = Color(0xFFFFFFFF),
     errorContainerColor = Color(0xFFF9DEDC),
@@ -253,6 +259,7 @@ val EdgeProbable: Color @Composable @ReadOnlyComposable get() = LocalAppColors.c
 val EdgeDefault: Color @Composable @ReadOnlyComposable get() = LocalAppColors.current.edgeDefault
 val DeselectHint: Color @Composable @ReadOnlyComposable get() = LocalAppColors.current.deselectHint
 val NodeBorderTarget: Color @Composable @ReadOnlyComposable get() = LocalAppColors.current.nodeBorderTarget
+val NodeBorderRoot: Color @Composable @ReadOnlyComposable get() = LocalAppColors.current.nodeBorderRoot
 val MitigationRelevantBackground: Color @Composable @ReadOnlyComposable get() = LocalAppColors.current.edgeOptimal
 val MitigationRelevantIcon: Color @Composable @ReadOnlyComposable get() = LocalAppColors.current.infoIconColor
 val MitigationIrrelevant: Color @Composable @ReadOnlyComposable get() = LocalAppColors.current.mitigationIrrelevant
@@ -279,6 +286,7 @@ val SelectionInProgressBackground: Color @Composable @ReadOnlyComposable get() =
 val InfoIconSecondaryColor: Color @Composable @ReadOnlyComposable get() = LocalAppColors.current.infoIconSecondaryColor
 val InfoIconSecondaryDarkColor: Color @Composable @ReadOnlyComposable get() = LocalAppColors.current.infoIconSecondaryDarkColor
 val SelectedTechniqueBackground: Color @Composable @ReadOnlyComposable get() = LocalAppColors.current.selectedTechniqueBackground
+val RootTechniqueBackground: Color @Composable @ReadOnlyComposable get() = LocalAppColors.current.rootTechniqueBackground
 val HostItemSelectionBackground: Color @Composable @ReadOnlyComposable get() = LocalAppColors.current.hostItemSelectionBackground
 val TechniqueInHostBackground: Color @Composable @ReadOnlyComposable get() = LocalAppColors.current.techniqueInHostBackground
 val SecondaryTextColor: Color @Composable @ReadOnlyComposable get() = LocalAppColors.current.secondaryTextColor

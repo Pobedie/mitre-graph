@@ -110,13 +110,14 @@ class ViewModel(
             val possibleAttackVectorsStageAvailable: Boolean = (
                     currentState.edges.size >= 3 &&
                             currentState.edges.none { it.probability == null } &&
-                            state.value.edges.any { edge -> resolvedTargets.any { target -> edge.endNode.endsWith(target) } }
+                            state.value.edges.any { edge -> 
+                                resolvedTargets.any { target -> edge.endNode == "${target.second}_${target.first}" } 
+                            }
                     )
             val isAttackVectorMappingStageAvailable =
-                currentState.hosts.count { it.techniques.isNotEmpty() } >= 3 && 
                         resolvedTargets.isNotEmpty() &&
                         currentState.llmConnectionStatus != LlmConnectionStatus.Connecting
-            val isFirewallMappingStageAvailable = currentState.hosts.count { it.techniques.isNotEmpty() } >= 3
+            val isFirewallMappingStageAvailable = currentState.hosts.count { it.techniques.isNotEmpty() } >= 2
             _state.update {
                 it.copy(
                     isPossibleAttackVectorsStageAvailable = possibleAttackVectorsStageAvailable,
@@ -396,38 +397,126 @@ class ViewModel(
 
     fun setTargetGoal(goal: TargetGoal) {
         _state.update {
+            val wasAlreadySpecific = it.targetGoal == TargetGoal.Specific && goal == TargetGoal.Specific
             it.copy(
                 targetGoal = goal,
-                targetTechniques = emptyList(),
-                isTargetSelectionInProgress = goal == TargetGoal.Specific
+                targetTechniques = if (it.targetGoal != goal) emptyList() else it.targetTechniques,
+                isTargetSelectionInProgress = if (wasAlreadySpecific) !it.isTargetSelectionInProgress else goal == TargetGoal.Specific,
+                isRootSelectionInProgress = false
             )
         }
     }
 
     fun selectTargetTechnique(target: String) {
+        _state.update { state ->
+            val hostId = state.hosts[state.currentHostIndex].id
+            val targetPair = target to hostId
+            val isAdding = !state.targetTechniques.contains(targetPair)
+            val newTargets = if (isAdding) {
+                state.targetTechniques + targetPair
+            } else {
+                state.targetTechniques.filter { it != targetPair }
+            }
+            
+            var newState = state.copy(
+                targetTechniques = newTargets,
+                isTargetSelectionInProgress = true
+            )
+            
+            if (isAdding) {
+                newState = newState.addTechniqueIfMissing(target)
+            }
+            newState
+        }
+    }
+
+    fun setRootNodeGoal(goal: RootNodeGoal) {
         _state.update {
+            val wasAlreadyManual = it.rootNodeGoal == RootNodeGoal.Manual && goal == RootNodeGoal.Manual
             it.copy(
-                targetTechniques = listOf(target),
+                rootNodeGoal = goal,
+                rootTechniques = if (it.rootNodeGoal != goal) emptyList() else it.rootTechniques,
+                isRootSelectionInProgress = if (wasAlreadyManual) !it.isRootSelectionInProgress else goal == RootNodeGoal.Manual,
                 isTargetSelectionInProgress = false
             )
         }
     }
 
+    fun selectRootTechnique(techniqueId: String) {
+        _state.update { state ->
+            val hostId = state.hosts[state.currentHostIndex].id
+            val rootPair = techniqueId to hostId
+            val isAdding = !state.rootTechniques.contains(rootPair)
+            val newRootTechniques = if (isAdding) {
+                state.rootTechniques + rootPair
+            } else {
+                state.rootTechniques.filter { it != rootPair }
+            }
+            
+            var newState = state.copy(
+                rootTechniques = newRootTechniques,
+                isRootSelectionInProgress = true
+            )
+            
+            if (isAdding) {
+                newState = newState.addTechniqueIfMissing(techniqueId)
+            }
+            newState
+        }
+    }
+
+    private fun ViewState.addTechniqueIfMissing(techniqueId: String): ViewState {
+        if (selectedTechniquesId.contains(techniqueId)) return this
+        
+        val newSelections = selectedTechniquesId + techniqueId
+        val newHosts = hosts.toMutableList()
+        val currentHost = newHosts[currentHostIndex]
+        
+        val allTechniques = tactics.flatMap { it.techniques }
+        val technique = allTechniques.find { it.id == techniqueId }
+        
+        return if (technique != null) {
+            val newHostTechniques = currentHost.techniques + technique
+            newHosts[currentHostIndex] = currentHost.copy(techniques = newHostTechniques)
+            this.copy(
+                selectedTechniquesId = newSelections,
+                hosts = newHosts
+            )
+        } else this
+    }
+
+    fun cancelSelectionMode() {
+        _state.update {
+            it.copy(
+                isTargetSelectionInProgress = false,
+                isRootSelectionInProgress = false
+            )
+        }
+    }
+
     fun switchToPossibleAttackVectors() {
-        val rootNodes: List<String> =
-                state.value.nodes
-                        .filter { _node ->
-                            state.value.edges.none { _edge -> _edge.endNode == _node.id }
-                        }
-                        .map { it.id }
+        val rootNodes: List<String> = if (state.value.rootNodeGoal == RootNodeGoal.Manual) {
+            state.value.nodes
+                .filter { node -> 
+                    state.value.rootTechniques.any { it.first == node.techniqueId && it.second == node.hostId }
+                }
+                .map { it.id }
+        } else {
+            state.value.nodes
+                .filter { _node ->
+                    state.value.edges.none { _edge -> _edge.endNode == _node.id }
+                }
+                .map { it.id }
+        }
 
         val targetTechniques = getResolvedTargetTechniques()
         val allEdges = state.value.edges.map { it.copy(state = EdgeState.Idle) }
-        val probablePaths: MutableList<Pair<List<Edge>, Double>> = mutableListOf()
-        var optimalPath: Pair<List<Edge>, Double>? = null
+        val allFoundPaths: MutableList<Pair<List<Edge>, Double>> = mutableListOf()
 
         if (targetTechniques.isNotEmpty()) {
-            val targetNodes = state.value.nodes.filter { it.techniqueId in targetTechniques }.map { it.id }
+            val targetNodes = state.value.nodes.filter { node -> 
+                targetTechniques.any { it.first == node.techniqueId && it.second == node.hostId } 
+            }.map { it.id }
             rootNodes.forEach { _rootNode ->
                 val pathResult = findOptimalPath(
                     edges = allEdges,
@@ -435,20 +524,22 @@ class ViewModel(
                     targets = targetNodes
                 )
                 if (pathResult != null) {
-                    probablePaths.add(pathResult)
-                    val currentOptimal = optimalPath
-                    if (currentOptimal == null || pathResult.second < currentOptimal.second) {
-                        optimalPath = pathResult
-                    }
+                    allFoundPaths.add(pathResult)
                 }
             }
         }
 
-        val finalOptimalPath = optimalPath
+        val minCost = allFoundPaths.minOfOrNull { it.second }
+        val optimalPaths = if (minCost != null) {
+            allFoundPaths.filter { it.second <= minCost + 1e-9 }
+        } else emptyList()
+
+        val probablePaths = allFoundPaths.filter { it !in optimalPaths }
+
         val newEdges =
-            if (finalOptimalPath != null) {
+            if (optimalPaths.isNotEmpty()) {
                 allEdges.map { _edge ->
-                    if (finalOptimalPath.first.contains(_edge)) {
+                    if (optimalPaths.any { it.first.contains(_edge) }) {
                         _edge.copy( state = EdgeState.MostOptimal )
                     } else if (
                         probablePaths.any {
@@ -471,11 +562,13 @@ class ViewModel(
         }
         clearConsole()
         scope.launch {
-            if (finalOptimalPath != null) {
+            if (optimalPaths.isNotEmpty()) {
                 logToUiConsole(getString(Res.string.optimal_path_label), freezeDisplay = true)
-                logToUiConsole(formatPath(finalOptimalPath), freezeDisplay = true)
+                optimalPaths.forEach {
+                    logToUiConsole(formatPath(it), freezeDisplay = true)
+                }
 
-                val otherProbablePaths = probablePaths.filter { it != finalOptimalPath }.take(4)
+                val otherProbablePaths = probablePaths.take(4)
                 if (otherProbablePaths.isNotEmpty()) {
                     logToUiConsole("\n" + getString(Res.string.probable_paths_label), freezeDisplay = true)
                     otherProbablePaths.forEach {
@@ -545,10 +638,15 @@ class ViewModel(
             val newHosts = state.hosts.toMutableList()
             val currentHost = newHosts[state.currentHostIndex]
 
-            if (techniqueAlreadySelected) {
+            var newState = if (techniqueAlreadySelected) {
                 newSelections.remove(techniqueId)
                 val newHostTechniques = currentHost.techniques.filter { it.id != techniqueId }
                 newHosts[state.currentHostIndex] = currentHost.copy(techniques = newHostTechniques)
+                
+                state.copy(
+                    selectedTechniquesId = newSelections,
+                    hosts = newHosts
+                )
             } else {
                 newSelections.add(techniqueId)
                 val allTechniques = state.tactics.flatMap { it.techniques }
@@ -558,11 +656,20 @@ class ViewModel(
                     newHostTechniques.add(technique)
                     newHosts[state.currentHostIndex] = currentHost.copy(techniques = newHostTechniques)
                 }
+                state.copy(
+                    selectedTechniquesId = newSelections,
+                    hosts = newHosts
+                )
             }
-            state.copy(
-                selectedTechniquesId = newSelections,
-                hosts = newHosts
-            )
+            
+            if (techniqueAlreadySelected) {
+                val currentHostId = newState.hosts[newState.currentHostIndex].id
+                newState = newState.copy(
+                    rootTechniques = newState.rootTechniques.filter { it != (techniqueId to currentHostId) },
+                    targetTechniques = newState.targetTechniques.filter { it != (techniqueId to currentHostId) }
+                )
+            }
+            newState
         }
     }
 
@@ -666,11 +773,13 @@ class ViewModel(
                     host.copy(techniques = newTechniques)
                 } else host
             }
-            val newSelections = state.selectedTechniquesId.toMutableList()
-            newSelections.remove(techniqueId)
+            
+            val newSelections = state.selectedTechniquesId.filter { it != techniqueId }
             state.copy(
                 hosts = newHosts,
-                selectedTechniquesId = newSelections
+                selectedTechniquesId = newSelections,
+                rootTechniques = state.rootTechniques.filter { it != (techniqueId to hostId) },
+                targetTechniques = state.targetTechniques.filter { it != (techniqueId to hostId) }
             )
         }
     }
@@ -681,6 +790,7 @@ class ViewModel(
                 selectedTechniquesId = listOf(),
                 hosts = it.hosts.map { host -> host.copy(techniques = emptyList()) },
                 targetTechniques = emptyList(),
+                rootTechniques = emptyList(),
                 targetGoal = TargetGoal.HighestSeverity,
                 isTargetSelectionInProgress = false,
                 isAttackVectorMappingStageAvailable = false,
@@ -870,27 +980,29 @@ class ViewModel(
         }
     }
 
-    private fun getResolvedTargetTechniques(): List<String> {
+    private fun getResolvedTargetTechniques(): List<Pair<String, String>> {
         val currentState = state.value
         return when (currentState.targetGoal) {
             TargetGoal.Specific -> currentState.targetTechniques
             TargetGoal.HighestSeverity -> {
-                val allTechniques = currentState.hosts.flatMap { it.techniques }
+                val allTechniques = currentState.hosts.flatMap { host -> 
+                    host.techniques.map { it to host.id }
+                }
                 if (allTechniques.isEmpty()) return emptyList()
 
                 val tactics = currentState.tactics
-                val maxPos = allTechniques.maxOfOrNull { tech ->
+                val maxPos = allTechniques.maxOfOrNull { (tech, _) ->
                     tactics.find { it.id == tech.tacticId }?.position ?: 0
                 } ?: 0
 
-                val techsInMaxTactic = allTechniques.filter { tech ->
+                val techsInMaxTactic = allTechniques.filter { (tech, _) ->
                     (tactics.find { it.id == tech.tacticId }?.position ?: 0) == maxPos
                 }
 
-                val maxSeverity = techsInMaxTactic.maxOfOrNull { it.severityScore } ?: 0
+                val maxSeverity = techsInMaxTactic.maxOfOrNull { it.first.severityScore } ?: 0
 
-                techsInMaxTactic.filter { it.severityScore == maxSeverity }
-                    .map { it.id }
+                techsInMaxTactic.filter { it.first.severityScore == maxSeverity }
+                    .map { it.first.id to it.second }
                     .distinct()
             }
         }

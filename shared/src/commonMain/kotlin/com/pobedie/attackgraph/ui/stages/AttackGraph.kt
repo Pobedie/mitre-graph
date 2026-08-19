@@ -111,6 +111,7 @@ import com.pobedie.attackgraph.core.entity.Node
 import com.pobedie.attackgraph.core.entity.TechniqueMaturity
 import com.pobedie.attackgraph.ui.LlmConnectionStatus
 import com.pobedie.attackgraph.ui.Stage
+import com.pobedie.attackgraph.ui.RootNodeGoal
 import com.pobedie.attackgraph.ui.ViewModel
 import com.pobedie.attackgraph.ui.ViewState
 import com.pobedie.attackgraph.ui.components.DeleteButton
@@ -338,7 +339,12 @@ fun AttackGraph(
                     modifier = Modifier.width(NODE_WIDTH.dp),
                     node = node,
                     isSelected = node.id == state.selectedNode,
-                    isTarget = state.targetTechniques.contains(node.techniqueId),
+                    isTarget = state.targetTechniques.any { it.first == node.techniqueId && it.second == node.hostId },
+                    isRoot = if (state.rootNodeGoal == RootNodeGoal.Manual) {
+                        state.rootTechniques.any { it.first == node.techniqueId && it.second == node.hostId }
+                    } else {
+                        state.edges.none { it.endNode == node.id }
+                    },
                     isEnabled = state.stage == Stage.AttackVectorsBuilding && !state.isGenerationInProgress,
                     onClick = {
                         viewModel.setNodeConnection(node.id)
@@ -483,6 +489,7 @@ private fun TechniqueNode(
     node: Node,
     isSelected: Boolean,
     isTarget: Boolean,
+    isRoot: Boolean,
     isEnabled: Boolean,
     onClick: () -> Unit,
     areMitigationsShown: Boolean,
@@ -526,6 +533,9 @@ private fun TechniqueNode(
 
                     isSelected ->
                         Modifier.border(2.dp, SelectedBorderColor, RoundedCornerShape(4.dp))
+
+                    isRoot ->
+                        Modifier.border(3.dp, NodeBorderRoot, RoundedCornerShape(4.dp))
 
                     else -> Modifier
                 }

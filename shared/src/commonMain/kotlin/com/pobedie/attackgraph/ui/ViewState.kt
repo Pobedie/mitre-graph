@@ -14,7 +14,9 @@ data class ViewState(
     val edges: List<Edge> = emptyList(),
     val hosts: List<Host> = emptyList(),
     val targetGoal: TargetGoal = TargetGoal.HighestSeverity,
-    val targetTechniques: List<String> = emptyList(),
+    val targetTechniques: List<Pair<String, String>> = emptyList(),
+    val rootNodeGoal: RootNodeGoal = RootNodeGoal.Automatic,
+    val rootTechniques: List<Pair<String, String>> = emptyList(),
 
     // Import stage
     val filePath: String = "",
@@ -26,6 +28,7 @@ data class ViewState(
     val tactics: List<Tactic> = listOf(),
     val selectedTechniquesId: List<String> = listOf(),
     val isTargetSelectionInProgress: Boolean = false,
+    val isRootSelectionInProgress: Boolean = false,
     val currentHostIndex: Int = 0,
 
     //Firewall mapping
@@ -74,6 +77,11 @@ enum class Language(val code: String) {
 enum class TargetGoal {
     HighestSeverity,
     Specific
+}
+
+enum class RootNodeGoal {
+    Automatic,
+    Manual
 }
 
 enum class Stage {

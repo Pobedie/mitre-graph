@@ -25,10 +25,14 @@
     <string name="select_yaml_file_content_desc">Выбрать yaml файл</string>
     <string name="select_yaml_file_dialog_title">Выберите yaml файл MITRE ATLAS</string>
     <string name="select_techniques_title">Выберите техники для различных тактик</string>
-    <string name="achieve_label">Цель</string>
+    <string name="achieve_label">Цель:</string>
     <string name="highest_severity_label">наивысшая опасность</string>
     <string name="target_technique_label">конкретная техника</string>
+    <string name="starting_point_label">Начальная точка:</string>
+    <string name="automatic_label">Автоматически</string>
+    <string name="manual_label">Вручную</string>
     <string name="select_target_button">Выбрать цель</string>
+    <string name="cancel_selection_button">Отменить выбор</string>
     <string name="clear_selections_button">Очистить выбор</string>
     <string name="start_building_vectors_button">Начать построение векторов атаки</string>
     <string name="edge_value_calculation_button">Рассчитать значения ребер</string>
