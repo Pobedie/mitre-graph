@@ -24,7 +24,7 @@ fun calculateProbabilities(
         val i = edge.startNode
         val j = edge.endNode
 
-        if (!isEdgeAllowed(edge, firewallRules, nodes)) {
+        if (edge.state == EdgeState.Blocked || !isEdgeAllowed(edge, firewallRules, nodes)) {
             return@map edge.copy(probability = 0f, state = EdgeState.Blocked)
         }
 
@@ -78,6 +78,9 @@ fun isEdgeAllowed(
 ): Boolean {
     val sourceNode = nodes.find { it.id == edge.startNode } ?: return false
     val targetNode = nodes.find { it.id == edge.endNode } ?: return false
+
+    if (sourceNode.hostId == targetNode.hostId) return true
+    if (firewallRules.isEmpty()) return true
 
     return firewallRules.any { rule ->
         rule.sourceHostId == sourceNode.hostId &&

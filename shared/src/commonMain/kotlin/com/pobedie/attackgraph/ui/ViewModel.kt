@@ -1013,6 +1013,8 @@ class ViewModel(
         val targetNode = nodes.find { it.id == edge.endNode } ?: return false
 
         if (sourceNode.hostId == targetNode.hostId) return true
+        if (firewallRules.isEmpty()) return true
+
         return firewallRules.any { rule ->
             rule.sourceHostId == sourceNode.hostId &&
                     rule.targetHostId == targetNode.hostId &&
