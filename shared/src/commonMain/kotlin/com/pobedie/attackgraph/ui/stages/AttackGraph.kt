@@ -111,7 +111,6 @@ import com.pobedie.attackgraph.core.entity.Node
 import com.pobedie.attackgraph.core.entity.TechniqueMaturity
 import com.pobedie.attackgraph.ui.LlmConnectionStatus
 import com.pobedie.attackgraph.ui.Stage
-import com.pobedie.attackgraph.ui.RootNodeGoal
 import com.pobedie.attackgraph.ui.ViewModel
 import com.pobedie.attackgraph.ui.ViewState
 import com.pobedie.attackgraph.ui.components.DeleteButton
@@ -340,11 +339,7 @@ fun AttackGraph(
                     node = node,
                     isSelected = node.id == state.selectedNode,
                     isTarget = state.targetTechniques.any { it.first == node.techniqueId && it.second == node.hostId },
-                    isRoot = if (state.rootNodeGoal == RootNodeGoal.Manual) {
-                        state.rootTechniques.any { it.first == node.techniqueId && it.second == node.hostId }
-                    } else {
-                        state.edges.none { it.endNode == node.id }
-                    },
+                    isRoot = state.rootTechniques.any { it.first == node.techniqueId && it.second == node.hostId },
                     isEnabled = state.stage == Stage.AttackVectorsBuilding && !state.isGenerationInProgress,
                     onClick = {
                         viewModel.setNodeConnection(node.id)

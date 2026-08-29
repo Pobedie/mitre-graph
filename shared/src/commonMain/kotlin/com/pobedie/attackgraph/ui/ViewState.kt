@@ -16,6 +16,7 @@ data class ViewState(
     val targetGoal: TargetGoal = TargetGoal.HighestSeverity,
     val targetTechniques: List<Pair<String, String>> = emptyList(),
     val rootNodeGoal: RootNodeGoal = RootNodeGoal.Automatic,
+    // techniqueId to hostId
     val rootTechniques: List<Pair<String, String>> = emptyList(),
 
     // Import stage

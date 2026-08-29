@@ -118,6 +118,20 @@ class ViewModel(
                         resolvedTargets.isNotEmpty() &&
                         currentState.llmConnectionStatus != LlmConnectionStatus.Connecting
             val isFirewallMappingStageAvailable = currentState.hosts.count { it.techniques.isNotEmpty() } >= 2
+
+            if (currentState.rootNodeGoal == RootNodeGoal.Automatic) {
+                val autoRootPairs = currentState.nodes
+                    .filter { node ->
+                        currentState.edges.none { it.endNode == node.id } &&
+                                currentState.edges.any { it.startNode == node.id }
+                    }
+                    .map { it.techniqueId to it.hostId }
+
+                if (autoRootPairs != currentState.rootTechniques) {
+                    _state.update { it.copy(rootTechniques = autoRootPairs) }
+                }
+            }
+
             _state.update {
                 it.copy(
                     isPossibleAttackVectorsStageAvailable = possibleAttackVectorsStageAvailable,
@@ -495,19 +509,11 @@ class ViewModel(
     }
 
     fun switchToPossibleAttackVectors() {
-        val rootNodes: List<String> = if (state.value.rootNodeGoal == RootNodeGoal.Manual) {
-            state.value.nodes
-                .filter { node -> 
-                    state.value.rootTechniques.any { it.first == node.techniqueId && it.second == node.hostId }
-                }
-                .map { it.id }
-        } else {
-            state.value.nodes
-                .filter { _node ->
-                    state.value.edges.none { _edge -> _edge.endNode == _node.id }
-                }
-                .map { it.id }
-        }
+        val rootNodes = state.value.nodes
+            .filter { node ->
+                state.value.rootTechniques.any { it.first == node.techniqueId && it.second == node.hostId }
+            }
+            .map { it.id }
 
         val targetTechniques = getResolvedTargetTechniques()
         val allEdges = state.value.edges.map { 
