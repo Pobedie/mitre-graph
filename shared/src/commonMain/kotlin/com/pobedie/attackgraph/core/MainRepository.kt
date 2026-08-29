@@ -7,6 +7,7 @@ import com.pobedie.attackgraph.core.entity.AtlasYaml
 import com.pobedie.attackgraph.core.entity.AttackVector
 import com.pobedie.attackgraph.core.entity.Mitigation
 import com.pobedie.attackgraph.core.entity.Tactic
+import com.pobedie.attackgraph.core.entity.Technique
 import com.pobedie.attackgraph.core.entity.UserSettings
 import com.pobedie.attackgraph.core.mappers.toAttackVector
 import com.pobedie.attackgraph.core.mappers.toDomainModel
@@ -181,15 +182,18 @@ class MainRepository(
         _state.update { it.copy(isImportSuccessful = true) }
     }
 
-    suspend fun getTacticsWithTechniques(): List<Tactic> = withContext(Dispatchers.IO) {
+    suspend fun getTacticsWithTechniques(): Pair<List<Technique>, List<Tactic>> = withContext(Dispatchers.IO) {
+        val allTechniques = mutableListOf<Technique>()
         val tactics = atlasDatabase.tacticsQueries.selectAllTactics().executeAsList().map { tactic ->
-            val techniques = atlasDatabase.techniqueQueries.selectTechniquesByTactic(tactic.id).executeAsList()
+            val tacticTechniques = atlasDatabase.techniqueQueries.selectTechniquesByTactic(tactic.id).executeAsList()
+                .map { it.toDomainModel(tactic.id) }
+            allTechniques.addAll(tacticTechniques)
             tactic.toDomainModel(
-                techniques = techniques.map { it.toDomainModel(tacticId = tactic.id) }
+                techniques = tacticTechniques.map { it.id }
             )
         }.sortedBy { it.position }
-        println("Tactics fetched from db:\n  ${tactics.map { it.id + " " + it.name }}")
-        return@withContext tactics
+        println("INFO: fetched from db tactics : ${tactics.size}, techniques: ${allTechniques.size}")
+        return@withContext Pair(allTechniques, tactics)
     }
 
     suspend fun getAttackVectors(techniques: List<String>): List<AttackVector> = withContext(Dispatchers.IO){

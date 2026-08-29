@@ -108,6 +108,7 @@ import attackgraph.shared.generated.resources.starting_point_label
 import attackgraph.shared.generated.resources.tactic_description_content_desc
 import attackgraph.shared.generated.resources.target_technique_label
 import attackgraph.shared.generated.resources.technique_description_content_desc
+import com.pobedie.attackgraph.core.entity.Host
 import com.pobedie.attackgraph.core.entity.Tactic
 import com.pobedie.attackgraph.core.entity.Technique
 import com.pobedie.attackgraph.core.entity.Mitigation
@@ -175,20 +176,21 @@ fun TechniqueSelection(
                     ) { tactic ->
                         TacticColumn(
                             modifier = Modifier.padding(horizontal = 4.dp),
-                            tactic = tactic,
-                            selectedTechniques = state.selectedTechniquesId,
                             isTargetSelectionInProgress = state.isTargetSelectionInProgress,
+                            tactic = tactic,
+                            allTechniques = state.techniques,
+                            allSelectedTechniques = state.selectedTechniquesIds,
                             isRootSelectionInProgress = state.isRootSelectionInProgress,
                             targetTechniques = state.targetTechniques,
                             rootTechniques = state.rootTechniques,
-                            currentHostId = state.hosts[state.currentHostIndex].id,
+                            currentHost = state.hosts[state.currentHostIndex],
                             onTechniqueClick = {
                                 if (state.isRootSelectionInProgress) {
                                     viewModel.selectRootTechnique(it)
                                 } else if (state.isTargetSelectionInProgress) {
                                     viewModel.selectTargetTechnique(it)
                                 } else {
-                                    viewModel.selectTechnique(it)
+                                    viewModel.toggleTechnique(it)
                                 }
                             }
                         )
@@ -390,9 +392,12 @@ fun TechniqueSelection(
 
             val currentHost = state.hosts.getOrNull(state.currentHostIndex)
             if (currentHost != null) {
+                val hostTechniques = currentHost.techniquesIds.mapNotNull { techId ->
+                    state.techniques.find { it.id == techId }
+                }
                 HostItem(
                     name = currentHost.name,
-                    techniques = currentHost.techniques,
+                    techniques = hostTechniques,
                     mitigations = state.mitigations,
                     onNameChange = { viewModel.updateHostName(currentHost.id, it) },
                     onSeverityScoreSet = { techId, score ->
@@ -415,12 +420,13 @@ fun TechniqueSelection(
 @Composable
 private fun TacticColumn(
     tactic: Tactic,
+    allTechniques: List<Technique>,
+    allSelectedTechniques: List<String>,
     isTargetSelectionInProgress: Boolean,
     isRootSelectionInProgress: Boolean,
-    selectedTechniques: List<String>,
     targetTechniques: List<Pair<String, String>>,
     rootTechniques: List<Pair<String, String>>,
-    currentHostId: String,
+    currentHost: Host,
     onTechniqueClick: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -516,7 +522,11 @@ private fun TacticColumn(
             color = BackgroundColor
         )
 
-        tactic.techniques.forEachIndexed { index, technique ->
+        val tacticTechniques = tactic.techniquesIds.mapNotNull { techId ->
+            allTechniques.find { it.id == techId }
+        }
+
+        tacticTechniques.forEachIndexed { index, technique ->
             val techniqueTooltipState = rememberTooltipState(isPersistent = true)
             var techniqueShowTooltip by remember { mutableStateOf(false) }
             var isTechniqueInfoIconVisible by remember { mutableStateOf(false) }
@@ -540,17 +550,20 @@ private fun TacticColumn(
                     }
                     .then(
                         run {
-                            val isTargetForCurrent = targetTechniques.any { it.first == technique.id && it.second == currentHostId }
-                            val isRootForCurrent = rootTechniques.any { it.first == technique.id && it.second == currentHostId }
+                            val isTargetForCurrent = targetTechniques.any { it.first == technique.id && it.second == currentHost.id }
+                            val isRootForCurrent = rootTechniques.any { it.first == technique.id && it.second == currentHost.id }
                             val isTargetAnywhere = targetTechniques.any { it.first == technique.id }
                             val isRootAnywhere = rootTechniques.any { it.first == technique.id }
+                            val isSelectedForCurrent = currentHost.techniquesIds.contains(technique.id)
+                            val isSelectedAnywhere = allSelectedTechniques.contains(technique.id)
 
                             when {
                                 isTargetForCurrent -> Modifier.background(NodeBorderTarget)
                                 isTargetAnywhere -> Modifier.background(NodeBorderTarget.copy(alpha = 0.5f))
                                 isRootForCurrent -> Modifier.background(RootTechniqueBackground)
                                 isRootAnywhere -> Modifier.background(RootTechniqueBackground.copy(alpha = 0.5f))
-                                selectedTechniques.contains(technique.id) -> Modifier.background(SelectedTechniqueBackground)
+                                isSelectedForCurrent -> Modifier.background(SelectedTechniqueBackground)
+                                isSelectedAnywhere -> Modifier.background(SelectedTechniqueBackground.copy(alpha = 0.25f))
                                 else -> Modifier
                             }
                         }
@@ -619,7 +632,7 @@ private fun TacticColumn(
 
                 }
             }
-            if (index != tactic.techniques.size - 1) {
+            if (index != tacticTechniques.size - 1) {
                 HorizontalDivider(
                     thickness = 1.dp,
                     color = BackgroundColor

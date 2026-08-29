@@ -58,6 +58,7 @@ import com.dk.kuiver.renderer.KuiverViewerConfig
 import com.dk.kuiver.ui.EdgeContentWithLabel
 import com.dk.kuiver.ui.LabelPlacement
 import com.pobedie.attackgraph.core.entity.Host
+import com.pobedie.attackgraph.core.entity.Technique
 import com.pobedie.attackgraph.ui.ViewModel
 import com.pobedie.attackgraph.ui.ViewState
 import com.pobedie.attackgraph.ui.components.DeleteButton
@@ -169,6 +170,7 @@ fun FirewallMapping(
 
                 HostNode(
                     host = host,
+                    allTechniques = state.techniques,
                     isSelectedSource = isSelectedSource,
                     selectedTechniqueId = selectedSourceTechId,
                     onHostClick = {
@@ -245,8 +247,7 @@ fun FirewallMapping(
                                 ) {
                                     relevantRules.forEach { rule ->
                                         val sourceTechniqueName = rule.sourceTechniqueId?.let { techId ->
-                                            state.hosts.find { it.id == rule.sourceHostId }
-                                                ?.techniques?.find { it.id == techId }?.name
+                                            state.techniques.find { it.id == techId }?.name
                                         }
 
                                         FirewallEdge(
@@ -272,6 +273,7 @@ fun FirewallMapping(
 @Composable
 private fun HostNode(
     host: Host,
+    allTechniques: List<Technique>,
     isSelectedSource: Boolean,
     selectedTechniqueId: String?,
     onHostClick: () -> Unit,
@@ -310,7 +312,11 @@ private fun HostNode(
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        host.techniques.forEach { tech ->
+        val hostTechniques = host.techniquesIds.mapNotNull { techId ->
+            allTechniques.find { it.id == techId }
+        }
+
+        hostTechniques.forEach { tech ->
             val isTechSelected = selectedTechniqueId == tech.id
             Text(
                 text = tech.name,

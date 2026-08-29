@@ -7,12 +7,14 @@ import com.pobedie.attackgraph.core.entity.Host
 import com.pobedie.attackgraph.core.entity.Mitigation
 import com.pobedie.attackgraph.core.entity.Node
 import com.pobedie.attackgraph.core.entity.Tactic
+import com.pobedie.attackgraph.core.entity.Technique
 
 data class ViewState(
     val stage: Stage = Stage.Import,
     val nodes: List<Node> = emptyList(),
     val edges: List<Edge> = emptyList(),
     val hosts: List<Host> = emptyList(),
+    val techniques: List<Technique> = emptyList(),
     val targetGoal: TargetGoal = TargetGoal.HighestSeverity,
     val targetTechniques: List<Pair<String, String>> = emptyList(),
     val rootNodeGoal: RootNodeGoal = RootNodeGoal.Automatic,
@@ -27,7 +29,6 @@ data class ViewState(
     // Technique selection stage
     val isTechniqueSelectionStageAvailable: Boolean = false,
     val tactics: List<Tactic> = listOf(),
-    val selectedTechniquesId: List<String> = listOf(),
     val isTargetSelectionInProgress: Boolean = false,
     val isRootSelectionInProgress: Boolean = false,
     val currentHostIndex: Int = 0,
@@ -61,7 +62,9 @@ data class ViewState(
     val llmConnectionStatus: LlmConnectionStatus = LlmConnectionStatus.None,
     val isGenerationInProgress: Boolean = false,
     val isLlmAdded: Boolean = false
-)
+) {
+    val selectedTechniquesIds = hosts.flatMap { it.techniquesIds }
+}
 
 enum class LlmConnectionStatus {
     None,

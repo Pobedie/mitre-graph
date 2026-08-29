@@ -19,13 +19,13 @@ fun main() = application {
     val database = remember { createAtlasDatabase(driverFactory) }
     val settingsDatabase = remember { createSettingsDatabase(driverFactory) }
     val repository = remember { MainRepository(database, settingsDatabase) }
-
+    
     Window(
         onCloseRequest = ::exitApplication,
         title = "AttackGraph",
     ) {
         val scope = rememberCoroutineScope()
-        val mainViewModel = remember { ViewModel(scope, repository) }
+        val mainViewModel = remember { ViewModel.create(scope, repository) }
         val state by mainViewModel.state.collectAsStateWithLifecycle()
         AttackGraphTheme(darkTheme = state.isDarkMode) {
             MainScreen(mainViewModel)

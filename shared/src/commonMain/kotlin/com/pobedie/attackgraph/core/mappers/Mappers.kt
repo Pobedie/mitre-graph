@@ -8,14 +8,14 @@ import com.pobedie.attackgraph.database.Relationship
 
 
 fun com.pobedie.attackgraph.database.Tactic.toDomainModel(
-    techniques: List<Technique>
+    techniques: List<String>
 ): Tactic =
     Tactic(
         id = id,
         name = name,
         description = description,
         position = position.toInt(),
-        techniques = techniques
+        techniquesIds = techniques
     )
 
 

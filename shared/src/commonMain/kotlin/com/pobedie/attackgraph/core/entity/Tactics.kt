@@ -5,5 +5,5 @@ data class Tactic(
     val name: String,
     val description: String,
     val position: Int,
-    val techniques: List<Technique>,
+    val techniquesIds: List<String>,
 )
