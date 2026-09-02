@@ -1,9 +1,8 @@
 package com.pobedie.attackgraph.core.entity
 
-data class Tactic(
-    val id: String,
+
+data class Host(
     val name: String,
-    val description: String,
-    val position: Int,
+    val id: String,
     val techniquesIds: List<String>,
 )

@@ -16,27 +16,30 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.compose.ui.input.pointer.onPointerEvent
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.pobedie.attackgraph.ui.Stages.AttackGraph
-import com.pobedie.attackgraph.ui.Stages.ImportStage
-import com.pobedie.attackgraph.ui.Stages.TechniqueSelection
-import com.pobedie.attackgraph.ui.components.AlphaValueDialog
+import com.pobedie.attackgraph.ui.theme.MainBackground
+import com.pobedie.attackgraph.ui.theme.StageBarBackground
+import com.pobedie.attackgraph.ui.stages.AttackGraph
+import com.pobedie.attackgraph.ui.stages.ImportStage
+import com.pobedie.attackgraph.ui.stages.TechniqueSelection
 import com.pobedie.attackgraph.ui.components.Console
 import com.pobedie.attackgraph.ui.components.StageArrow
 import com.pobedie.attackgraph.ui.components.StageButton
 import attackgraph.shared.generated.resources.Res
 import attackgraph.shared.generated.resources.build_attack_vectors_button
 import attackgraph.shared.generated.resources.build_attack_vectors_hint
-import attackgraph.shared.generated.resources.import_button
+import attackgraph.shared.generated.resources.firewall_mapping_hint
+import attackgraph.shared.generated.resources.firewall_mapping_title
 import attackgraph.shared.generated.resources.import_hint
-import attackgraph.shared.generated.resources.mitigations_and_attacks_button
-import attackgraph.shared.generated.resources.mitigations_and_attacks_hint
+import attackgraph.shared.generated.resources.import_tab
+import attackgraph.shared.generated.resources.possible_attack_vectors_button
+import attackgraph.shared.generated.resources.possible_attack_vectors_hint
 import attackgraph.shared.generated.resources.select_techniques_button
 import attackgraph.shared.generated.resources.select_techniques_hint
+import com.pobedie.attackgraph.ui.stages.FirewallMapping
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.stringResource
 
@@ -51,7 +54,7 @@ fun MainScreen(
 
     Column(
         modifier = Modifier
-            .background(Color(20, 20, 20))
+            .background(MainBackground)
             .fillMaxSize(),
     ) {
         val scrollState = rememberLazyListState()
@@ -61,7 +64,7 @@ fun MainScreen(
             modifier = Modifier
                 .fillMaxWidth()
                 .heightIn(min = 80.dp)
-                .background(Color.DarkGray)
+                .background(StageBarBackground)
                 // by default to scroll horizontaly you need to use Shift+MouseWheel which is a bad UX in this case
                 .onPointerEvent(PointerEventType.Scroll) {
                     val delta = it.changes.first().scrollDelta
@@ -78,7 +81,7 @@ fun MainScreen(
                         viewModel.switchToImportStage()
                         viewModel.importAtlasData()
                               },
-                    buttonText = stringResource(Res.string.import_button),
+                    buttonText = stringResource(Res.string.import_tab),
                     hintText = stringResource(Res.string.import_hint),
                     isHighlighted = state.stage == Stage.Import,
                     isEnabled = true
@@ -100,6 +103,18 @@ fun MainScreen(
             item {
                 StageButton(
                     onClick = {
+                        viewModel.switchToFirewallMappingStage()
+                    },
+                    buttonText = stringResource(Res.string.firewall_mapping_title),
+                    hintText = stringResource(Res.string.firewall_mapping_hint),
+                    isHighlighted = state.stage == Stage.FirewallMapping,
+                    isEnabled = state.isFirewallMappingStageAvailable
+                )
+            }
+            StageArrow()
+            item {
+                StageButton(
+                    onClick = {
                         viewModel.switchToAttackVectorBuildingStage()
                     },
                     buttonText = stringResource(Res.string.build_attack_vectors_button),
@@ -112,12 +127,12 @@ fun MainScreen(
             item {
                 StageButton(
                     onClick = {
-                        viewModel.showAlphaValueDialog()
+                        viewModel.switchToPossibleAttackVectors()
                     },
-                    buttonText = stringResource(Res.string.mitigations_and_attacks_button),
-                    hintText = stringResource(Res.string.mitigations_and_attacks_hint),
-                    isHighlighted = state.stage == Stage.MitigationsAndAttacks,
-                    isEnabled = state.isMitigationsAndAttacksStageAvailable
+                    buttonText = stringResource(Res.string.possible_attack_vectors_button),
+                    hintText = stringResource(Res.string.possible_attack_vectors_hint),
+                    isHighlighted = state.stage == Stage.PossibleAttackVectors,
+                    isEnabled = state.isPossibleAttackVectorsStageAvailable
                 )
             }
 
@@ -131,9 +146,10 @@ fun MainScreen(
             when (state.stage) {
                 Stage.Import -> ImportStage(viewModel, state)
                 Stage.TechniqueSelection -> TechniqueSelection(viewModel, state)
+                Stage.FirewallMapping -> FirewallMapping(viewModel, state)
                 Stage.AttackVectorsBuilding,
-                Stage.MitigationsAndAttacks,
-                Stage.BestPath -> AttackGraph(viewModel, state)
+                Stage.EdgeValueCalculation,
+                Stage.PossibleAttackVectors -> AttackGraph(viewModel, state)
             }
 
             Console(
@@ -144,16 +160,6 @@ fun MainScreen(
                     .align(Alignment.BottomEnd)
                     .padding(16.dp)
             )
-
-            if (state.alphaValueDialogVisible) {
-                AlphaValueDialog(
-                    alpha = state.alphaValue,
-                    onClick ={
-                        viewModel.setAlphaValue(it)
-                        viewModel.switchToMitigationsAndAttacks()
-                    }
-                )
-            }
         }
     }
 }

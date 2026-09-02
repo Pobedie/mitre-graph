@@ -10,6 +10,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import com.pobedie.attackgraph.ui.theme.OnBackgroundColor
 import androidx.compose.ui.unit.dp
 import attackgraph.shared.generated.resources.Res
 import attackgraph.shared.generated.resources.ic_arrow_forward
@@ -23,7 +24,7 @@ fun LazyListScope.StageArrow() {
         Icon(
             modifier = Modifier.height(36.dp),
             painter = painterResource(Res.drawable.ic_arrow_forward),
-            tint = MaterialTheme.colorScheme.onBackground,
+            tint = OnBackgroundColor,
             contentDescription = stringResource(Res.string.next_step_content_desc)
         )
     }

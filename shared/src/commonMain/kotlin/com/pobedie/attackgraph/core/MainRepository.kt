@@ -7,8 +7,11 @@ import com.pobedie.attackgraph.core.entity.AtlasYaml
 import com.pobedie.attackgraph.core.entity.AttackVector
 import com.pobedie.attackgraph.core.entity.Mitigation
 import com.pobedie.attackgraph.core.entity.Tactic
+import com.pobedie.attackgraph.core.entity.Technique
+import com.pobedie.attackgraph.core.entity.UserSettings
 import com.pobedie.attackgraph.core.mappers.toAttackVector
 import com.pobedie.attackgraph.core.mappers.toDomainModel
+import com.pobedie.attackgraph.settings.UserSettingsDb
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -17,13 +20,34 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.withContext
 
 class MainRepository(
-    val database: Atlas
+    val atlasDatabase: Atlas,
+    val settingsDatabase: UserSettingsDb
 ) {
 
     private data class State(
         val isImportSuccessful: Boolean = false
     )
     private val _state = MutableStateFlow(State())
+
+    fun saveUserSettings(settings: UserSettings) {
+        settingsDatabase.user_settingsQueries.saveUserSettings(
+            llm_url = settings.llmUrl,
+            llm_api_key = settings.llmApiKey,
+            llm_model = settings.llmModel
+        )
+    }
+
+    fun getUserSettings(): UserSettings? {
+        return settingsDatabase.user_settingsQueries.getUserSettings()
+            .executeAsOneOrNull()
+            ?.let {
+                UserSettings(
+                    llmUrl = it.llm_url,
+                    llmApiKey = it.llm_api_key,
+                    llmModel = it.llm_model
+                )
+            }
+    }
 
     suspend fun importMitreAtlasData(yamlContent: String) = withContext(Dispatchers.IO) {
         val yaml = Yaml(
@@ -33,8 +57,10 @@ class MainRepository(
         )
         val atlasData = yaml.decodeFromString(AtlasYaml.serializer(), yamlContent)
 
-        database.transaction {
-            database.metadataQueries.insertOrReplaceMetadata(
+        val tacticPositions = atlasData.relationships["ATLAS-matrix"]?.sequences?.associate { it.target to it.position } ?: emptyMap()
+
+        atlasDatabase.transaction {
+            atlasDatabase.metadataQueries.insertOrReplaceMetadata(
                 id = atlasData.collection.id,
                 formatVersion = atlasData.formatVersion,
                 dataVersion = atlasData.collection.version,
@@ -43,12 +69,13 @@ class MainRepository(
             )
 
             atlasData.tactics.values.forEach { tactic ->
-                database.tacticsQueries.insertTactic(
+                atlasDatabase.tacticsQueries.insertTactic(
                     id = tactic.id,
                     name = tactic.name,
                     description = tactic.description,
                     created_date = tactic.createdDate,
-                    modified_date = tactic.modifiedDate
+                    modified_date = tactic.modifiedDate,
+                    position = tacticPositions[tactic.id]?.toLong() ?: 0L
                 )
             }
 
@@ -59,7 +86,7 @@ class MainRepository(
                 val tacticId = atlasData.relationships[technique.id]?.achieves
                     ?.firstOrNull { it.target.startsWith("AML.TA") }?.target ?: "UNKNOWN"
 
-                database.techniqueQueries.insertTechnique(
+                atlasDatabase.techniqueQueries.insertTechnique(
                     id = technique.id,
                     name = technique.name,
                     description = technique.description,
@@ -73,7 +100,7 @@ class MainRepository(
 
             // Insert Mitigations
             atlasData.mitigations.values.forEach { mitigation ->
-                database.mitigationQueries.insertMitigation(
+                atlasDatabase.mitigationQueries.insertMitigation(
                     id = mitigation.id,
                     name = mitigation.name,
                     description = mitigation.description,
@@ -86,7 +113,7 @@ class MainRepository(
 
             // Insert Case Studies
             atlasData.caseStudies.values.forEach { caseStudy ->
-                database.`case-studyQueries`.insertCaseStudy(
+                atlasDatabase.`case-studyQueries`.insertCaseStudy(
                     id = caseStudy.id,
                     name = caseStudy.name,
                     description = caseStudy.description,
@@ -104,7 +131,7 @@ class MainRepository(
                             ?.firstOrNull { it.target.startsWith("AML.T") }?.target
                         ?: "UNKNOWN"
 
-                    database.relationshipsQueries.insertRelationship(
+                    atlasDatabase.relationshipsQueries.insertRelationship(
                         step_id = rel.stepId,
                         source_id = rel.source,
                         target_id = rel.target,
@@ -122,7 +149,7 @@ class MainRepository(
                             ?.firstOrNull { it.target.startsWith("AML.TA") }?.target 
                         ?: "UNKNOWN"
                     
-                    database.relationshipsQueries.insertRelationship(
+                    atlasDatabase.relationshipsQueries.insertRelationship(
                         step_id = rel.stepId,
                         source_id = rel.source,
                         target_id = rel.target,
@@ -138,7 +165,7 @@ class MainRepository(
                             ?.firstOrNull { it.target.startsWith("AML.TA") }?.target
                         ?: "UNKNOWN"
 
-                    database.relationshipsQueries.insertRelationship(
+                    atlasDatabase.relationshipsQueries.insertRelationship(
                         step_id = rel.stepId,
                         source_id = rel.source,
                         target_id = rel.target,
@@ -155,42 +182,47 @@ class MainRepository(
         _state.update { it.copy(isImportSuccessful = true) }
     }
 
-    suspend fun getTacticsWithTechniques(): List<Tactic> = withContext(Dispatchers.IO) {
-        val tactics = database.tacticsQueries.selectAllTactics().executeAsList().map { tactic ->
-            val techniques = database.techniqueQueries.selectTechniquesByTactic(tactic.id).executeAsList()
+    suspend fun getTacticsWithTechniques(): Pair<List<Technique>, List<Tactic>> = withContext(Dispatchers.IO) {
+        val allTechniques = mutableListOf<Technique>()
+        val tactics = atlasDatabase.tacticsQueries.selectAllTactics().executeAsList().map { tactic ->
+            val tacticTechniques = atlasDatabase.techniqueQueries.selectTechniquesByTactic(tactic.id).executeAsList()
+                .map { it.toDomainModel(tactic.id) }
+            allTechniques.addAll(tacticTechniques)
             tactic.toDomainModel(
-                techniques = techniques.map { it.toDomainModel(tacticId = tactic.id) }
+                techniques = tacticTechniques.map { it.id }
             )
-        }
-            .sortedBy { it.id }
-        println("Tactics fetched from db:\n  ${tactics.map { it.id + " " + it.name }}")
-        return@withContext tactics
+        }.sortedBy { it.position }
+        println("INFO: fetched from db tactics : ${tactics.size}, techniques: ${allTechniques.size}")
+        return@withContext Pair(allTechniques, tactics)
     }
 
-    suspend fun getAttackVectors(targetTechnique: String ): List<AttackVector> = withContext(Dispatchers.IO){
-        val relatedCaseStudies = database.relationshipsQueries.selectRelationshipsByTargetTechnique(targetTechnique)
-            .executeAsList()
-            .mapNotNull {
-                if (it.relationship_type == "employs") it.source_id else null
-            }
+    suspend fun getAttackVectors(techniques: List<String>): List<AttackVector> = withContext(Dispatchers.IO){
+        val relatedCaseStudies = techniques.flatMap { _techniqueId ->
+            atlasDatabase.relationshipsQueries.selectRelationshipsByTargetTechnique(_techniqueId)
+                .executeAsList()
+                .mapNotNull {
+                    if (it.relationship_type == "employs") it.source_id else null
+                }
+        }.distinct()
+
         val attackVectors = relatedCaseStudies.flatMap {
-            database.relationshipsQueries.selectRelationshipsByCaseStudy(it)
+            atlasDatabase.relationshipsQueries.selectRelationshipsByCaseStudy(it)
                 .executeAsList()
                 .map { _relationship ->
                     _relationship.toAttackVector()
                 }
         }
-        println("For target technique: $targetTechnique found attack vectors :\n\t${attackVectors}")
+        println("For techniques: $techniques found attack vectors :\n\t${attackVectors.map { "${it.stepId} ${it.tactic}" }}")
         return@withContext attackVectors
     }
 
     suspend fun getMittigations(techniques: List<String>): List<Mitigation> = withContext(Dispatchers.IO) {
         val mitigations: List<Mitigation> = techniques.flatMap { _techId ->
-                database.relationshipsQueries.selectRelationshipsByTargetTechnique(_techId)
+                atlasDatabase.relationshipsQueries.selectRelationshipsByTargetTechnique(_techId)
                     .executeAsList()
                     .mapNotNull { _relationship ->
                         if (_relationship.relationship_type == "mitigates" && _relationship.target_id == _techId) {
-                            val mitigations = database.mitigationQueries.selectMitigationById(_relationship.source_id)
+                            val mitigations = atlasDatabase.mitigationQueries.selectMitigationById(_relationship.source_id)
                                 .executeAsOne()
                             Mitigation(
                                 id = _relationship.source_id,
@@ -204,6 +236,25 @@ class MainRepository(
                             )
                     } else null
             }
+        }
+        return@withContext mitigations
+    }
+
+    suspend fun getAllMitigations(): List<Mitigation> = withContext(Dispatchers.IO) {
+        val relationships = atlasDatabase.relationshipsQueries.selectAllMitigationRelationships().executeAsList()
+        val mitigations = relationships.mapNotNull { _relationship ->
+            val mitigationData = atlasDatabase.mitigationQueries.selectMitigationById(_relationship.source_id)
+                .executeAsOneOrNull() ?: return@mapNotNull null
+            Mitigation(
+                id = _relationship.source_id,
+                name = mitigationData.name,
+                mitigationDescription = mitigationData.description,
+                relationshipDescription = _relationship.description,
+                targetTechnique = _relationship.target_id,
+                categories = mitigationData.categories,
+                lifecyclePhases = mitigationData.lifecycle_phases,
+                isRelevant = true
+            )
         }
         return@withContext mitigations
     }

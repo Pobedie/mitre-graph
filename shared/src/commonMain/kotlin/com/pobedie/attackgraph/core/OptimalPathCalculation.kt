@@ -1,20 +1,20 @@
 package com.pobedie.attackgraph.core
 
 import com.pobedie.attackgraph.core.entity.Edge
+import com.pobedie.attackgraph.core.entity.EdgeState
 import java.util.PriorityQueue
 import kotlin.math.ln
 
 /**
  * Calculates the most optimal path using Dijkstra's algorithm.
  * 
- * Weights are calculated using probability (logarithmic) and risk (linear).
+ * Weights are calculated using probability (logarithmic).
  * @return A pair containing the list of edges in the path and the total cost, or null if no path exists.
  */
 fun findOptimalPath(
     edges: List<Edge>,
     start: String,
-    target: String,
-    alpha: Float = 0.0f
+    targets: List<String>
 ): Pair<List<Edge>, Double>? {
     val adj = edges.groupBy { it.startNode }
 
@@ -26,19 +26,25 @@ fun findOptimalPath(
     val queue = PriorityQueue<Pair<Double, String>>(compareBy { it.first })
     queue.add(0.0 to start)
 
+    var reachedTarget: String? = null
+
     while (queue.isNotEmpty()) {
         val (currentDist, currentNode) = queue.poll()
         
-        if (currentNode == target) break
+        if (targets.contains(currentNode)) {
+            reachedTarget = currentNode
+            break
+        }
         if (currentNode in visited) continue
         visited.add(currentNode)
 
         adj[currentNode]?.forEach { edge ->
-            val prob = edge.probability
-            val risk = edge.risk
+            if (edge.state == EdgeState.Blocked) return@forEach
             
-            if (prob != null && risk != null) {
-                val weight = edgeWeight(prob, risk, alpha)
+            val prob = edge.probability
+            
+            if (prob != null) {
+                val weight = edgeWeight(prob)
                 if (weight.isInfinite()) return@forEach
                 
                 val neighbor = edge.endNode
@@ -53,9 +59,9 @@ fun findOptimalPath(
         }
     }
 
-    if (dist.getValue(target) == Double.POSITIVE_INFINITY) return null
+    if (reachedTarget == null) return null
     val path = mutableListOf<Edge>()
-    var currentRebuildNode = target
+    var currentRebuildNode = reachedTarget
     while (currentRebuildNode != start) {
         val edge = prevEdge[currentRebuildNode] ?: break
         path.add(edge)
@@ -63,11 +69,10 @@ fun findOptimalPath(
     }
     if (currentRebuildNode != start) return null
     path.reverse()
-    return path to dist.getValue(target)
+    return path to dist.getValue(reachedTarget!!)
 }
 
-fun edgeWeight(prob: Float, risk: Float, alpha: Float): Double {
+fun edgeWeight(prob: Float): Double {
     if (prob <= 0.0) return Double.POSITIVE_INFINITY
-    val riskPart = alpha * risk
-    return -ln(prob.toDouble()) + riskPart
+    return -ln(prob.toDouble())
 }

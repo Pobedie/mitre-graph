@@ -5,7 +5,8 @@ data class Technique(
     val name: String,
     val description: String,
     val tacticId: String,
-    val maturity: TechniqueMaturity
+    val maturity: TechniqueMaturity,
+    val severityScore: Int
 )
 
 enum class TechniqueMaturity(val probabilityMult: Float) {

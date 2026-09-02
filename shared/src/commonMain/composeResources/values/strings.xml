@@ -1,22 +1,42 @@
 <resources>
+    <string name="import_tab">Import and settings</string>
     <string name="import_button">Import</string>
-    <string name="import_hint">Import a YAML file with MITRE ATLAS data.\n\nYou can find this file at https://github.com/mitre-atlas/atlas-data/blob/main/dist/ or use the included one (it might be not relevant)</string>
+    <string name="import_hint">Import a YAML file with MITRE ATLAS data and configure LLM settings.\n\nYou can find this file at https://github.com/mitre-atlas/atlas-data/blob/main/dist/ or use the included one (it might be not relevant)</string>
     <string name="select_techniques_button">Select techniques</string>
     <string name="select_techniques_hint">Select attack techniques from each tactic</string>
     <string name="build_attack_vectors_button">Build attack vectors</string>
-    <string name="build_attack_vectors_hint">Show attack vectors by drawing edges between nodes, then set penalty and risk values (0.0-1.0)</string>
-    <string name="mitigations_and_attacks_button">Attack vectors and mitigations</string>
-    <string name="mitigations_and_attacks_hint">Show proven by case-studies attack vectors and mitigations</string>
+    <string name="build_attack_vectors_hint">Show attack vectors by drawing edges between nodes, then set probability values (0.0-1.0)</string>
+    <string name="possible_attack_vectors_button">Possible attack vectors</string>
+    <string name="possible_attack_vectors_hint">Show proven by case-studies attack vectors and mitigations</string>
     <string name="import_from_file_title">Import from file</string>
+    <string name="firewall_mapping_title">Allowed routes</string>
+    <string name="firewall_mapping_hint">Set allowed routes between hosts</string>
+    <string name="llm_settings_title">LLM Settings</string>
+    <string name="llm_url_label">URL</string>
+    <string name="llm_api_key_label">API Key</string>
+    <string name="llm_model_label">Model Name</string>
+    <string name="connect_button">Connect</string>
+    <string name="connecting_status">Connecting...</string>
+    <string name="connection_success">Connected</string>
+    <string name="connection_failed">Connection Failed</string>
     <string name="or_use_included_data">or use included data</string>
     <string name="use_included_data_checkbox">Use included MITRE ATLAS data (ATLAS-2026.05. Might not be relevant)</string>
     <string name="select_yaml_file_placeholder">Select yaml file from MITRE ATLAS</string>
     <string name="select_yaml_file_content_desc">Select yaml file</string>
     <string name="select_yaml_file_dialog_title">Select MITRE ATLAS yaml file</string>
     <string name="select_techniques_title">Select techniques for different tactics</string>
+    <string name="achieve_label">Achieve:</string>
+    <string name="highest_severity_label">highest severity</string>
+    <string name="target_technique_label">target technique</string>
+    <string name="starting_point_label">Starting point:</string>
+    <string name="automatic_label">Automatic</string>
+    <string name="manual_label">Manual</string>
     <string name="select_target_button">Select target</string>
+    <string name="cancel_selection_button">Cancel selection</string>
     <string name="clear_selections_button">Clear selections</string>
     <string name="start_building_vectors_button">Start building attack vectors</string>
+    <string name="edge_value_calculation_button">Calculate edge values</string>
+    <string name="edge_value_calculation_hint">Calculate edge probabilities based on node maturity and severity scores</string>
     <string name="tactic_description_content_desc">Tactic description</string>
     <string name="technique_description_content_desc">Technique description</string>
     <string name="deselect_hint">Right click anywhere to deselect</string>
@@ -28,12 +48,12 @@
     <string name="alpha_value_description">It will be used as a multiplier for risk values</string>
     <string name="apply_button">Apply</string>
     <string name="p_label">P</string>
-    <string name="r_label">R</string>
 
     <string name="description_maturity_format">ID: %1$s\nMaturity: %2$s\n\n%3$s</string>
+    <string name="description_maturity_severity_format">ID: %1$s\nMaturity: %2$s\nSeverity score: %3$s\n\n%4$s</string>
     <string name="description_format">ID: %1$s\n\n%2$s</string>
     <string name="mitigation_full_description_format">ID: %1$s\n\nMitigation:\n%2$s\n\n\n%3$s</string>
-    <string name="edge_probability_risk_format">P:%1$s R:%2$s</string>
+    <string name="edge_probability_risk_format">P:%1$s</string>
 
     <string name="file_not_found_error">File not found at %1$s</string>
     <string name="file_blank_error">File %1$s seems to be blank</string>
@@ -47,6 +67,23 @@
     <string name="probable_paths_label">OTHER PROBABLE PATHS:</string>
     <string name="no_optimal_path_found">INFO: no optimal path found</string>
     <string name="target_not_selected_error">ERROR: target technique is not selected</string>
+    <string name="firewall_host_rule_exists_error">All traffic from host %1$s to %2$s is already allowed. To set a rule from a specific technique, first delete the allow-all-traffic rule.</string>
+    <string name="dashed_edges_firewall_hint">INFO: red-dashed edges are not valid because of firewall rules</string>
     <string name="imported_nodes_info">INFO: imported %1$d nodes</string>
     <string name="path_cost_format">%1$s | cost: %2$s</string>
+
+    <string name="hosts_title">Hosts</string>
+    <string name="previous_host_content_desc">Previous Host</string>
+    <string name="next_host_content_desc">Next Host</string>
+    <string name="add_host_content_desc">Add Host</string>
+    <string name="delete_host_content_desc">Delete Host</string>
+    <string name="delete_technique_from_host_content_desc">Delete technique from the host</string>
+    <string name="maturity_format">Maturity: %1$s</string>
+    <string name="severity_score_format">Severity score: %1$d</string>
+    <string name="host_name_format">Host %1$d</string>
+
+    <string name="maturity_demonstrated">Demonstrated</string>
+    <string name="maturity_feasible">Feasible</string>
+    <string name="maturity_realized">Realized</string>
+    <string name="maturity_unknown">Unknown</string>
 </resources>

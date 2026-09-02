@@ -8,13 +8,14 @@ import com.pobedie.attackgraph.database.Relationship
 
 
 fun com.pobedie.attackgraph.database.Tactic.toDomainModel(
-    techniques: List<Technique>
+    techniques: List<String>
 ): Tactic =
     Tactic(
         id = id,
         name = name,
         description = description,
-        techniques = techniques
+        position = position.toInt(),
+        techniquesIds = techniques
     )
 
 
@@ -31,14 +32,17 @@ fun com.pobedie.attackgraph.database.Technique.toDomainModel(
             "Feasible" -> TechniqueMaturity.Feasible
             "Realized" -> TechniqueMaturity.Realized
             else -> TechniqueMaturity.Unknown
-        }
+        },
+        severityScore = 3
     )
 
 fun Relationship.toAttackVector(): AttackVector =
     AttackVector(
         caseStudyId = source_id,
-        step = step_id.removePrefix("S").toInt(),
+        step = try { step_id.removePrefix("S").toInt() } catch (e: Exception) { 0 },
+        stepId = step_id,
         tactic = tactic_id,
         targetTechnique = target_id,
-        description = description
+        description = description,
+        leadsToStep = leads_to
     )

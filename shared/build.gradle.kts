@@ -26,6 +26,10 @@ kotlin {
             implementation(libs.kaml)
             implementation(libs.kotlinx.serialization.core)
             implementation(libs.kotlinx.serialization.json)
+            implementation(libs.ktor.client.core)
+            implementation(libs.ktor.client.cio)
+            implementation(libs.ktor.client.serialization.json)
+            implementation(libs.ktor.client.negotiation)
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
@@ -37,6 +41,12 @@ sqldelight {
     databases {
         register("Atlas") {
             packageName.set("com.pobedie.attackgraph.database")
+            srcDirs.setFrom("src/commonMain/sqldelight/atlas")
+            verifyMigrations.set(false)
+        }
+        register("UserSettingsDb") {
+            packageName.set("com.pobedie.attackgraph.settings")
+            srcDirs.setFrom("src/commonMain/sqldelight/settings")
             verifyMigrations.set(false)
         }
     }
