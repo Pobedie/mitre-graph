@@ -57,7 +57,6 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.drawText
@@ -70,9 +69,12 @@ import androidx.compose.ui.layout.layout
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.DpOffset
+import androidx.compose.ui.unit.DpRect
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.height
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.unit.width
 import androidx.compose.ui.zIndex
 import attackgraph.shared.generated.resources.Res
 import attackgraph.shared.generated.resources.description_maturity_severity_format
@@ -102,7 +104,6 @@ import com.dk.kuiver.model.nodes
 import com.dk.kuiver.rememberKuiverViewerState
 import com.dk.kuiver.renderer.KuiverViewer
 import com.dk.kuiver.renderer.KuiverViewerConfig
-import com.dk.kuiver.ui.ArrowDrawer
 import com.dk.kuiver.ui.EdgeContentWithLabel
 import com.dk.kuiver.ui.LabelPlacement
 import com.pobedie.attackgraph.core.entity.EdgeState
@@ -118,10 +119,7 @@ import com.pobedie.attackgraph.ui.components.FloatInputField
 import kotlinx.coroutines.delay
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
-import kotlin.math.atan2
-import kotlin.math.cos
 import kotlin.math.round
-import kotlin.math.sin
 import kotlin.time.Duration.Companion.seconds
 
 @OptIn(ExperimentalComposeUiApi::class, ExperimentalFoundationApi::class)
@@ -165,7 +163,7 @@ fun AttackGraph(
             val newHostContainers = mutableListOf<HostContainerData>()
 
             tactics.forEachIndexed { tacticIndex, tactic ->
-                val x = tacticIndex * COLUMN_X_SPACING.toFloat()
+                val x = COLUMN_X_SPACING * tacticIndex
                 var currentY = INITIAL_Y_PADDING
 
                 tacticToHosts[tactic.id]?.forEach { hostId ->
@@ -179,21 +177,20 @@ fun AttackGraph(
                         val libNode = kuiver.nodes[nodeData.id] ?: return@forEach
                         updatedNodes.add(
                             libNode.copy(
-                                position = Offset(x + NODE_X_OFFSET, currentY)
+                                position = DpOffset(x + NODE_X_OFFSET, currentY)
                             )
                         )
-                        currentY += (libNode.dimensions?.height?.value ?: DEFAULT_NODE_HEIGHT) + NODE_Y_SPACING
+                        currentY += (libNode.dimensions?.height ?: DEFAULT_NODE_HEIGHT) + NODE_Y_SPACING
                     }
 
                     newHostContainers.add(
                         HostContainerData(
                             name = hostName,
-                            rect = Rect(
-                                Offset(x, hostStartY),
-                                Size(
-                                    NODE_WIDTH + HOST_CONTAINER_WIDTH_PADDING,
-                                    currentY - hostStartY - HOST_CONTAINER_BOTTOM_PADDING
-                                )
+                            rect = DpRect(
+                                left = x,
+                                top = hostStartY,
+                                right = x + NODE_WIDTH + HOST_CONTAINER_WIDTH_PADDING,
+                                bottom = currentY - HOST_CONTAINER_BOTTOM_PADDING
                             )
                         )
                     )
@@ -230,7 +227,6 @@ fun AttackGraph(
         delay(2.seconds)
         zoomDelta = 0f
     }
-
     val textMeasurer = rememberTextMeasurer()
 
     Box(
@@ -252,16 +248,15 @@ fun AttackGraph(
             },
         contentAlignment = Alignment.Center
     ) {
-        tactics.forEach { tactic ->
-            val index = tactics.indexOf(tactic)
+        tactics.forEachIndexed { index, tactic ->
             val vsOffset = viewerState.offset.x
             val vsScale = viewerState.scale
             // shifting coords from center to the first column
-            val coordsOffset = ((tactics.size / 2f * COLUMN_X_SPACING - COLUMN_X_SPACING / 2f) * vsScale)
-            val columnXOffset = ((vsOffset - coordsOffset) + (index * COLUMN_X_SPACING * vsScale)).toInt()
+            val coordsOffset = COLUMN_X_SPACING * (tactics.size / 2f) - COLUMN_X_SPACING / 2f
+            val columnXOffset = vsOffset + (COLUMN_X_SPACING * index - coordsOffset) * vsScale
             TacticColumn(
                 xOffset = columnXOffset,
-                width = vsScale.dp * COLUMN_X_WIDTH,
+                width = COLUMN_X_WIDTH * vsScale,
                 tacticName = tactic.name,
                 color = tactic.color
             )
@@ -279,42 +274,48 @@ fun AttackGraph(
                     val vsScale = viewerState.scale
                     val vsOffset = viewerState.offset
 
-                    val minNodeY = (hostContainers.minOfOrNull { it.rect.top } ?: 0f) + HOST_TITLE_HEIGHT
-                    val maxNodeY = (hostContainers.maxOfOrNull { it.rect.bottom } ?: 0f) + HOST_CONTAINER_BOTTOM_PADDING - NODE_Y_SPACING
+                    val minNodeY = (hostContainers.minOfOrNull { it.rect.top } ?: 0.dp) + HOST_TITLE_HEIGHT
+                    val maxNodeY = (hostContainers.maxOfOrNull { it.rect.bottom } ?: 0.dp) + HOST_CONTAINER_BOTTOM_PADDING - NODE_Y_SPACING
                     val graphCenterY = (minNodeY + maxNodeY) / 2f
 
-                    val coordsOffsetX = (tactics.size / 2f * COLUMN_X_SPACING - COLUMN_X_SPACING / 2f)
+                    val coordsOffsetX = COLUMN_X_SPACING * (tactics.size / 2f) - COLUMN_X_SPACING / 2f
                     val graphCenterX = coordsOffsetX + (NODE_X_OFFSET + NODE_WIDTH / 2f)
 
                     hostContainers.forEach { container ->
-                        val nodeOffsetX = container.rect.left - graphCenterX
-                        val nodeOffsetY = container.rect.top - graphCenterY
+                        val nodeOffsetX = (container.rect.left - graphCenterX) * vsScale
+                        val nodeOffsetY = (container.rect.top - graphCenterY) * vsScale
                         val translatedRect = Rect(
                             offset = Offset(
-                                center.x + (vsOffset.x + nodeOffsetX * vsScale),
-                                center.y + (vsOffset.y + nodeOffsetY * vsScale)
+                                center.x + (vsOffset.x + nodeOffsetX).toPx(),
+                                center.y + (vsOffset.y + nodeOffsetY).toPx()
                             ),
-                            size = container.rect.size * vsScale
+                            size = Size(
+                                width = (container.rect.width * vsScale).toPx(),
+                                height = (container.rect.height * vsScale).toPx()
+                            )
                         )
 
                         drawRoundRect(
                             color = hostContainerBackground,
                             topLeft = translatedRect.topLeft,
                             size = translatedRect.size,
-                            cornerRadius = androidx.compose.ui.geometry.CornerRadius(8f * vsScale)
+                            cornerRadius = androidx.compose.ui.geometry.CornerRadius((8.dp * vsScale).toPx())
                         )
                         drawRoundRect(
                             color = hostContainerBorder,
                             topLeft = translatedRect.topLeft,
                             size = translatedRect.size,
-                            cornerRadius = androidx.compose.ui.geometry.CornerRadius(8f * vsScale),
-                            style = Stroke(width = 1f * vsScale)
+                            cornerRadius = androidx.compose.ui.geometry.CornerRadius((8.dp * vsScale).toPx()),
+                            style = Stroke(width = (1.dp * vsScale).toPx())
                         )
                         drawText(
                             textMeasurer = textMeasurer,
-                            size = Size(height = HOST_TITLE_HEIGHT*vsScale, width = container.rect.width*vsScale),
+                            size = Size(
+                                height = (HOST_TITLE_HEIGHT * vsScale).toPx(),
+                                width = (container.rect.width * vsScale).toPx()
+                            ),
                             text = container.name,
-                            topLeft = translatedRect.topLeft + Offset(8f * vsScale, 4f * vsScale),
+                            topLeft = translatedRect.topLeft + Offset((8.dp * vsScale).toPx(), (4.dp * vsScale).toPx()),
                             style = TextStyle(
                                 color = primaryTextColor,
                                 fontSize = 12.sp * vsScale,
@@ -329,13 +330,13 @@ fun AttackGraph(
         KuiverViewer(
             state = viewerState,
             config = KuiverViewerConfig(
-                edgeAnimationSpec = snap(),
+                layoutAnimationSpec = snap(),
                 zoomConditionDesktop = { true }
             ),
             nodeContent = { libNode ->
                 val node = state.nodes.findLast { it.id == libNode.id } ?: return@KuiverViewer
                 TechniqueNode(
-                    modifier = Modifier.width(NODE_WIDTH.dp),
+                    modifier = Modifier.width(NODE_WIDTH),
                     node = node,
                     isSelected = node.id == state.selectedNode,
                     isTarget = state.targetTechniques.any { it.first == node.techniqueId && it.second == node.hostId },
@@ -356,13 +357,13 @@ fun AttackGraph(
                 val _edge = state.edges.find { it.startNode == libEdge.fromId && it.endNode == libEdge.toId }
                 val (edgeColor, edgeWidth) =
                     when {
-                        _edge?.state == EdgeState.Blocked -> Pair(ErrorColor.copy(alpha = 0.5f), 1f)
+                        _edge?.state == EdgeState.Blocked -> Pair(ErrorColor.copy(alpha = 0.5f), 1.dp)
                         state.stage == Stage.AttackVectorsBuilding ||
                                 state.stage == Stage.EdgeValueCalculation ||
-                                _edge == null -> Pair(EdgeDefault, 2f)
-                        _edge.state == EdgeState.MostOptimal -> Pair(EdgeOptimal, 4f)
-                        _edge.state == EdgeState.Probable -> Pair(EdgeProbable, 3f)
-                        else -> Pair(EdgeDefault, 2f)
+                                _edge == null -> Pair(EdgeDefault, 2.dp)
+                        _edge.state == EdgeState.MostOptimal -> Pair(EdgeOptimal, 4.dp)
+                        _edge.state == EdgeState.Probable -> Pair(EdgeProbable, 3.dp)
+                        else -> Pair(EdgeDefault, 2.dp)
                     }
                 val isSelected = state.selectedEdge?.let {
                     _edge != null && _edge.startNode == it.first && _edge.endNode == it.second
@@ -376,7 +377,6 @@ fun AttackGraph(
                         to,
                         color = edgeColor,
                         strokeWidth = edgeWidth,
-                        arrowDrawer = ArrowStyle,
                         enableCurve = true,
                         dashed = isDisallowed,
                         labelPlacement = LabelPlacement.END,
@@ -489,7 +489,7 @@ fun AttackGraph(
 
 data class HostContainerData(
     val name: String,
-    val rect: Rect
+    val rect: DpRect
 )
 
 @OptIn(ExperimentalFoundationApi::class, ExperimentalComposeUiApi::class)
@@ -779,7 +779,7 @@ private fun TechniqueEdge(
 
 @Composable
 private fun TacticColumn(
-    xOffset: Int,
+    xOffset: Dp,
     width: Dp,
     tacticName: String,
     color: Color
@@ -788,7 +788,7 @@ private fun TacticColumn(
         modifier = Modifier
             .fillMaxHeight()
             .width(width)
-            .offset { IntOffset (xOffset, 0)}
+            .offset(x = xOffset)
             .sideBorders(2.dp, color),
         verticalArrangement = Arrangement.Top,
     ) {
@@ -808,30 +808,6 @@ private fun TacticColumn(
     }
 }
 
-
-val ArrowStyle: ArrowDrawer = { arrowTip, direction, color ->
-    val angle = atan2(direction.y.toDouble(), direction.x.toDouble()).toFloat()
-    val arrowSize = 16f
-    val arrowOffset = 8f
-    val arrowAngleSpread = 0.5f
-    val arrowBasePoint = Offset(
-        arrowTip.x - direction.x * arrowOffset,
-        arrowTip.y - direction.y * arrowOffset
-    )
-    val arrowPath = Path().apply {
-        moveTo(arrowBasePoint.x, arrowBasePoint.y)
-        lineTo(
-            arrowBasePoint.x - arrowSize * cos(angle - arrowAngleSpread),
-            arrowBasePoint.y - arrowSize * sin(angle - arrowAngleSpread)
-        )
-        lineTo(
-            arrowBasePoint.x - arrowSize * cos(angle + arrowAngleSpread),
-            arrowBasePoint.y - arrowSize * sin(angle + arrowAngleSpread)
-        )
-        close()
-    }
-    drawPath(path = arrowPath, color = color.copy(alpha = 1.0f))
-}
 
 private fun Modifier.rotateLayout90() = layout { measurable, constraints ->
     val childConstraints = constraints.copy(
@@ -874,17 +850,18 @@ fun Modifier.sideBorders(width: Dp, color: Color): Modifier = this.drawBehind {
 }
 
 
-private const val COLUMN_X_SPACING = 400
-private const val COLUMN_X_WIDTH = 230
+// Kuiver's graph coordinate space is dp throughout, so these are density-independent
+private val COLUMN_X_SPACING = 400.dp
+private val COLUMN_X_WIDTH = 230.dp
 
-private const val INITIAL_Y_PADDING = 50f
-private const val HOST_TITLE_HEIGHT = 40f
-private const val HOST_SPACING = 40f
-private const val NODE_X_OFFSET = 10f
-private const val DEFAULT_NODE_HEIGHT = 80f
-private const val NODE_Y_SPACING = 20f
+private val INITIAL_Y_PADDING = 50.dp
+private val HOST_TITLE_HEIGHT = 40.dp
+private val HOST_SPACING = 40.dp
+private val NODE_X_OFFSET = 10.dp
+private val DEFAULT_NODE_HEIGHT = 80.dp
+private val NODE_Y_SPACING = 20.dp
 
-private const val HOST_CONTAINER_WIDTH_PADDING = 20f
-private const val HOST_CONTAINER_BOTTOM_PADDING = 10f
+private val HOST_CONTAINER_WIDTH_PADDING = 20.dp
+private val HOST_CONTAINER_BOTTOM_PADDING = 10.dp
 
-private const val NODE_WIDTH = 170
+private val NODE_WIDTH = 170.dp

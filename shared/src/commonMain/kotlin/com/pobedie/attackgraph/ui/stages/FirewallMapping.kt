@@ -41,8 +41,10 @@ import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.compose.ui.input.pointer.onPointerEvent
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
@@ -71,6 +73,9 @@ fun FirewallMapping(
     viewModel: ViewModel,
     state: ViewState
 ) {
+    // Node positions live in kuiver's dp space, pointer/canvas values are px
+    val density = LocalDensity.current
+
     val hostNodes = remember(state.hosts) {
         state.hosts.map { it.id }
     }
@@ -90,22 +95,22 @@ fun FirewallMapping(
         }
     }
 
-    var nodePositions: MutableSet<Pair<String, Offset>> by remember {
+    var nodePositions: MutableSet<Pair<String, DpOffset>> by remember {
         mutableStateOf(
             kuiver.nodes.values.mapIndexedTo(mutableSetOf()) { index, node ->
-                Pair(node.id, Offset(index * HOST_HORIZONTAL_SPACING, 0f))
+                Pair(node.id, DpOffset(HOST_HORIZONTAL_SPACING * index, 0.dp))
             }
         )
     }
 
     val hostLayout: LayoutProvider = remember(state.hosts, nodePositions) {
         { kuiver, _ ->
-            val updatedNodes = kuiver.nodes.values.mapIndexed { index, node ->
+            val updatedNodes = kuiver.nodes.values.mapIndexed { _, node ->
                 val posOverride = nodePositions.find { it.first == node.id }
                 if (posOverride != null) {
                     node.copy(position = posOverride.second)
                 } else {
-                    node.copy(position = Offset.Zero)
+                    node.copy(position = DpOffset.Zero)
                 }
             }
             buildKuiverWithClassifiedEdges(updatedNodes, kuiver.edges)
@@ -148,8 +153,7 @@ fun FirewallMapping(
         KuiverViewer(
             state = viewerState,
             config = KuiverViewerConfig(
-                nodeAnimationSpec = snap(),
-                edgeAnimationSpec = snap(),
+                layoutAnimationSpec = snap(),
                 zoomConditionDesktop = { true }
             ),
             nodeContent = { libNode ->
@@ -200,7 +204,9 @@ fun FirewallMapping(
                             viewModel.clearNodeSelection()
                         }
                     },
-                    onDrag = { _offset ->
+                    onDrag = { _offsetPx ->
+                        // onDrag reports px, node positions are dp
+                        val _offset = with(density) { DpOffset(_offsetPx.x.toDp(), _offsetPx.y.toDp()) }
                         nodePositions = nodePositions.mapTo(mutableSetOf()) { _node ->
                             if (libNode.id == _node.first) {
                                 _node.copy(second = _node.second + _offset)
@@ -226,7 +232,7 @@ fun FirewallMapping(
                     val sourceIndex = hostNodes.indexOf(libEdge.fromId)
                     val targetIndex = hostNodes.indexOf(libEdge.toId)
                     val isForwardArrow = sourceIndex < targetIndex
-                    val verticalOffset = if (isForwardArrow) 80f else 0f
+                    val verticalOffset = if (isForwardArrow) with(density) { 80.dp.toPx() } else 0f
                     val adjustedFrom = from.copy(y = from.y + verticalOffset)
                     val adjustedTo = to.copy(y = to.y + verticalOffset)
 
@@ -235,8 +241,7 @@ fun FirewallMapping(
                             adjustedFrom,
                             adjustedTo,
                             color = EdgeDefault,
-                            strokeWidth = 2f,
-                            arrowDrawer = ArrowStyle,
+                            strokeWidth = 2.dp,
                             enableCurve = true,
                             labelPlacement = LabelPlacement.CENTER,
                             label = "rules_${libEdge.fromId}_${libEdge.toId}",
@@ -379,4 +384,4 @@ private fun FirewallEdge(
     }
 }
 
-private const val HOST_HORIZONTAL_SPACING = 500f
+private val HOST_HORIZONTAL_SPACING = 500.dp
