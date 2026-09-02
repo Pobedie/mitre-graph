@@ -1,0 +1,47 @@
+name: Build
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+  workflow_dispatch:
+
+defaults:
+  run:
+    shell: bash # so ./gradlew works on the Windows runner too
+
+jobs:
+  package:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            task: createDistributable # .deb/.rpm would need dpkg/rpmbuild
+            artifact: app
+          - os: macos-latest
+            task: packageDmg
+            artifact: dmg
+          - os: windows-latest
+            task: packageMsi
+            artifact: msi
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      # corretto 21 matches gradle/gradle-daemon-jvm.properties, so Gradle
+      # reuses this JDK instead of downloading its own from foojay.
+      - uses: actions/setup-java@v4
+        with:
+          distribution: corretto
+          java-version: 21
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - run: ./gradlew build ${{ matrix.task }}
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: AttackGraph-${{ matrix.os }}
+          path: desktopApp/build/compose/binaries/main/${{ matrix.artifact }}
+          if-no-files-found: error

@@ -20,8 +20,8 @@ compose.desktop {
         mainClass = "com.pobedie.attackgraph.MainKt"
 
         nativeDistributions {
-            targetFormats(TargetFormat.Dmg, TargetFormat.Exe,  TargetFormat.AppImage)
-            packageName = "Mitrenom"
+            targetFormats(TargetFormat.Dmg, TargetFormat.Msi)
+            packageName = "AttackGraph"
             packageVersion = "1.0.0"
             modules("java.sql")
         }
