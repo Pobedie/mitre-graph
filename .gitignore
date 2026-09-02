@@ -17,5 +17,4 @@ captures
 !*.xcworkspace/contents.xcworkspacedata
 **/xcshareddata/WorkspaceSettings.xcsettings
 node_modules/
-/desktopApp/atlas.db
-/desktopApp/user_settings.db
+*.db
