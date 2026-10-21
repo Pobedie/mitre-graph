@@ -57,7 +57,7 @@ import attackgraph.shared.generated.resources.select_yaml_file_dialog_title
 import attackgraph.shared.generated.resources.select_yaml_file_placeholder
 import attackgraph.shared.generated.resources.use_included_data_checkbox
 import com.pobedie.attackgraph.ui.Language
-import com.pobedie.attackgraph.ui.LlmConnectionStatus
+import com.pobedie.attackgraph.ui.AiConnectionStatus
 import com.pobedie.attackgraph.ui.ViewModel
 import com.pobedie.attackgraph.ui.ViewState
 import kotlinx.coroutines.runBlocking
@@ -152,14 +152,14 @@ fun ImportStage(
 
             LlmSettingsField(
                 label = stringResource(Res.string.llm_url_label),
-                value = state.llmUrl,
+                value = state.aiUrl,
                 onValueChange = { viewModel.updateLlmUrl(it) },
                 modifier = Modifier.padding(horizontal = 22.dp, vertical = 4.dp)
             )
 
             LlmSettingsField(
                 label = stringResource(Res.string.llm_api_key_label),
-                value = state.llmApiKey,
+                value = state.aiApiKey,
                 isApiField = true,
                 onValueChange = { viewModel.updateLlmApiKey(it) },
                 modifier = Modifier.padding(horizontal = 22.dp, vertical = 4.dp)
@@ -167,9 +167,9 @@ fun ImportStage(
 
             LlmModelSelectionField(
                 label = stringResource(Res.string.llm_model_label),
-                value = state.llmModel,
-                options = state.availableLlmModels,
-                isLoading = state.isLlmModelsLoading,
+                value = state.aiModel,
+                options = state.availableAiModels,
+                isLoading = state.isAiModelsLoading,
                 onValueChange = { viewModel.updateLlmModel(it) },
                 onExpanded = {viewModel.fetchLlmModels()},
                 modifier = Modifier.padding(horizontal = 22.dp, vertical = 4.dp)
@@ -182,15 +182,15 @@ fun ImportStage(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                val statusText = when (state.llmConnectionStatus) {
-                    LlmConnectionStatus.None -> ""
-                    LlmConnectionStatus.Connecting -> stringResource(Res.string.connecting_status)
-                    LlmConnectionStatus.Connected -> stringResource(Res.string.connection_success)
-                    LlmConnectionStatus.Failed -> stringResource(Res.string.connection_failed)
+                val statusText = when (state.aiConnectionStatus) {
+                    AiConnectionStatus.None -> ""
+                    AiConnectionStatus.Connecting -> stringResource(Res.string.connecting_status)
+                    AiConnectionStatus.Connected -> stringResource(Res.string.connection_success)
+                    AiConnectionStatus.Failed -> stringResource(Res.string.connection_failed)
                 }
-                val statusColor = when (state.llmConnectionStatus) {
-                    LlmConnectionStatus.Connected -> StatusSuccess
-                    LlmConnectionStatus.Failed -> ErrorColor
+                val statusColor = when (state.aiConnectionStatus) {
+                    AiConnectionStatus.Connected -> StatusSuccess
+                    AiConnectionStatus.Failed -> ErrorColor
                     else -> PrimaryTextColor
                 }
                 Text(
@@ -201,7 +201,7 @@ fun ImportStage(
 
                 Button(
                     onClick = { viewModel.checkLlmConnection() },
-                    enabled = state.llmUrl.isNotBlank() && state.llmConnectionStatus != LlmConnectionStatus.Connecting
+                    enabled = state.aiUrl.isNotBlank() && state.aiConnectionStatus != AiConnectionStatus.Connecting
                 ) {
                     Text(stringResource(Res.string.connect_button))
                 }

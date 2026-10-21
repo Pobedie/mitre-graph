@@ -1,7 +1,7 @@
 <resources>
     <string name="import_tab">Импорт и настройки</string>
     <string name="import_button">Импорт</string>
-    <string name="import_hint">Импорт YAML файла с данными MITRE ATLAS и настройка параметров LLM.\n\nВы можете найти этот файл по адресу https://github.com/mitre-atlas/atlas-data/blob/main/dist/ или использовать включенный (он может быть неактуальным)</string>
+    <string name="import_hint">Импорт YAML файла с данными MITRE ATLAS и настройка параметров нейронной сети.\n\nВы можете найти этот файл по адресу https://github.com/mitre-atlas/atlas-data/blob/main/dist/ или использовать включенный (он может быть неактуальным)</string>
     <string name="select_techniques_button">Выбрать техники</string>
     <string name="select_techniques_hint">Выберите техники атак из каждой тактики</string>
     <string name="build_attack_vectors_button">Построить векторы атаки</string>
@@ -11,7 +11,7 @@
     <string name="import_from_file_title">Импорт из файла</string>
     <string name="firewall_mapping_title">Разрешенные маршруты</string>
     <string name="firewall_mapping_hint">Настройка разрешенных маршрутов между хостами</string>
-    <string name="llm_settings_title">Настройки LLM</string>
+    <string name="llm_settings_title">Настройки нейронной сети</string>
     <string name="llm_url_label">URL</string>
     <string name="llm_api_key_label">API Ключ</string>
     <string name="llm_model_label">Название модели</string>
@@ -40,6 +40,8 @@
     <string name="tactic_description_content_desc">Описание тактики</string>
     <string name="technique_description_content_desc">Описание техники</string>
     <string name="deselect_hint">Щелкните правой кнопкой мыши в любом месте, чтобы отменить выбор</string>
+    <string name="searching_attack_vectors">Поиск векторов атак</string>
+    <string name="techniques_processed_format">%1$d / %2$d техник обработано</string>
     <string name="set_as_irrelevant">Пометить как нерелевантное</string>
     <string name="set_as_relevant">Пометить как релевантное</string>
     <string name="show_mitigation_info_content_desc">Показать информацию о мерах защиты</string>

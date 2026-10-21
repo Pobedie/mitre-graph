@@ -17,9 +17,11 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -29,8 +31,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material3.Button
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.PlainTooltip
 import androidx.compose.material3.Text
@@ -88,10 +90,12 @@ import attackgraph.shared.generated.resources.maturity_realized
 import attackgraph.shared.generated.resources.maturity_unknown
 import attackgraph.shared.generated.resources.mitigation_full_description_format
 import attackgraph.shared.generated.resources.p_label
+import attackgraph.shared.generated.resources.searching_attack_vectors
 import attackgraph.shared.generated.resources.set_as_irrelevant
 import attackgraph.shared.generated.resources.set_as_relevant
 import attackgraph.shared.generated.resources.show_mitigation_info_content_desc
 import attackgraph.shared.generated.resources.technique_description_content_desc
+import attackgraph.shared.generated.resources.techniques_processed_format
 import attackgraph.shared.generated.resources.unknown_value
 import com.pobedie.attackgraph.ui.theme.*
 import com.dk.kuiver.model.KuiverNode
@@ -110,7 +114,7 @@ import com.pobedie.attackgraph.core.entity.EdgeState
 import com.pobedie.attackgraph.core.entity.Mitigation
 import com.pobedie.attackgraph.core.entity.Node
 import com.pobedie.attackgraph.core.entity.TechniqueMaturity
-import com.pobedie.attackgraph.ui.LlmConnectionStatus
+import com.pobedie.attackgraph.ui.AiConnectionStatus
 import com.pobedie.attackgraph.ui.Stage
 import com.pobedie.attackgraph.ui.ViewModel
 import com.pobedie.attackgraph.ui.ViewState
@@ -341,7 +345,7 @@ fun AttackGraph(
                     isSelected = node.id == state.selectedNode,
                     isTarget = state.targetTechniques.any { it.first == node.techniqueId && it.second == node.hostId },
                     isRoot = state.rootTechniques.any { it.first == node.techniqueId && it.second == node.hostId },
-                    isEnabled = state.stage == Stage.AttackVectorsBuilding && !state.isGenerationInProgress,
+                    isEnabled = state.stage == Stage.AttackVectorsBuilding && !state.isAttackVectorSearchingInProgress,
                     onClick = {
                         viewModel.setNodeConnection(node.id)
                     },
@@ -399,7 +403,7 @@ fun AttackGraph(
                                         isSelected = isSelected,
                                         isEnabled = (state.stage == Stage.AttackVectorsBuilding ||
                                                 state.stage == Stage.EdgeValueCalculation) &&
-                                                !state.isGenerationInProgress,
+                                                !state.isAttackVectorSearchingInProgress,
                                         onClick = {
                                             viewModel.selectEdge(
                                                 _edge.startNode,
@@ -433,17 +437,17 @@ fun AttackGraph(
             modifier = Modifier.align(Alignment.BottomStart)
         ) {
             AnimatedVisibility(
-                visible = state.stage == Stage.AttackVectorsBuilding && state.llmConnectionStatus == LlmConnectionStatus.Connected,
+                visible = state.stage == Stage.AttackVectorsBuilding && state.aiConnectionStatus == AiConnectionStatus.Connected,
                 enter = fadeIn(),
                 exit = fadeOut()
             ) {
                 Button(
-                    enabled = state.llmConnectionStatus == LlmConnectionStatus.Connected && !state.isGenerationInProgress,
+                    enabled = state.aiConnectionStatus == AiConnectionStatus.Connected && !state.isAttackVectorSearchingInProgress,
                     modifier = Modifier.padding(horizontal = 4.dp),
-                    onClick = { viewModel.findAttackVectorsViaLLM() }
+                    onClick = { viewModel.findAttackVectorsViaDecisionModel() }
 
                 ) {
-                    if (state.isGenerationInProgress) {
+                    if (state.isAttackVectorSearchingInProgress) {
                         Text("Generating vector attacks")
                     } else {
                         Text("Let LLM find vector attacks")
@@ -465,23 +469,45 @@ fun AttackGraph(
         }
 
         AnimatedVisibility(
-            visible = state.isGenerationInProgress,
+            visible = state.isAttackVectorSearchingInProgress,
             enter = fadeIn(),
             exit = fadeOut()
         ) {
             Column (
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(Color.White.copy(alpha = 0.5f)),
+                    .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.85f)),
                 verticalArrangement = Arrangement.Center,
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text(
-                    text = "Generating vector attacks",
+                    text = stringResource(Res.string.searching_attack_vectors),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold
                 )
-                CircularProgressIndicator(modifier = Modifier.padding(16.dp))
+                Spacer(modifier = Modifier.height(16.dp))
+                val progress = if (state.aiTotalTechniques > 0) {
+                    (state.aiProcessedTechniques.toFloat() / state.aiTotalTechniques).coerceIn(0f, 1f)
+                } else {
+                    0f
+                }
+                LinearProgressIndicator(
+                    progress = { progress },
+                    modifier = Modifier
+                        .fillMaxWidth(0.5f)
+                        .height(8.dp)
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text =
+                        stringResource(
+                            Res.string.techniques_processed_format,
+                            state.aiProcessedTechniques,
+                            state.aiTotalTechniques
+                        ),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
         }
     }

@@ -110,7 +110,7 @@ class AttackVectorService {
         existingEdges: List<Edge>,
         nodes: List<Node>
     ): List<Edge> {
-        val llmEdges = decisions.flatMapTo(mutableSetOf()) { decision ->
+        val llmEdges = decisions.filter { it.confidence > 0.5f && it.confidence <= 1f }.flatMapTo(mutableSetOf()) { decision ->
             val startHosts = hosts.filter { it.techniquesIds.contains(decision.sourceId) }
             val endHosts = hosts.filter { it.techniquesIds.contains(decision.targetId) }
             

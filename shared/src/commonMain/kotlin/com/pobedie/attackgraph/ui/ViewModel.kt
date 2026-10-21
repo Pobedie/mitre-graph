@@ -26,6 +26,7 @@ import io.ktor.client.HttpClient
 import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.serialization.kotlinx.json.json
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -66,6 +67,7 @@ class ViewModel(
                         prettyPrint = true
                         isLenient = true
                         ignoreUnknownKeys = true
+                        encodeDefaults = true
                     })
                 }
             }
@@ -101,10 +103,10 @@ class ViewModel(
                             techniquesIds = emptyList()
                         )
                     ),
-                    llmUrl = savedSettings?.llmUrl ?: "",
-                    llmApiKey = savedSettings?.llmApiKey ?: "",
-                    llmModel = savedSettings?.llmModel ?: "",
-                    isLlmAdded = savedSettings != null
+                    aiUrl = savedSettings?.llmUrl ?: "",
+                    aiApiKey = savedSettings?.llmApiKey ?: "",
+                    aiModel = savedSettings?.llmModel ?: "",
+                    isAiAdded = savedSettings != null
                 )
             }
         }
@@ -135,7 +137,7 @@ class ViewModel(
                     )
             val isAttackVectorMappingStageAvailable =
                         resolvedTargets.isNotEmpty() &&
-                        currentState.llmConnectionStatus != LlmConnectionStatus.Connecting
+                        currentState.aiConnectionStatus != AiConnectionStatus.Connecting
             val isFirewallMappingStageAvailable = currentState.hosts.count { it.techniquesIds.isNotEmpty() } >= 2
 
             if (currentState.rootNodeGoal == RootNodeGoal.Automatic) {
@@ -162,34 +164,34 @@ class ViewModel(
     }
 
     fun updateLlmUrl(url: String) {
-        _state.update { it.copy(llmUrl = url, llmConnectionStatus = LlmConnectionStatus.None) }
+        _state.update { it.copy(aiUrl = url, aiConnectionStatus = AiConnectionStatus.None) }
     }
 
     fun updateLlmApiKey(key: String) {
-        _state.update { it.copy(llmApiKey = key, llmConnectionStatus = LlmConnectionStatus.None) }
+        _state.update { it.copy(aiApiKey = key, aiConnectionStatus = AiConnectionStatus.None) }
     }
 
     fun updateLlmModel(model: String) {
-        _state.update { it.copy(llmModel = model) }
+        _state.update { it.copy(aiModel = model) }
     }
 
     fun fetchLlmModels() {
         val currentState = state.value
-        if (currentState.llmUrl.isBlank()) return
+        if (currentState.aiUrl.isBlank()) return
 
-        _state.update { it.copy(isLlmModelsLoading = true) }
+        _state.update { it.copy(isAiModelsLoading = true) }
 
         scope.launch {
             try {
-                val models = llmService.fetchModels(currentState.llmUrl, currentState.llmApiKey)
+                val models = llmService.fetchModels(currentState.aiUrl, currentState.aiApiKey)
                 _state.update {
                     it.copy(
-                        availableLlmModels = models,
-                        isLlmModelsLoading = false
+                        availableAiModels = models,
+                        isAiModelsLoading = false
                     )
                 }
             } catch (e: Exception) {
-                _state.update { it.copy(isLlmModelsLoading = false) }
+                _state.update { it.copy(isAiModelsLoading = false) }
                 e.printStackTrace()
             }
         }
@@ -198,48 +200,59 @@ class ViewModel(
     fun checkLlmConnection() {
         val currentState = state.value
         val settings = UserSettings(
-            llmUrl = currentState.llmUrl,
-            llmApiKey = currentState.llmApiKey,
-            llmModel = currentState.llmModel
+            llmUrl = currentState.aiUrl,
+            llmApiKey = currentState.aiApiKey,
+            llmModel = currentState.aiModel
         )
 
-        _state.update { it.copy(llmConnectionStatus = LlmConnectionStatus.Connecting) }
+        _state.update { it.copy(aiConnectionStatus = AiConnectionStatus.Connecting) }
 
         scope.launch {
             mainRepository.saveUserSettings(settings)
             try {
-                // For connection check, we still use the injected service's client or similar logic
-                // Here we might need a way to just check connection if llmService doesn't expose it
-                // For now, I'll keep the direct httpClient call if it's just a health check
-                // but usually llmService should handle it.
-                // Assuming llmService has a way to check connection or we just use fetchModels as a check.
                 llmService.fetchModels(settings.llmUrl, settings.llmApiKey)
                 
                 _state.update { 
                     it.copy(
-                        llmConnectionStatus = LlmConnectionStatus.Connected,
-                        isLlmAdded = true
+                        aiConnectionStatus = AiConnectionStatus.Connected,
+                        isAiAdded = true
                     ) 
                 }
             } catch (e: Exception) {
-                _state.update { it.copy(llmConnectionStatus = LlmConnectionStatus.Failed) }
+                _state.update { it.copy(aiConnectionStatus = AiConnectionStatus.Failed) }
                 e.printStackTrace()
             }
         }
     }
 
-    fun findAttackVectorsViaLLM() {
+    fun findAttackVectorsViaDecisionModel() {
+        val currentState = state.value
+        if (currentState.isAttackVectorSearchingInProgress) return
+        val total = currentState.nodes.map { it.techniqueId }.distinct().size
+        _state.update {
+            it.copy(
+                isAttackVectorSearchingInProgress = true,
+                aiProcessedTechniques = 0,
+                aiTotalTechniques = total
+            )
+        }
         scope.launch {
-            _state.update { it.copy(isGenerationInProgress = true) }
             try {
-                val currentState = state.value
                 val decisions = llmService.fetchDecision(
-                    url = currentState.llmUrl,
-                    apiKey = currentState.llmApiKey,
-                    model = currentState.llmModel,
+                    url = currentState.aiUrl,
+                    apiKey = currentState.aiApiKey,
+                    model = currentState.aiModel,
                     techniques = currentState.nodes,
                     mitigations = currentState.mitigations,
-                    attackVectors = currentState.attackVectors
+                    attackVectors = currentState.attackVectors,
+                    onProgress = { processed, totalTechs ->
+                        _state.update {
+                            it.copy(
+                                aiProcessedTechniques = processed,
+                                aiTotalTechniques = totalTechs
+                            )
+                        }
+                    }
                 )
 
                 val newEdges = attackVectorService.processLlmDecisions(
@@ -256,11 +269,20 @@ class ViewModel(
                         edges = updatedEdges
                     )
                 }
-            } catch (e: Throwable) {
-                _state.update { it.copy(llmConnectionStatus = LlmConnectionStatus.Failed) }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                _state.update { it.copy(aiConnectionStatus = AiConnectionStatus.Failed) }
                 e.printStackTrace()
+            } finally {
+                _state.update {
+                    it.copy(
+                        isAttackVectorSearchingInProgress = false,
+                        aiProcessedTechniques = 0,
+                        aiTotalTechniques = 0
+                    )
+                }
             }
-            _state.update { it.copy(isGenerationInProgress = false) }
         }
     }
 

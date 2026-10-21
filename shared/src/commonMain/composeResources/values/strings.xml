@@ -1,7 +1,7 @@
 <resources>
     <string name="import_tab">Import and settings</string>
     <string name="import_button">Import</string>
-    <string name="import_hint">Import a YAML file with MITRE ATLAS data and configure LLM settings.\n\nYou can find this file at https://github.com/mitre-atlas/atlas-data/blob/main/dist/ or use the included one (it might be not relevant)</string>
+    <string name="import_hint">Import a YAML file with MITRE ATLAS data and configure neural network settings.\n\nYou can find this file at https://github.com/mitre-atlas/atlas-data/blob/main/dist/ or use the included one (it might be not relevant)</string>
     <string name="select_techniques_button">Select techniques</string>
     <string name="select_techniques_hint">Select attack techniques from each tactic</string>
     <string name="build_attack_vectors_button">Build attack vectors</string>
@@ -11,7 +11,7 @@
     <string name="import_from_file_title">Import from file</string>
     <string name="firewall_mapping_title">Allowed routes</string>
     <string name="firewall_mapping_hint">Set allowed routes between hosts</string>
-    <string name="llm_settings_title">LLM Settings</string>
+    <string name="llm_settings_title">Neural network Settings</string>
     <string name="llm_url_label">URL</string>
     <string name="llm_api_key_label">API Key</string>
     <string name="llm_model_label">Model Name</string>
@@ -40,6 +40,8 @@
     <string name="tactic_description_content_desc">Tactic description</string>
     <string name="technique_description_content_desc">Technique description</string>
     <string name="deselect_hint">Right click anywhere to deselect</string>
+    <string name="searching_attack_vectors">Searching attack vectors</string>
+    <string name="techniques_processed_format">%1$d / %2$d techniques processed</string>
     <string name="set_as_irrelevant">Set as irrelevant</string>
     <string name="set_as_relevant">Set as relevant</string>
     <string name="show_mitigation_info_content_desc">Show mitigation info</string>

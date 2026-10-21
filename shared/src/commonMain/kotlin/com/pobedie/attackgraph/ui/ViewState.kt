@@ -53,20 +53,22 @@ data class ViewState(
     val consoleText: String = "",
     val isConsoleFrozen: Boolean = false,
 
-    // LLM settings
-    val llmUrl: String = "",
-    val llmApiKey: String = "",
-    val llmModel: String = "",
-    val availableLlmModels: List<String> = emptyList(),
-    val isLlmModelsLoading: Boolean = false,
-    val llmConnectionStatus: LlmConnectionStatus = LlmConnectionStatus.None,
-    val isGenerationInProgress: Boolean = false,
-    val isLlmAdded: Boolean = false
+    // AI settings
+    val aiUrl: String = "",
+    val aiApiKey: String = "",
+    val aiModel: String = "",
+    val availableAiModels: List<String> = emptyList(),
+    val isAiModelsLoading: Boolean = false,
+    val aiConnectionStatus: AiConnectionStatus = AiConnectionStatus.None,
+    val isAttackVectorSearchingInProgress: Boolean = false,
+    val aiProcessedTechniques: Int = 0,
+    val aiTotalTechniques: Int = 0,
+    val isAiAdded: Boolean = false
 ) {
     val selectedTechniquesIds = hosts.flatMap { it.techniquesIds }
 }
 
-enum class LlmConnectionStatus {
+enum class AiConnectionStatus {
     None,
     Connecting,
     Connected,
