@@ -4,7 +4,8 @@ import com.pobedie.attackgraph.core.MainRepository
 import com.pobedie.attackgraph.core.entity.UserSettings
 import com.pobedie.attackgraph.database.kotlin.DriverFactory
 import com.pobedie.attackgraph.database.kotlin.createAtlasDatabase
-import com.pobedie.attackgraph.database.kotlin.createSettingsDatabase
+import app.cash.sqldelight.driver.jdbc.sqlite.JdbcSqliteDriver
+import com.pobedie.attackgraph.settings.UserSettingsDb
 import kotlinx.coroutines.runBlocking
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -16,13 +17,16 @@ class UserSettingsTest {
     fun testSaveAndGetUserSettings() {
         val driverFactory = DriverFactory()
         val database = createAtlasDatabase(driverFactory)
-        val settingsDatabase = createSettingsDatabase(driverFactory)
+        val settingsDriver = JdbcSqliteDriver(JdbcSqliteDriver.IN_MEMORY)
+        UserSettingsDb.Schema.create(settingsDriver)
+        val settingsDatabase = UserSettingsDb(settingsDriver)
         val repository = MainRepository(database, settingsDatabase)
 
         val settings = UserSettings(
-            llmUrl = "https://api.openai.com/v1",
-            llmApiKey = "sk-12345",
-            llmModel = "gpt-4"
+            dmUrl = "https://api.openai.com/v1",
+            dmApiKey = "sk-12345",
+            dmModel = "custom-dm",
+            dmConfidenceThreshold = 0.75f
         )
 
         repository.saveUserSettings(settings)
@@ -30,16 +34,19 @@ class UserSettingsTest {
         val retrievedSettings = repository.getUserSettings()
 
         assertNotNull(retrievedSettings)
-        assertEquals(settings.llmUrl, retrievedSettings.llmUrl)
-        assertEquals(settings.llmApiKey, retrievedSettings.llmApiKey)
-        assertEquals(settings.llmModel, retrievedSettings.llmModel)
+        assertEquals(settings.dmUrl, retrievedSettings.dmUrl)
+        assertEquals(settings.dmApiKey, retrievedSettings.dmApiKey)
+        assertEquals(settings.dmModel, retrievedSettings.dmModel)
+        assertEquals(settings.dmConfidenceThreshold, retrievedSettings.dmConfidenceThreshold)
     }
 
     @Test
     fun testGetTacticsWithTechniquesReturnsAllTechniques() {
         val driverFactory = DriverFactory()
         val database = createAtlasDatabase(driverFactory)
-        val settingsDatabase = createSettingsDatabase(driverFactory)
+        val settingsDriver = JdbcSqliteDriver(JdbcSqliteDriver.IN_MEMORY)
+        UserSettingsDb.Schema.create(settingsDriver)
+        val settingsDatabase = UserSettingsDb(settingsDriver)
         val repository = MainRepository(database, settingsDatabase)
 
         database.transaction {

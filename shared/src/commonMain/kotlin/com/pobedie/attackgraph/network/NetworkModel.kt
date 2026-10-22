@@ -2,7 +2,7 @@ package com.pobedie.attackgraph.network
 import kotlinx.serialization.Serializable
 
 @Serializable
-data class NimbleRequest(
+data class DmRequest(
     val model: String,
     val state: Map<String, String>,
     val questions: Map<String, Question>
@@ -16,7 +16,7 @@ data class Question(
 )
 
 @Serializable
-data class NimbleResponse(
+data class DmResponse(
     val model: String? = null,
     val answers: Map<String, QuestionAnswer>,
     val usage: UsageData? = null

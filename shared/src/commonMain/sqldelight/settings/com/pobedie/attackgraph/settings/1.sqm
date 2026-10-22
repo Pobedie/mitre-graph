@@ -1,0 +1,4 @@
+ALTER TABLE user_settings RENAME COLUMN llm_url TO dm_url;
+ALTER TABLE user_settings RENAME COLUMN llm_api_key TO dm_api_key;
+ALTER TABLE user_settings RENAME COLUMN llm_model TO dm_model;
+ALTER TABLE user_settings ADD COLUMN dm_confidence_threshold REAL NOT NULL DEFAULT 0.5;

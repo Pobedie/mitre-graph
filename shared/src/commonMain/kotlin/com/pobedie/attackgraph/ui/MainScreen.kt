@@ -25,6 +25,7 @@ import com.pobedie.attackgraph.ui.theme.StageBarBackground
 import com.pobedie.attackgraph.ui.stages.AttackGraph
 import com.pobedie.attackgraph.ui.stages.ImportStage
 import com.pobedie.attackgraph.ui.stages.TechniqueSelection
+import com.pobedie.attackgraph.ui.components.DmErrorDialog
 import com.pobedie.attackgraph.ui.components.Console
 import com.pobedie.attackgraph.ui.components.StageArrow
 import com.pobedie.attackgraph.ui.components.StageButton
@@ -162,4 +163,12 @@ fun MainScreen(
             )
         }
     }
+    state.dmRequestError?.let { error ->
+        DmErrorDialog(
+            error = error,
+            onRetry = viewModel::retryDmRequest,
+            onDismiss = viewModel::dismissDmRequestError
+        )
+    }
+
 }

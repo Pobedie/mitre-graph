@@ -11,10 +11,10 @@
     <string name="import_from_file_title">Import from file</string>
     <string name="firewall_mapping_title">Allowed routes</string>
     <string name="firewall_mapping_hint">Set allowed routes between hosts</string>
-    <string name="llm_settings_title">Neural network Settings</string>
-    <string name="llm_url_label">URL</string>
-    <string name="llm_api_key_label">API Key</string>
-    <string name="llm_model_label">Model Name</string>
+    <string name="dm_settings_title">Decision model settings</string>
+    <string name="dm_url_label">URL</string>
+    <string name="dm_api_key_label">API Key (leave empty if model is local)</string>
+    <string name="dm_model_label">Model Name</string>
     <string name="connect_button">Connect</string>
     <string name="connecting_status">Connecting...</string>
     <string name="connection_success">Connected</string>
@@ -88,4 +88,13 @@
     <string name="maturity_feasible">Feasible</string>
     <string name="maturity_realized">Realized</string>
     <string name="maturity_unknown">Unknown</string>
+    <string name="dm_confidence_threshold">Minimum model confidence: %1$d% (inclusive)</string>
+    <string name="dm_model_hint">Enter a model ID manually or choose from the dropdown.</string>
+    <string name="dm_model_warning">The selected model must be a decision model . Model compatibility is not checked automatically.</string>
+    <string name="dm_find_vectors">Find attack vectors with decision model</string>
+    <string name="dm_error_title">DM request failed</string>
+    <string name="dm_error_code">Error code: %1$s</string>
+    <string name="dm_error_no_status">No HTTP response received</string>
+    <string name="dm_error_retry">Retry</string>
+    <string name="dm_error_cancel">Cancel</string>
 </resources>

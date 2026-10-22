@@ -11,10 +11,10 @@
     <string name="import_from_file_title">Импорт из файла</string>
     <string name="firewall_mapping_title">Разрешенные маршруты</string>
     <string name="firewall_mapping_hint">Настройка разрешенных маршрутов между хостами</string>
-    <string name="llm_settings_title">Настройки нейронной сети</string>
-    <string name="llm_url_label">URL</string>
-    <string name="llm_api_key_label">API Ключ</string>
-    <string name="llm_model_label">Название модели</string>
+    <string name="dm_settings_title">Настройки модели принятия решений</string>
+    <string name="dm_url_label">URL</string>
+    <string name="dm_api_key_label">API Ключ (оставьте пустым для локальной модели)</string>
+    <string name="dm_model_label">Название модели</string>
     <string name="connect_button">Подключиться</string>
     <string name="connecting_status">Подключение...</string>
     <string name="connection_success">Подключено</string>
@@ -88,4 +88,13 @@
     <string name="maturity_feasible">Возможна</string>
     <string name="maturity_realized">Реализована</string>
     <string name="maturity_unknown">Неизвестно</string>
+    <string name="dm_confidence_threshold">Минимальная уверенность модели: %1$d% (включительно)</string>
+    <string name="dm_model_hint">Введите ID модели вручную или выберите из списка.</string>
+    <string name="dm_model_warning">Выбранная модель должна быть моделью принятия решений (Decision Model). Совместимость модели не проверяется автоматически.</string>
+    <string name="dm_find_vectors">Найти векторы атак с моделью принятия решений</string>
+    <string name="dm_error_title">Ошибка запроса к DM</string>
+    <string name="dm_error_code">Код ошибки: %1$s</string>
+    <string name="dm_error_no_status">HTTP-ответ не получен</string>
+    <string name="dm_error_retry">Повторить</string>
+    <string name="dm_error_cancel">Отмена</string>
 </resources>

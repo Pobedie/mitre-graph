@@ -5,25 +5,28 @@ import com.pobedie.attackgraph.core.entity.Mitigation
 import com.pobedie.attackgraph.core.entity.Node
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.expectSuccess
-import io.ktor.client.call.body
 import io.ktor.client.request.get
 import io.ktor.client.request.header
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
-import io.ktor.client.statement.bodyAsText
+import kotlinx.serialization.json.Json
 
-class LlmService(private val client: HttpClient) {
+class DmService(private val client: HttpClient) {
+    private val json = Json { ignoreUnknownKeys = true }
 
     suspend fun fetchModels(
         url: String,
-        apiKey: String?
+        apiKey: String?,
+        onError: suspend (DmRequestException) -> Boolean = { throw it }
     ): List<String> {
         val fullUrl = decisionApiEndpoint(url, "models")
-        val response = client.get(fullUrl) {
-            expectSuccess = true
-            header("Authorization", "Bearer ${apiKey?.takeIf { it.isNotBlank() } ?: "DUMMY_KEY"}")
+        val body = requestDmBody(onError) {
+            client.get(fullUrl) {
+                expectSuccess = false
+                header("Authorization", "Bearer ${apiKey?.takeIf { it.isNotBlank() } ?: "DUMMY_KEY"}")
+            }
         }
-        val responseBody = response.body<ModelsResponse>()
+        val responseBody = json.decodeFromString<ModelsResponse>(body)
         return responseBody.data.map { it.id }
     }
 
@@ -34,9 +37,11 @@ class LlmService(private val client: HttpClient) {
         techniques: List<Node>,
         mitigations: List<Mitigation>,
         attackVectors: List<AttackVector>,
-        onProgress: (processed: Int, total: Int) -> Unit
+        onProgress: (processed: Int, total: Int) -> Unit,
+        onError: suspend (DmRequestException) -> Boolean = { throw it }
     ): List<DecisionOutput> {
 
+        require(model.isNotBlank()) { "Select a DM model before searching" }
         val fullUrl = decisionApiEndpoint(url, "systemone")
 
         val uniqueTechniques = techniques.map { it.techniqueId }.distinct()
@@ -63,20 +68,20 @@ class LlmService(private val client: HttpClient) {
                     criteria = batch.associateWith { it }
                 )
 
-                val requestBody = NimbleRequest(
-                    model = model.ifBlank { "nimble" },
+                val requestBody = DmRequest(
+                    model = model.trim(),
                     state = mapOf("AI_attack_graph" to statePrompt),
                     questions = mapOf("potential_attacks" to question)
                 )
 
-                val response = client.post(fullUrl) {
-                    expectSuccess = true
-                    header("Authorization", "Bearer ${apiKey?.takeIf { it.isNotBlank() } ?: "DUMMY_KEY"}")
-                    header("Content-Type", "application/json")
-                    setBody(requestBody)
+                val responseBody = requestDmBody(onError) {
+                    client.post(fullUrl) {
+                        expectSuccess = false
+                        header("Authorization", "Bearer ${apiKey?.takeIf { it.isNotBlank() } ?: "DUMMY_KEY"}")
+                        header("Content-Type", "application/json")
+                        setBody(requestBody)
+                    }
                 }
-
-                val responseBody = response.bodyAsText()
 
                 val parsedDecisions = DecisionParser.parse(responseBody, sourceId, batch.toSet())
                 allDecisions.addAll(parsedDecisions)

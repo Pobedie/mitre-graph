@@ -21,11 +21,15 @@ import com.pobedie.attackgraph.core.entity.FirewallRule
 import com.pobedie.attackgraph.core.entity.Host
 import com.pobedie.attackgraph.core.entity.UserSettings
 import com.pobedie.attackgraph.core.isEdgeAllowed
-import com.pobedie.attackgraph.network.LlmService
+import com.pobedie.attackgraph.network.DmRequestException
+import com.pobedie.attackgraph.network.DmService
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.serialization.kotlinx.json.json
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -48,7 +52,7 @@ class ViewModel(
     val mainRepository: MainRepository,
     private val attackVectorService: AttackVectorService,
     private val pathfinderService: PathfinderService,
-    private val llmService: LlmService
+    private val dmService: DmService
 ) {
 
     companion object {
@@ -76,7 +80,7 @@ class ViewModel(
                 mainRepository = mainRepository,
                 attackVectorService = AttackVectorService(),
                 pathfinderService = PathfinderService(),
-                llmService = LlmService(httpClient)
+                dmService = DmService(httpClient)
             )
         }
     }
@@ -103,10 +107,11 @@ class ViewModel(
                             techniquesIds = emptyList()
                         )
                     ),
-                    aiUrl = savedSettings?.llmUrl ?: "",
-                    aiApiKey = savedSettings?.llmApiKey ?: "",
-                    aiModel = savedSettings?.llmModel ?: "",
-                    isAiAdded = savedSettings != null
+                    dmUrl = savedSettings?.dmUrl ?: "",
+                    dmApiKey = savedSettings?.dmApiKey ?: "",
+                    dmModel = savedSettings?.dmModel ?: "",
+                    dmConfidenceThreshold = savedSettings?.dmConfidenceThreshold ?: 0.5f,
+                    isDmAdded = savedSettings != null
                 )
             }
         }
@@ -137,7 +142,7 @@ class ViewModel(
                     )
             val isAttackVectorMappingStageAvailable =
                         resolvedTargets.isNotEmpty() &&
-                        currentState.aiConnectionStatus != AiConnectionStatus.Connecting
+                        currentState.dmConnectionStatus != DmConnectionStatus.Connecting
             val isFirewallMappingStageAvailable = currentState.hosts.count { it.techniquesIds.isNotEmpty() } >= 2
 
             if (currentState.rootNodeGoal == RootNodeGoal.Automatic) {
@@ -163,63 +168,122 @@ class ViewModel(
         }.launchIn(scope)
     }
 
-    fun updateLlmUrl(url: String) {
-        _state.update { it.copy(aiUrl = url, aiConnectionStatus = AiConnectionStatus.None) }
+    fun updateDmUrl(url: String) {
+        _state.update { it.copy(dmUrl = url, dmConnectionStatus = DmConnectionStatus.None) }
     }
 
-    fun updateLlmApiKey(key: String) {
-        _state.update { it.copy(aiApiKey = key, aiConnectionStatus = AiConnectionStatus.None) }
+    fun updateDmApiKey(key: String) {
+        _state.update { it.copy(dmApiKey = key, dmConnectionStatus = DmConnectionStatus.None) }
     }
 
-    fun updateLlmModel(model: String) {
-        _state.update { it.copy(aiModel = model) }
+    fun updateDmModel(model: String) {
+        _state.update { it.copy(dmModel = model, dmConnectionStatus = DmConnectionStatus.None) }
     }
 
-    fun fetchLlmModels() {
+    fun updateDmConfidenceThreshold(threshold: Float) {
+        require(threshold.isFinite() && threshold in 0f..1f)
+        _state.update { it.copy(dmConfidenceThreshold = threshold) }
+    }
+
+    fun saveDmSettings() {
+        val current = state.value
+        mainRepository.saveUserSettings(UserSettings(
+            dmUrl = current.dmUrl,
+            dmApiKey = current.dmApiKey,
+            dmModel = current.dmModel,
+            dmConfidenceThreshold = current.dmConfidenceThreshold
+        ))
+    }
+
+    private val dmErrorMutex = Mutex()
+    private var pendingDmRetry: CompletableDeferred<Boolean>? = null
+
+    private suspend fun awaitDmRetry(error: DmRequestException): Boolean = dmErrorMutex.withLock {
+        val decision = CompletableDeferred<Boolean>()
+        pendingDmRetry = decision
+        _state.update {
+            it.copy(dmRequestError = DmRequestError(error.statusCode, error.errorCode, error.message))
+        }
+        try {
+            decision.await()
+        } finally {
+            pendingDmRetry = null
+            _state.update { it.copy(dmRequestError = null) }
+        }
+    }
+
+    fun retryDmRequest() {
+        pendingDmRetry?.complete(true)
+    }
+
+    fun dismissDmRequestError() {
+        pendingDmRetry?.complete(false)
+    }
+
+    fun fetchDmModels() {
         val currentState = state.value
-        if (currentState.aiUrl.isBlank()) return
+        if (currentState.dmUrl.isBlank()) return
 
-        _state.update { it.copy(isAiModelsLoading = true) }
+        _state.update { it.copy(isDmModelsLoading = true) }
 
         scope.launch {
             try {
-                val models = llmService.fetchModels(currentState.aiUrl, currentState.aiApiKey)
+                val models = dmService.fetchModels(currentState.dmUrl, currentState.dmApiKey, ::awaitDmRetry)
                 _state.update {
                     it.copy(
-                        availableAiModels = models,
-                        isAiModelsLoading = false
+                        availableDmModels = models,
+                        isDmModelsLoading = false
                     )
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
-                _state.update { it.copy(isAiModelsLoading = false) }
                 e.printStackTrace()
+            } finally {
+                _state.update { it.copy(isDmModelsLoading = false) }
             }
         }
     }
 
-    fun checkLlmConnection() {
+    fun checkDmConnection() {
         val currentState = state.value
+        if (currentState.dmModel.isBlank() || currentState.dmConnectionStatus == DmConnectionStatus.Connecting) return
         val settings = UserSettings(
-            llmUrl = currentState.aiUrl,
-            llmApiKey = currentState.aiApiKey,
-            llmModel = currentState.aiModel
+            dmUrl = currentState.dmUrl,
+            dmApiKey = currentState.dmApiKey,
+            dmModel = currentState.dmModel,
+            dmConfidenceThreshold = currentState.dmConfidenceThreshold
         )
 
-        _state.update { it.copy(aiConnectionStatus = AiConnectionStatus.Connecting) }
+        _state.update { it.copy(dmConnectionStatus = DmConnectionStatus.Connecting) }
 
         scope.launch {
-            mainRepository.saveUserSettings(settings)
             try {
-                llmService.fetchModels(settings.llmUrl, settings.llmApiKey)
+                val models = dmService.fetchModels(settings.dmUrl, settings.dmApiKey, ::awaitDmRetry)
+                if (state.value.dmUrl != settings.dmUrl || state.value.dmApiKey != settings.dmApiKey ||
+                    state.value.dmModel != settings.dmModel) return@launch
+                saveDmSettings()
                 
                 _state.update { 
                     it.copy(
-                        aiConnectionStatus = AiConnectionStatus.Connected,
-                        isAiAdded = true
+                        dmConnectionStatus = DmConnectionStatus.Connected,
+                        availableDmModels = models,
+                        isDmAdded = true
                     ) 
                 }
+            } catch (e: CancellationException) {
+                _state.update {
+                    if (it.dmConnectionStatus == DmConnectionStatus.Connecting) {
+                        it.copy(dmConnectionStatus = DmConnectionStatus.None)
+                    } else it
+                }
+                throw e
             } catch (e: Exception) {
-                _state.update { it.copy(aiConnectionStatus = AiConnectionStatus.Failed) }
+                _state.update {
+                    if (it.dmUrl == settings.dmUrl && it.dmApiKey == settings.dmApiKey && it.dmModel == settings.dmModel) {
+                        it.copy(dmConnectionStatus = DmConnectionStatus.Failed)
+                    } else it
+                }
                 e.printStackTrace()
             }
         }
@@ -232,34 +296,36 @@ class ViewModel(
         _state.update {
             it.copy(
                 isAttackVectorSearchingInProgress = true,
-                aiProcessedTechniques = 0,
-                aiTotalTechniques = total
+                dmProcessedTechniques = 0,
+                dmTotalTechniques = total
             )
         }
         scope.launch {
             try {
-                val decisions = llmService.fetchDecision(
-                    url = currentState.aiUrl,
-                    apiKey = currentState.aiApiKey,
-                    model = currentState.aiModel,
+                val decisions = dmService.fetchDecision(
+                    url = currentState.dmUrl,
+                    apiKey = currentState.dmApiKey,
+                    model = currentState.dmModel,
                     techniques = currentState.nodes,
                     mitigations = currentState.mitigations,
                     attackVectors = currentState.attackVectors,
                     onProgress = { processed, totalTechs ->
                         _state.update {
                             it.copy(
-                                aiProcessedTechniques = processed,
-                                aiTotalTechniques = totalTechs
+                                dmProcessedTechniques = processed,
+                                dmTotalTechniques = totalTechs
                             )
                         }
-                    }
+                    },
+                    onError = ::awaitDmRetry
                 )
 
-                val newEdges = attackVectorService.processLlmDecisions(
+                val newEdges = attackVectorService.processDmDecisions(
                     decisions = decisions,
                     hosts = currentState.hosts,
                     existingEdges = currentState.edges,
-                    nodes = currentState.nodes
+                    nodes = currentState.nodes,
+                    confidenceThreshold = currentState.dmConfidenceThreshold
                 )
                 
                 val updatedEdges = calculateProbabilitiesSimple(newEdges, currentState.nodes)
@@ -272,14 +338,14 @@ class ViewModel(
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
-                _state.update { it.copy(aiConnectionStatus = AiConnectionStatus.Failed) }
+                _state.update { it.copy(dmConnectionStatus = DmConnectionStatus.Failed) }
                 e.printStackTrace()
             } finally {
                 _state.update {
                     it.copy(
                         isAttackVectorSearchingInProgress = false,
-                        aiProcessedTechniques = 0,
-                        aiTotalTechniques = 0
+                        dmProcessedTechniques = 0,
+                        dmTotalTechniques = 0
                     )
                 }
             }

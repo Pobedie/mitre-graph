@@ -53,22 +53,24 @@ data class ViewState(
     val consoleText: String = "",
     val isConsoleFrozen: Boolean = false,
 
-    // AI settings
-    val aiUrl: String = "",
-    val aiApiKey: String = "",
-    val aiModel: String = "",
-    val availableAiModels: List<String> = emptyList(),
-    val isAiModelsLoading: Boolean = false,
-    val aiConnectionStatus: AiConnectionStatus = AiConnectionStatus.None,
+    // DM settings
+    val dmUrl: String = "",
+    val dmApiKey: String = "",
+    val dmModel: String = "",
+    val dmConfidenceThreshold: Float = 0.5f,
+    val availableDmModels: List<String> = emptyList(),
+    val isDmModelsLoading: Boolean = false,
+    val dmConnectionStatus: DmConnectionStatus = DmConnectionStatus.None,
     val isAttackVectorSearchingInProgress: Boolean = false,
-    val aiProcessedTechniques: Int = 0,
-    val aiTotalTechniques: Int = 0,
-    val isAiAdded: Boolean = false
+    val dmProcessedTechniques: Int = 0,
+    val dmTotalTechniques: Int = 0,
+    val dmRequestError: DmRequestError? = null,
+    val isDmAdded: Boolean = false
 ) {
     val selectedTechniquesIds = hosts.flatMap { it.techniquesIds }
 }
 
-enum class AiConnectionStatus {
+enum class DmConnectionStatus {
     None,
     Connecting,
     Connected,
@@ -98,3 +100,9 @@ enum class Stage {
     EdgeValueCalculation, // Calculates the values of the edges
     PossibleAttackVectors, // Shows nodes that will be mitigated and edges that form a proven attack vector
 }
+
+data class DmRequestError(
+    val statusCode: Int?,
+    val errorCode: String?,
+    val message: String
+)

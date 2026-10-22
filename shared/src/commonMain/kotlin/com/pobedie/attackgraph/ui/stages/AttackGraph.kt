@@ -90,6 +90,7 @@ import attackgraph.shared.generated.resources.maturity_realized
 import attackgraph.shared.generated.resources.maturity_unknown
 import attackgraph.shared.generated.resources.mitigation_full_description_format
 import attackgraph.shared.generated.resources.p_label
+import attackgraph.shared.generated.resources.dm_find_vectors
 import attackgraph.shared.generated.resources.searching_attack_vectors
 import attackgraph.shared.generated.resources.set_as_irrelevant
 import attackgraph.shared.generated.resources.set_as_relevant
@@ -114,7 +115,7 @@ import com.pobedie.attackgraph.core.entity.EdgeState
 import com.pobedie.attackgraph.core.entity.Mitigation
 import com.pobedie.attackgraph.core.entity.Node
 import com.pobedie.attackgraph.core.entity.TechniqueMaturity
-import com.pobedie.attackgraph.ui.AiConnectionStatus
+import com.pobedie.attackgraph.ui.DmConnectionStatus
 import com.pobedie.attackgraph.ui.Stage
 import com.pobedie.attackgraph.ui.ViewModel
 import com.pobedie.attackgraph.ui.ViewState
@@ -437,20 +438,20 @@ fun AttackGraph(
             modifier = Modifier.align(Alignment.BottomStart)
         ) {
             AnimatedVisibility(
-                visible = state.stage == Stage.AttackVectorsBuilding && state.aiConnectionStatus == AiConnectionStatus.Connected,
+                visible = state.stage == Stage.AttackVectorsBuilding && state.dmConnectionStatus == DmConnectionStatus.Connected,
                 enter = fadeIn(),
                 exit = fadeOut()
             ) {
                 Button(
-                    enabled = state.aiConnectionStatus == AiConnectionStatus.Connected && !state.isAttackVectorSearchingInProgress,
+                    enabled = state.dmConnectionStatus == DmConnectionStatus.Connected && !state.isAttackVectorSearchingInProgress,
                     modifier = Modifier.padding(horizontal = 4.dp),
                     onClick = { viewModel.findAttackVectorsViaDecisionModel() }
 
                 ) {
                     if (state.isAttackVectorSearchingInProgress) {
-                        Text("Generating vector attacks")
+                        Text(stringResource(Res.string.searching_attack_vectors))
                     } else {
-                        Text("Let LLM find vector attacks")
+                        Text(stringResource(Res.string.dm_find_vectors))
                     }
                 }
             }
@@ -486,8 +487,8 @@ fun AttackGraph(
                     fontWeight = FontWeight.Bold
                 )
                 Spacer(modifier = Modifier.height(16.dp))
-                val progress = if (state.aiTotalTechniques > 0) {
-                    (state.aiProcessedTechniques.toFloat() / state.aiTotalTechniques).coerceIn(0f, 1f)
+                val progress = if (state.dmTotalTechniques > 0) {
+                    (state.dmProcessedTechniques.toFloat() / state.dmTotalTechniques).coerceIn(0f, 1f)
                 } else {
                     0f
                 }
@@ -502,8 +503,8 @@ fun AttackGraph(
                     text =
                         stringResource(
                             Res.string.techniques_processed_format,
-                            state.aiProcessedTechniques,
-                            state.aiTotalTechniques
+                            state.dmProcessedTechniques,
+                            state.dmTotalTechniques
                         ),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant

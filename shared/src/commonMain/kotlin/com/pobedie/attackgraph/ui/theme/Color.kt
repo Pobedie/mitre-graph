@@ -51,6 +51,7 @@ data class AttackGraphColors(
     val statusFail: Color,
     val nodeBorderRoot: Color,
     val errorColor: Color,
+    val warning: Color,
     val onErrorColor: Color,
     val errorContainerColor: Color,
     val onErrorContainerColor: Color,
@@ -114,6 +115,7 @@ val DarkAppColors = AttackGraphColors(
     statusFail = Color(0xFF862B0E),
     nodeBorderRoot = Color(0xFF81C709),
     errorColor = Color(0xFFF2B8B5),
+    warning = Color(0xFFEF6C00),
     onErrorColor = Color(0xFF601410),
     errorContainerColor = Color(0xFF8C1D18),
     onErrorContainerColor = Color(0xFFF9DEDC),
@@ -176,6 +178,7 @@ val LightAppColors = AttackGraphColors(
     statusFail = Color(0xFF862B0E),
     nodeBorderRoot = Color(0xFF689F38),
     errorColor = Color(0xFFB3261E),
+    warning = Color(0xFFEF6C00),
     onErrorColor = Color(0xFFFFFFFF),
     errorContainerColor = Color(0xFFF9DEDC),
     onErrorContainerColor = Color(0xFF410E0B),
@@ -304,6 +307,7 @@ val StatusFail: Color @Composable @ReadOnlyComposable get() = LocalAppColors.cur
 
 // Theme colors
 val ErrorColor: Color @Composable @ReadOnlyComposable get() = LocalAppColors.current.errorColor
+val WarningColor: Color @Composable @ReadOnlyComposable get() = LocalAppColors.current.warning
 val OnErrorColor: Color @Composable @ReadOnlyComposable get() = LocalAppColors.current.onErrorColor
 val ErrorContainerColor: Color @Composable @ReadOnlyComposable get() = LocalAppColors.current.errorContainerColor
 val OnErrorContainerColor: Color @Composable @ReadOnlyComposable get() = LocalAppColors.current.onErrorContainerColor

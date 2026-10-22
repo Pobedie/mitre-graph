@@ -6,7 +6,7 @@ object DecisionParser {
     private val json = Json { ignoreUnknownKeys = true }
 
     fun parse(input: String, sourceId: String, targetIds: Set<String>): List<DecisionOutput> {
-        val response = json.decodeFromString<NimbleResponse>(input)
+        val response = json.decodeFromString<DmResponse>(input)
         val answer = requireNotNull(response.answers["potential_attacks"]) {
             "Decision response is missing the potential_attacks answer"
         }

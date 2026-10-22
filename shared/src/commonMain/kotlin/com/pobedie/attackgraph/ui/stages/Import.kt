@@ -17,6 +17,14 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
+import kotlin.math.roundToInt
+import androidx.compose.material3.Slider
+import androidx.compose.material3.SliderDefaults
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import attackgraph.shared.generated.resources.dm_confidence_threshold
+import attackgraph.shared.generated.resources.dm_model_hint
+import attackgraph.shared.generated.resources.dm_model_warning
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Checkbox
@@ -47,17 +55,17 @@ import attackgraph.shared.generated.resources.connection_success
 import attackgraph.shared.generated.resources.ic_floder
 import attackgraph.shared.generated.resources.import_button
 import attackgraph.shared.generated.resources.import_from_file_title
-import attackgraph.shared.generated.resources.llm_api_key_label
-import attackgraph.shared.generated.resources.llm_model_label
-import attackgraph.shared.generated.resources.llm_settings_title
-import attackgraph.shared.generated.resources.llm_url_label
+import attackgraph.shared.generated.resources.dm_api_key_label
+import attackgraph.shared.generated.resources.dm_model_label
+import attackgraph.shared.generated.resources.dm_settings_title
+import attackgraph.shared.generated.resources.dm_url_label
 import attackgraph.shared.generated.resources.or_use_included_data
 import attackgraph.shared.generated.resources.select_yaml_file_content_desc
 import attackgraph.shared.generated.resources.select_yaml_file_dialog_title
 import attackgraph.shared.generated.resources.select_yaml_file_placeholder
 import attackgraph.shared.generated.resources.use_included_data_checkbox
 import com.pobedie.attackgraph.ui.Language
-import com.pobedie.attackgraph.ui.AiConnectionStatus
+import com.pobedie.attackgraph.ui.DmConnectionStatus
 import com.pobedie.attackgraph.ui.ViewModel
 import com.pobedie.attackgraph.ui.ViewState
 import kotlinx.coroutines.runBlocking
@@ -89,6 +97,7 @@ fun ImportStage(
                 .background(DialogBackground)
                 .widthIn(max = 600.dp)
                 .heightIn(max = 800.dp)
+                .verticalScroll(rememberScrollState())
                 .padding(bottom = 16.dp)
             ,
             horizontalAlignment = Alignment.Start
@@ -146,34 +155,61 @@ fun ImportStage(
 
             Text(
                 modifier = Modifier.padding(vertical = 8.dp, horizontal = 16.dp),
-                text = stringResource(Res.string.llm_settings_title),
+                text = stringResource(Res.string.dm_settings_title),
                 style = MaterialTheme.typography.titleLarge
             )
 
-            LlmSettingsField(
-                label = stringResource(Res.string.llm_url_label),
-                value = state.aiUrl,
-                onValueChange = { viewModel.updateLlmUrl(it) },
+            DmSettingsField(
+                label = stringResource(Res.string.dm_url_label),
+                value = state.dmUrl,
+                onValueChange = { viewModel.updateDmUrl(it) },
                 modifier = Modifier.padding(horizontal = 22.dp, vertical = 4.dp)
             )
 
-            LlmSettingsField(
-                label = stringResource(Res.string.llm_api_key_label),
-                value = state.aiApiKey,
+            DmSettingsField(
+                label = stringResource(Res.string.dm_api_key_label),
+                value = state.dmApiKey,
                 isApiField = true,
-                onValueChange = { viewModel.updateLlmApiKey(it) },
+                onValueChange = { viewModel.updateDmApiKey(it) },
                 modifier = Modifier.padding(horizontal = 22.dp, vertical = 4.dp)
             )
 
-            LlmModelSelectionField(
-                label = stringResource(Res.string.llm_model_label),
-                value = state.aiModel,
-                options = state.availableAiModels,
-                isLoading = state.isAiModelsLoading,
-                onValueChange = { viewModel.updateLlmModel(it) },
-                onExpanded = {viewModel.fetchLlmModels()},
+            Text(
+                text = stringResource(Res.string.dm_model_warning),
+                modifier = Modifier.padding(horizontal = 22.dp, vertical = 4.dp),
+                style = MaterialTheme.typography.bodyMedium,
+                color = WarningColor
+            )
+            DmModelSelectionField(
+                label = stringResource(Res.string.dm_model_label),
+                value = state.dmModel,
+                options = state.availableDmModels,
+                isLoading = state.isDmModelsLoading,
+                onValueChange = { viewModel.updateDmModel(it) },
+                onExpanded = {viewModel.fetchDmModels()},
                 modifier = Modifier.padding(horizontal = 22.dp, vertical = 4.dp)
             )
+
+            Column(modifier = Modifier.padding(horizontal = 22.dp, vertical = 4.dp)) {
+                Text(stringResource(Res.string.dm_model_hint), style = MaterialTheme.typography.bodySmall)
+                Text(
+                    stringResource(Res.string.dm_confidence_threshold, (state.dmConfidenceThreshold * 100).roundToInt()),
+                    modifier = Modifier.padding(top = 12.dp)
+                )
+                Slider(
+                    value = state.dmConfidenceThreshold,
+                    onValueChange = viewModel::updateDmConfidenceThreshold,
+                    onValueChangeFinished = viewModel::saveDmSettings,
+                    valueRange = 0f..1f,
+                    steps = 99,
+                    colors = SliderDefaults.colors(
+                        activeTickColor = TransparentColor,
+                        inactiveTickColor = TransparentColor,
+                        disabledActiveTickColor = TransparentColor,
+                        disabledInactiveTickColor = TransparentColor
+                    )
+                )
+            }
 
             Row(
                 modifier = Modifier
@@ -182,15 +218,15 @@ fun ImportStage(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                val statusText = when (state.aiConnectionStatus) {
-                    AiConnectionStatus.None -> ""
-                    AiConnectionStatus.Connecting -> stringResource(Res.string.connecting_status)
-                    AiConnectionStatus.Connected -> stringResource(Res.string.connection_success)
-                    AiConnectionStatus.Failed -> stringResource(Res.string.connection_failed)
+                val statusText = when (state.dmConnectionStatus) {
+                    DmConnectionStatus.None -> ""
+                    DmConnectionStatus.Connecting -> stringResource(Res.string.connecting_status)
+                    DmConnectionStatus.Connected -> stringResource(Res.string.connection_success)
+                    DmConnectionStatus.Failed -> stringResource(Res.string.connection_failed)
                 }
-                val statusColor = when (state.aiConnectionStatus) {
-                    AiConnectionStatus.Connected -> StatusSuccess
-                    AiConnectionStatus.Failed -> ErrorColor
+                val statusColor = when (state.dmConnectionStatus) {
+                    DmConnectionStatus.Connected -> StatusSuccess
+                    DmConnectionStatus.Failed -> ErrorColor
                     else -> PrimaryTextColor
                 }
                 Text(
@@ -200,8 +236,8 @@ fun ImportStage(
                 )
 
                 Button(
-                    onClick = { viewModel.checkLlmConnection() },
-                    enabled = state.aiUrl.isNotBlank() && state.aiConnectionStatus != AiConnectionStatus.Connecting
+                    onClick = { viewModel.checkDmConnection() },
+                    enabled = state.dmUrl.isNotBlank() && state.dmModel.isNotBlank() && state.dmConnectionStatus != DmConnectionStatus.Connecting
                 ) {
                     Text(stringResource(Res.string.connect_button))
                 }
@@ -357,7 +393,7 @@ fun openFilePicker(
 }
 
 @Composable
-private fun LlmSettingsField(
+private fun DmSettingsField(
     label: String,
     value: String,
     isApiField: Boolean = false,
@@ -391,7 +427,7 @@ private fun LlmSettingsField(
 }
 
 @Composable
-private fun LlmModelSelectionField(
+private fun DmModelSelectionField(
     label: String,
     value: String,
     options: List<String>,
@@ -408,8 +444,7 @@ private fun LlmModelSelectionField(
             onValueChange = onValueChange,
             label = { Text(text = label) },
             modifier = Modifier
-                .fillMaxWidth()
-                .onFocusChanged { if (it.isFocused) expanded = true },
+                .fillMaxWidth(),
             trailingIcon = {
                 if (isLoading) {
                     CircularProgressIndicator(modifier = Modifier.size(24.dp))
@@ -418,8 +453,8 @@ private fun LlmModelSelectionField(
                         imageVector = if (expanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
                         contentDescription = null,
                         modifier = Modifier.clickable {
-                            onExpanded()
                             expanded = !expanded
+                            if (expanded) onExpanded()
                         }
                     )
                 }
