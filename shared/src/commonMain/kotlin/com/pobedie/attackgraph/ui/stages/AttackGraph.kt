@@ -111,6 +111,7 @@ import com.dk.kuiver.renderer.KuiverViewer
 import com.dk.kuiver.renderer.KuiverViewerConfig
 import com.dk.kuiver.ui.EdgeContentWithLabel
 import com.dk.kuiver.ui.LabelPlacement
+import com.dk.kuiver.util.calculatePositionBounds
 import com.pobedie.attackgraph.core.entity.EdgeState
 import com.pobedie.attackgraph.core.entity.Mitigation
 import com.pobedie.attackgraph.core.entity.Node
@@ -180,12 +181,17 @@ fun AttackGraph(
 
                     hostNodes.forEach { nodeData ->
                         val libNode = kuiver.nodes[nodeData.id] ?: return@forEach
+                        val nodeHeight = libNode.dimensions?.height ?: DEFAULT_NODE_HEIGHT
                         updatedNodes.add(
                             libNode.copy(
-                                position = DpOffset(x + NODE_X_OFFSET, currentY)
+                                // Kuiver positions nodes by their center, not their top-left corner.
+                                position = DpOffset(
+                                    x + NODE_X_OFFSET + NODE_WIDTH / 2f,
+                                    currentY + nodeHeight / 2f
+                                )
                             )
                         )
-                        currentY += (libNode.dimensions?.height ?: DEFAULT_NODE_HEIGHT) + NODE_Y_SPACING
+                        currentY += nodeHeight + NODE_Y_SPACING
                     }
 
                     newHostContainers.add(
@@ -195,7 +201,7 @@ fun AttackGraph(
                                 left = x,
                                 top = hostStartY,
                                 right = x + NODE_WIDTH + HOST_CONTAINER_WIDTH_PADDING,
-                                bottom = currentY - HOST_CONTAINER_BOTTOM_PADDING
+                                bottom = currentY - NODE_Y_SPACING + HOST_CONTAINER_BOTTOM_PADDING
                             )
                         )
                     )
@@ -279,12 +285,10 @@ fun AttackGraph(
                     val vsScale = viewerState.scale
                     val vsOffset = viewerState.offset
 
-                    val minNodeY = (hostContainers.minOfOrNull { it.rect.top } ?: 0.dp) + HOST_TITLE_HEIGHT
-                    val maxNodeY = (hostContainers.maxOfOrNull { it.rect.bottom } ?: 0.dp) + HOST_CONTAINER_BOTTOM_PADDING - NODE_Y_SPACING
-                    val graphCenterY = (minNodeY + maxNodeY) / 2f
-
-                    val coordsOffsetX = COLUMN_X_SPACING * (tactics.size / 2f) - COLUMN_X_SPACING / 2f
-                    val graphCenterX = coordsOffsetX + (NODE_X_OFFSET + NODE_WIDTH / 2f)
+                    // Match the renderer's origin, including unequal technique heights.
+                    val graphBounds = viewerState.layoutedKuiver.nodes.values.calculatePositionBounds()
+                    val graphCenterX = graphBounds.centerX
+                    val graphCenterY = graphBounds.centerY
 
                     hostContainers.forEach { container ->
                         val nodeOffsetX = (container.rect.left - graphCenterX) * vsScale
