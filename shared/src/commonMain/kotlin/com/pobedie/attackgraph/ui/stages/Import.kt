@@ -27,6 +27,9 @@ import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuAnchorType
+import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -40,7 +43,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.window.PopupProperties
 import com.pobedie.attackgraph.ui.theme.*
 import androidx.compose.ui.unit.dp
 import attackgraph.shared.generated.resources.Res
@@ -422,6 +424,7 @@ private fun DmSettingsField(
     )
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun DmModelSelectionField(
     label: String,
@@ -434,13 +437,21 @@ private fun DmModelSelectionField(
 ) {
     var expanded by remember { mutableStateOf(false) }
 
-    Box(modifier = modifier.fillMaxWidth()) {
+    ExposedDropdownMenuBox(
+        expanded = expanded,
+        onExpandedChange = {
+            expanded = it
+            if (it) onExpanded()
+        },
+        modifier = modifier.fillMaxWidth()
+    ) {
         OutlinedTextField(
             value = value,
             onValueChange = onValueChange,
             label = { Text(text = label) },
             modifier = Modifier
-                .fillMaxWidth(),
+                .fillMaxWidth()
+                .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryEditable, enabled = false),
             trailingIcon = {
                 if (isLoading) {
                     CircularProgressIndicator(modifier = Modifier.size(24.dp))
@@ -448,10 +459,7 @@ private fun DmModelSelectionField(
                     Icon(
                         imageVector = if (expanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
                         contentDescription = null,
-                        modifier = Modifier.clickable {
-                            expanded = !expanded
-                            if (expanded) onExpanded()
-                        }
+                        modifier = Modifier.menuAnchor(ExposedDropdownMenuAnchorType.SecondaryEditable)
                     )
                 }
             },
@@ -468,13 +476,10 @@ private fun DmModelSelectionField(
             )
         )
 
-        DropdownMenu(
+        ExposedDropdownMenu(
             expanded = expanded && options.isNotEmpty(),
             onDismissRequest = { expanded = false },
-            properties = PopupProperties(focusable = false), // Keep focus on TextField to allow typing
-            modifier = Modifier
-                .width(556.dp) // Match the width of the dialog's content (600 - 22*2)
-                .background(DropdownMenuBackground)
+            containerColor = DropdownMenuBackground
         ) {
             options.forEach { option ->
                 DropdownMenuItem(
