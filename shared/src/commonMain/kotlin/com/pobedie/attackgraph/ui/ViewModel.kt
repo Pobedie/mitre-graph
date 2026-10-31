@@ -113,6 +113,7 @@ class ViewModel(
                     dmApiKey = savedSettings?.dmApiKey ?: "",
                     dmModel = savedSettings?.dmModel ?: "",
                     dmConfidenceThreshold = savedSettings?.dmConfidenceThreshold ?: 0.5f,
+                    dmTargetBatchSize = savedSettings?.dmTargetBatchSize ?: 5,
                     isDmAdded = savedSettings != null
                 )
             }
@@ -199,13 +200,18 @@ class ViewModel(
         }
     }
 
+    fun updateDmTargetBatchSize(size: Int) {
+        _state.update { it.copy(dmTargetBatchSize = size) }
+    }
+
     fun saveDmSettings() {
         val current = state.value
         mainRepository.saveUserSettings(UserSettings(
             dmUrl = current.dmUrl,
             dmApiKey = current.dmApiKey,
             dmModel = current.dmModel,
-            dmConfidenceThreshold = current.dmConfidenceThreshold
+            dmConfidenceThreshold = current.dmConfidenceThreshold,
+            dmTargetBatchSize = current.dmTargetBatchSize
         ))
     }
 
@@ -266,7 +272,8 @@ class ViewModel(
             dmUrl = currentState.dmUrl,
             dmApiKey = currentState.dmApiKey,
             dmModel = currentState.dmModel,
-            dmConfidenceThreshold = currentState.dmConfidenceThreshold
+            dmConfidenceThreshold = currentState.dmConfidenceThreshold,
+            dmTargetBatchSize = currentState.dmTargetBatchSize
         )
 
         _state.update { it.copy(dmConnectionStatus = DmConnectionStatus.Connecting) }
@@ -324,6 +331,7 @@ class ViewModel(
                     techniques = currentState.nodes,
                     mitigations = currentState.mitigations,
                     attackVectors = currentState.attackVectors,
+                    targetBatchSize = currentState.dmTargetBatchSize,
                     onProgress = { processed, totalTechs ->
                         _state.update {
                             it.copy(

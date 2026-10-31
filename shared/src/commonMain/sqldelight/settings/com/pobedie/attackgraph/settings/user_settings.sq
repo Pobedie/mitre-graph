@@ -4,14 +4,15 @@ CREATE TABLE user_settings (
     dm_api_key TEXT NOT NULL,
     dm_model TEXT NOT NULL,
     dm_confidence_threshold REAL NOT NULL DEFAULT 0.5,
+    dm_target_batch_size INTEGER NOT NULL DEFAULT 5,
     CONSTRAINT one_row CHECK (id = 0)
 );
 
 saveUserSettings:
-INSERT OR REPLACE INTO user_settings(id, dm_url, dm_api_key, dm_model, dm_confidence_threshold)
-VALUES (0, ?, ?, ?, ?);
+INSERT OR REPLACE INTO user_settings(id, dm_url, dm_api_key, dm_model, dm_confidence_threshold, dm_target_batch_size)
+VALUES (0, ?, ?, ?, ?, ?);
 
 getUserSettings:
-SELECT dm_url, dm_api_key, dm_model, dm_confidence_threshold
+SELECT dm_url, dm_api_key, dm_model, dm_confidence_threshold, dm_target_batch_size
 FROM user_settings
 WHERE id = 0;

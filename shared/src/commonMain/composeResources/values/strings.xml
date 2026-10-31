@@ -97,4 +97,7 @@
     <string name="dm_error_no_status">No HTTP response received</string>
     <string name="dm_error_retry">Retry</string>
     <string name="dm_error_cancel">Cancel</string>
+    <string name="dm_advanced_settings">Advanced settings</string>
+    <string name="dm_target_batch_size">Target processing batch size: %1$d</string>
+    <string name="dm_target_batch_size_hint">Maximum number of candidate target techniques included in each decision-model request for one source technique. Larger batches include more targets per request but require more compute and larger context window; smaller batches send more requests but are easier to compute and more compatible with model's context windows.</string>
 </resources>

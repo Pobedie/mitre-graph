@@ -58,6 +58,7 @@ data class ViewState(
     val dmApiKey: String = "",
     val dmModel: String = "",
     val dmConfidenceThreshold: Float = 0.5f,
+    val dmTargetBatchSize: Int = 5,
     val availableDmModels: List<String> = emptyList(),
     val isDmModelsLoading: Boolean = false,
     val dmConnectionStatus: DmConnectionStatus = DmConnectionStatus.None,

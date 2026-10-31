@@ -4,5 +4,6 @@ data class UserSettings(
     val dmUrl: String,
     val dmApiKey: String,
     val dmModel: String,
-    val dmConfidenceThreshold: Float = 0.5f
+    val dmConfidenceThreshold: Float = 0.5f,
+    val dmTargetBatchSize: Int = 5
 )

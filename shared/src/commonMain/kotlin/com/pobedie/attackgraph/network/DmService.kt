@@ -38,6 +38,7 @@ class DmService(private val client: HttpClient) {
         mitigations: List<Mitigation>,
         attackVectors: List<AttackVector>,
         onProgress: (processed: Int, total: Int) -> Unit,
+        targetBatchSize: Int = 5,
         onError: suspend (DmRequestException) -> Boolean = { throw it }
     ): List<DecisionOutput> {
 
@@ -52,7 +53,7 @@ class DmService(private val client: HttpClient) {
 
         uniqueTechniques.forEachIndexed { index, sourceId ->
             val candidateTargets = uniqueTechniques.filter { it != sourceId }
-            val targetBatches = candidateTargets.chunked(MAX_TARGETS_PER_REQUEST)
+            val targetBatches = candidateTargets.chunked(targetBatchSize)
 
             for (batch in targetBatches) {
                 val statePrompt = buildDecisionPrompt(
@@ -102,5 +103,3 @@ internal fun decisionApiEndpoint(url: String, endpoint: String): String {
         .removeSuffix("/models")
     return "$base/$endpoint"
 }
-
-private const val MAX_TARGETS_PER_REQUEST = 5

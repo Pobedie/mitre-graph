@@ -65,6 +65,7 @@ import com.pobedie.attackgraph.ui.DmConnectionStatus
 import com.pobedie.attackgraph.ui.ViewModel
 import com.pobedie.attackgraph.ui.ViewState
 import com.pobedie.attackgraph.ui.components.DmConfidenceSlider
+import com.pobedie.attackgraph.ui.components.DmAdvancedSettings
 import kotlinx.coroutines.runBlocking
 import org.jetbrains.compose.resources.getString
 import org.jetbrains.compose.resources.painterResource
@@ -90,10 +91,10 @@ fun ImportStage(
         Column(
             modifier = Modifier
                 .align(Alignment.Center)
+                .padding(bottom = 16.dp)
                 .clip(RoundedCornerShape(8.dp))
                 .background(DialogBackground)
                 .widthIn(max = 600.dp)
-                .heightIn(max = 800.dp)
                 .verticalScroll(rememberScrollState())
                 .padding(bottom = 16.dp)
             ,
@@ -188,12 +189,21 @@ fun ImportStage(
             )
 
             Column(modifier = Modifier.padding(horizontal = 22.dp, vertical = 4.dp)) {
-                Text(stringResource(Res.string.dm_model_hint), style = MaterialTheme.typography.bodySmall)
+                Text(
+                    stringResource(Res.string.dm_model_hint),
+                    style = MaterialTheme.typography.bodySmall
+                )
                 DmConfidenceSlider(
                     value = state.dmConfidenceThreshold,
-                    onValueChange = viewModel::updateDmConfidenceThreshold,
-                    onValueChangeFinished = viewModel::saveDmSettings,
+                    onValueChange = { viewModel.updateDmConfidenceThreshold(it) },
+                    onValueChangeFinished = { viewModel.saveDmSettings() },
                     modifier = Modifier.padding(top = 12.dp)
+                )
+                DmAdvancedSettings(
+                    targetBatchSize = state.dmTargetBatchSize,
+                    onTargetBatchSizeChange = { viewModel.updateDmTargetBatchSize(it) },
+                    onValueChangeFinished = { viewModel.saveDmSettings() },
+                    modifier = Modifier.padding(top = 8.dp)
                 )
             }
 
