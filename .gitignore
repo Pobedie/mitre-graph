@@ -20,3 +20,4 @@ node_modules/
 /desktopApp/atlas.db
 /desktopApp/user_settings.db
 /shared/user_settings.db
+*.db
