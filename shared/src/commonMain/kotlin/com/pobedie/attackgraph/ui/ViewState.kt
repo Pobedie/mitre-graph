@@ -62,12 +62,17 @@ data class ViewState(
     val isDmModelsLoading: Boolean = false,
     val dmConnectionStatus: DmConnectionStatus = DmConnectionStatus.None,
     val isAttackVectorSearchingInProgress: Boolean = false,
+    val hasDmProcessedConnections: Boolean = false,
     val dmProcessedTechniques: Int = 0,
     val dmTotalTechniques: Int = 0,
     val dmRequestError: DmRequestError? = null,
     val isDmAdded: Boolean = false
 ) {
     val selectedTechniquesIds = hosts.flatMap { it.techniquesIds }
+
+    val confidenceFilteredEdges: List<Edge>
+        get() = edges.filter { (it.dmConfidence ?: 1f) >= dmConfidenceThreshold }
+
 }
 
 enum class DmConnectionStatus {

@@ -33,6 +33,7 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
@@ -85,6 +86,7 @@ class ViewModel(
         }
     }
 
+    private var pathConsoleJob: Job? = null
     private val _state = MutableStateFlow<ViewState>(ViewState())
     val state = _state.asStateFlow()
 
@@ -130,40 +132,45 @@ class ViewModel(
         }
     }
 
-    private fun observeStateChanges() {
-        state.onEach { currentState ->
-            val resolvedTargets = getResolvedTargetTechniques()
-            val possibleAttackVectorsStageAvailable = (
-                    currentState.edges.size >= 3 &&
-                            currentState.edges.none { it.probability == null } &&
-                            currentState.edges.any { edge -> 
-                                resolvedTargets.any { target -> edge.endNode == "${target.second}_${target.first}" } 
-                            }
-                    )
-            val isAttackVectorMappingStageAvailable =
-                        resolvedTargets.isNotEmpty() &&
-                        currentState.dmConnectionStatus != DmConnectionStatus.Connecting
-            val isFirewallMappingStageAvailable = currentState.hosts.count { it.techniquesIds.isNotEmpty() } >= 2
+    private fun ViewState.withResolvedGraphState(resolvedTargets: List<Pair<String, String>>): ViewState {
+        val filteredEdges = confidenceFilteredEdges
+        val roots = if (rootNodeGoal == RootNodeGoal.Automatic) {
+            val incomingNodes = filteredEdges.mapTo(mutableSetOf()) { it.endNode }
+            val outgoingNodes = filteredEdges.mapTo(mutableSetOf()) { it.startNode }
+            nodes.filter { it.id !in incomingNodes && it.id in outgoingNodes }
+                .map { it.techniqueId to it.hostId }
+        } else rootTechniques
 
-            if (currentState.rootNodeGoal == RootNodeGoal.Automatic) {
-                val autoRootPairs = currentState.nodes
-                    .filter { node ->
-                        currentState.edges.none { it.endNode == node.id } &&
-                                currentState.edges.any { it.startNode == node.id }
-                    }
-                    .map { it.techniqueId to it.hostId }
+        return copy(
+            rootTechniques = roots,
+            selectedEdge = selectedEdge?.takeIf { selected ->
+                filteredEdges.any { it.startNode == selected.first && it.endNode == selected.second }
+            },
+            isPossibleAttackVectorsStageAvailable = filteredEdges.size >= 3 &&
+                    filteredEdges.none { it.probability == null } &&
+                    filteredEdges.any { edge ->
+                        resolvedTargets.any { target -> edge.endNode == "${target.second}_${target.first}" }
+                    },
+            isAttackVectorMappingStageAvailable = resolvedTargets.isNotEmpty() &&
+                    dmConnectionStatus != DmConnectionStatus.Connecting,
+            isFirewallMappingStageAvailable = hosts.count { it.techniquesIds.isNotEmpty() } >= 2
+        )
+    }
 
-                if (autoRootPairs != currentState.rootTechniques) {
-                    _state.update { it.copy(rootTechniques = autoRootPairs) }
-                }
+    private fun ViewState.withCalculatedEdges(calculatedEdges: List<Edge>): ViewState {
+        val calculatedByEndpoints = calculatedEdges.associateBy { it.startNode to it.endNode }
+        return copy(edges = edges.map { edge ->
+            calculatedByEndpoints[edge.startNode to edge.endNode] ?: when (edge.state) {
+                EdgeState.MostOptimal, EdgeState.Probable -> edge.copy(state = EdgeState.Idle)
+                else -> edge
             }
+        })
+    }
 
-            _state.update {
-                it.copy(
-                    isPossibleAttackVectorsStageAvailable = possibleAttackVectorsStageAvailable,
-                    isAttackVectorMappingStageAvailable = isAttackVectorMappingStageAvailable,
-                    isFirewallMappingStageAvailable = isFirewallMappingStageAvailable
-                )
+    private fun observeStateChanges() {
+        state.onEach {
+            _state.update { currentState ->
+                currentState.withResolvedGraphState(getResolvedTargetTechniques(currentState))
             }
         }.launchIn(scope)
     }
@@ -182,7 +189,14 @@ class ViewModel(
 
     fun updateDmConfidenceThreshold(threshold: Float) {
         require(threshold.isFinite() && threshold in 0f..1f)
-        _state.update { it.copy(dmConfidenceThreshold = threshold) }
+        if (state.value.dmConfidenceThreshold == threshold) return
+        _state.update {
+            it.copy(dmConfidenceThreshold = threshold)
+                .withResolvedGraphState(getResolvedTargetTechniques(it))
+        }
+        if (state.value.stage == Stage.PossibleAttackVectors) {
+            switchToPossibleAttackVectors()
+        }
     }
 
     fun saveDmSettings() {
@@ -296,6 +310,7 @@ class ViewModel(
         _state.update {
             it.copy(
                 isAttackVectorSearchingInProgress = true,
+                hasDmProcessedConnections = false,
                 dmProcessedTechniques = 0,
                 dmTotalTechniques = total
             )
@@ -325,14 +340,16 @@ class ViewModel(
                     hosts = currentState.hosts,
                     existingEdges = currentState.edges,
                     nodes = currentState.nodes,
-                    confidenceThreshold = currentState.dmConfidenceThreshold
+                    // Retain every valid decision so lowering the slider can restore its edges.
+                    confidenceThreshold = 0f
                 )
                 
                 val updatedEdges = calculateProbabilitiesSimple(newEdges, currentState.nodes)
 
                 _state.update {
                     it.copy(
-                        edges = updatedEdges
+                        edges = updatedEdges,
+                        hasDmProcessedConnections = true
                     )
                 }
             } catch (e: CancellationException) {
@@ -528,36 +545,50 @@ class ViewModel(
     }
 
     fun switchToPossibleAttackVectors() {
-        val currentState = state.value
+        pathConsoleJob?.cancel()
+        val resolvedTargets = getResolvedTargetTechniques()
+        val currentState = state.value.withResolvedGraphState(resolvedTargets)
         val result = pathfinderService.calculatePaths(
             nodes = currentState.nodes,
-            edges = currentState.edges,
+            edges = currentState.confidenceFilteredEdges,
             rootTechniques = currentState.rootTechniques,
-            targetTechniques = getResolvedTargetTechniques()
+            targetTechniques = resolvedTargets
         )
+        val calculatedEdges = currentState.withCalculatedEdges(result.edges).edges
 
         _state.update {
             it.copy(
                 stage = Stage.PossibleAttackVectors,
-                edges = result.edges
+                rootTechniques = currentState.rootTechniques,
+                edges = calculatedEdges,
+                consoleText = "",
+                isConsoleFrozen = true
             )
         }
-        clearConsole()
-        scope.launch {
+        pathConsoleJob = scope.launch {
+            val lines = mutableListOf<String>()
             if (result.optimalPaths.isNotEmpty()) {
-                logToUiConsole(getString(Res.string.optimal_path_label), freezeDisplay = true)
+                lines.add(getString(Res.string.optimal_path_label))
                 result.optimalPaths.forEach {
-                    logToUiConsole(formatPath(it, currentState.nodes), freezeDisplay = true)
+                    lines.add(formatPath(it, currentState.nodes))
                 }
                 val otherProbablePaths = result.probablePaths.take(4)
                 if (otherProbablePaths.isNotEmpty()) {
-                    logToUiConsole("\n" + getString(Res.string.probable_paths_label), freezeDisplay = true)
+                    lines.add("\n" + getString(Res.string.probable_paths_label))
                     otherProbablePaths.forEach {
-                        logToUiConsole(formatPath(it, currentState.nodes), freezeDisplay = true)
+                        lines.add(formatPath(it, currentState.nodes))
                     }
                 }
             } else {
-                logToUiConsole(getString(Res.string.no_optimal_path_found), freezeDisplay = true)
+                lines.add(getString(Res.string.no_optimal_path_found))
+            }
+            _state.update {
+                if (it.stage == Stage.PossibleAttackVectors &&
+                    it.dmConfidenceThreshold == currentState.dmConfidenceThreshold &&
+                    it.edges == calculatedEdges
+                ) {
+                    it.copy(consoleText = lines.joinToString("\n"), isConsoleFrozen = true)
+                } else it
             }
         }
     }
@@ -937,8 +968,9 @@ class ViewModel(
         }
     }
 
-    private fun getResolvedTargetTechniques(): List<Pair<String, String>> {
-        val currentState = state.value
+    private fun getResolvedTargetTechniques(
+        currentState: ViewState = state.value
+    ): List<Pair<String, String>> {
         return when (currentState.targetGoal) {
             TargetGoal.Specific -> currentState.targetTechniques
             TargetGoal.HighestSeverity -> {

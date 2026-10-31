@@ -35,6 +35,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.PlainTooltip
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TooltipAnchorPosition
 import androidx.compose.material3.TooltipBox
@@ -121,6 +122,7 @@ import com.pobedie.attackgraph.ui.Stage
 import com.pobedie.attackgraph.ui.ViewModel
 import com.pobedie.attackgraph.ui.ViewState
 import com.pobedie.attackgraph.ui.components.DeleteButton
+import com.pobedie.attackgraph.ui.components.DmConfidenceSlider
 import com.pobedie.attackgraph.ui.components.FloatInputField
 import kotlinx.coroutines.delay
 import org.jetbrains.compose.resources.painterResource
@@ -147,8 +149,11 @@ fun AttackGraph(
         }
     }
 
-    val edges = remember(state.edges) {
-        state.edges.map { _edge ->
+    val filteredEdges = remember(state.edges, state.dmConfidenceThreshold) {
+        state.confidenceFilteredEdges
+    }
+    val edges = remember(filteredEdges) {
+        filteredEdges.map { _edge ->
             _edge.startNode to _edge.endNode
         }
     }
@@ -441,6 +446,25 @@ fun AttackGraph(
         Column(
             modifier = Modifier.align(Alignment.BottomStart)
         ) {
+            val dmUiWidth = 300.dp
+            if (state.stage == Stage.AttackVectorsBuilding &&
+                state.hasDmProcessedConnections &&
+                !state.isAttackVectorSearchingInProgress
+            ) {
+                Surface(
+                    modifier = Modifier.padding(8.dp).width(dmUiWidth),
+                    shape = RoundedCornerShape(8.dp),
+                    tonalElevation = 3.dp
+                ) {
+                    DmConfidenceSlider(
+                        value = state.dmConfidenceThreshold,
+                        onValueChange = { viewModel.updateDmConfidenceThreshold(it) },
+                        onValueChangeFinished = { viewModel.saveDmSettings() },
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                    )
+                }
+            }
+
             AnimatedVisibility(
                 visible = state.stage == Stage.AttackVectorsBuilding && state.dmConnectionStatus == DmConnectionStatus.Connected,
                 enter = fadeIn(),
@@ -448,7 +472,7 @@ fun AttackGraph(
             ) {
                 Button(
                     enabled = state.dmConnectionStatus == DmConnectionStatus.Connected && !state.isAttackVectorSearchingInProgress,
-                    modifier = Modifier.padding(horizontal = 4.dp),
+                    modifier = Modifier.padding(horizontal = 8.dp).width(dmUiWidth),
                     onClick = { viewModel.findAttackVectorsViaDecisionModel() }
 
                 ) {

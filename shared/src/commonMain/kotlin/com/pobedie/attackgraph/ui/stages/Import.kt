@@ -17,12 +17,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
-import kotlin.math.roundToInt
-import androidx.compose.material3.Slider
-import androidx.compose.material3.SliderDefaults
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import attackgraph.shared.generated.resources.dm_confidence_threshold
 import attackgraph.shared.generated.resources.dm_model_hint
 import attackgraph.shared.generated.resources.dm_model_warning
 import androidx.compose.material3.Button
@@ -68,6 +64,7 @@ import com.pobedie.attackgraph.ui.Language
 import com.pobedie.attackgraph.ui.DmConnectionStatus
 import com.pobedie.attackgraph.ui.ViewModel
 import com.pobedie.attackgraph.ui.ViewState
+import com.pobedie.attackgraph.ui.components.DmConfidenceSlider
 import kotlinx.coroutines.runBlocking
 import org.jetbrains.compose.resources.getString
 import org.jetbrains.compose.resources.painterResource
@@ -192,22 +189,11 @@ fun ImportStage(
 
             Column(modifier = Modifier.padding(horizontal = 22.dp, vertical = 4.dp)) {
                 Text(stringResource(Res.string.dm_model_hint), style = MaterialTheme.typography.bodySmall)
-                Text(
-                    stringResource(Res.string.dm_confidence_threshold, (state.dmConfidenceThreshold * 100).roundToInt()),
-                    modifier = Modifier.padding(top = 12.dp)
-                )
-                Slider(
+                DmConfidenceSlider(
                     value = state.dmConfidenceThreshold,
                     onValueChange = viewModel::updateDmConfidenceThreshold,
                     onValueChangeFinished = viewModel::saveDmSettings,
-                    valueRange = 0f..1f,
-                    steps = 99,
-                    colors = SliderDefaults.colors(
-                        activeTickColor = TransparentColor,
-                        inactiveTickColor = TransparentColor,
-                        disabledActiveTickColor = TransparentColor,
-                        disabledInactiveTickColor = TransparentColor
-                    )
+                    modifier = Modifier.padding(top = 12.dp)
                 )
             }
 
