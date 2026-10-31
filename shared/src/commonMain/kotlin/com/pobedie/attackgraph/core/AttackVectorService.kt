@@ -104,13 +104,15 @@ class AttackVectorService {
         }
     }
 
-    fun processLlmDecisions(
+    fun processDmDecisions(
         decisions: List<DecisionOutput>,
         hosts: List<Host>,
         existingEdges: List<Edge>,
-        nodes: List<Node>
+        nodes: List<Node>,
+        confidenceThreshold: Float = 0.5f
     ): List<Edge> {
-        val llmEdges = decisions.flatMapTo(mutableSetOf()) { decision ->
+        require(confidenceThreshold.isFinite() && confidenceThreshold in 0f..1f)
+        val dmEdges = decisions.filter { it.confidence >= confidenceThreshold && it.confidence <= 1f }.flatMapTo(mutableSetOf()) { decision ->
             val startHosts = hosts.filter { it.techniquesIds.contains(decision.sourceId) }
             val endHosts = hosts.filter { it.techniquesIds.contains(decision.targetId) }
             
@@ -120,13 +122,13 @@ class AttackVectorService {
                     edges.add(Edge(
                         startNode = "${start.id}_${decision.sourceId}",
                         endNode = "${end.id}_${decision.targetId}",
-                        llmConfidence = decision.confidence
+                        dmConfidence = decision.confidence
                     ))
                 }
             }
             edges
         }
         
-        return (existingEdges + llmEdges).distinctBy { it.startNode to it.endNode }
+        return (existingEdges + dmEdges).distinctBy { it.startNode to it.endNode }
     }
 }

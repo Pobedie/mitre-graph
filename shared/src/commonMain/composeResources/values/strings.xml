@@ -1,7 +1,7 @@
 <resources>
     <string name="import_tab">Import and settings</string>
     <string name="import_button">Import</string>
-    <string name="import_hint">Import a YAML file with MITRE ATLAS data and configure LLM settings.\n\nYou can find this file at https://github.com/mitre-atlas/atlas-data/blob/main/dist/ or use the included one (it might be not relevant)</string>
+    <string name="import_hint">Import a YAML file with MITRE ATLAS data and configure neural network settings.\n\nYou can find this file at https://github.com/mitre-atlas/atlas-data/blob/main/dist/ or use the included one (it might be not relevant)</string>
     <string name="select_techniques_button">Select techniques</string>
     <string name="select_techniques_hint">Select attack techniques from each tactic</string>
     <string name="build_attack_vectors_button">Build attack vectors</string>
@@ -11,10 +11,10 @@
     <string name="import_from_file_title">Import from file</string>
     <string name="firewall_mapping_title">Allowed routes</string>
     <string name="firewall_mapping_hint">Set allowed routes between hosts</string>
-    <string name="llm_settings_title">LLM Settings</string>
-    <string name="llm_url_label">URL</string>
-    <string name="llm_api_key_label">API Key</string>
-    <string name="llm_model_label">Model Name</string>
+    <string name="dm_settings_title">Decision model settings</string>
+    <string name="dm_url_label">URL</string>
+    <string name="dm_api_key_label">API Key (leave empty if model is local)</string>
+    <string name="dm_model_label">Model Name</string>
     <string name="connect_button">Connect</string>
     <string name="connecting_status">Connecting...</string>
     <string name="connection_success">Connected</string>
@@ -40,6 +40,8 @@
     <string name="tactic_description_content_desc">Tactic description</string>
     <string name="technique_description_content_desc">Technique description</string>
     <string name="deselect_hint">Right click anywhere to deselect</string>
+    <string name="searching_attack_vectors">Searching attack vectors</string>
+    <string name="techniques_processed_format">%1$d / %2$d techniques processed</string>
     <string name="set_as_irrelevant">Set as irrelevant</string>
     <string name="set_as_relevant">Set as relevant</string>
     <string name="show_mitigation_info_content_desc">Show mitigation info</string>
@@ -86,4 +88,16 @@
     <string name="maturity_feasible">Feasible</string>
     <string name="maturity_realized">Realized</string>
     <string name="maturity_unknown">Unknown</string>
+    <string name="dm_confidence_threshold">Minimum model confidence: %1$d% (inclusive)</string>
+    <string name="dm_model_hint">Enter a model ID manually or choose from the dropdown.</string>
+    <string name="dm_model_warning">The selected model must be a decision model . Model compatibility is not checked automatically.</string>
+    <string name="dm_find_vectors">Find attack vectors with decision model</string>
+    <string name="dm_error_title">DM request failed</string>
+    <string name="dm_error_code">Error code: %1$s</string>
+    <string name="dm_error_no_status">No HTTP response received</string>
+    <string name="dm_error_retry">Retry</string>
+    <string name="dm_error_cancel">Cancel</string>
+    <string name="dm_advanced_settings">Advanced settings</string>
+    <string name="dm_target_batch_size">Target processing batch size: %1$d</string>
+    <string name="dm_target_batch_size_hint">Maximum number of candidate target techniques included in each decision-model request for one source technique. Larger batches include more targets per request but require more compute and larger context window; smaller batches send more requests but are easier to compute and more compatible with model's context windows.</string>
 </resources>

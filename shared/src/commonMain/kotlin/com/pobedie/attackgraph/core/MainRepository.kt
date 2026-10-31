@@ -31,9 +31,11 @@ class MainRepository(
 
     fun saveUserSettings(settings: UserSettings) {
         settingsDatabase.user_settingsQueries.saveUserSettings(
-            llm_url = settings.llmUrl,
-            llm_api_key = settings.llmApiKey,
-            llm_model = settings.llmModel
+            dm_url = settings.dmUrl,
+            dm_api_key = settings.dmApiKey,
+            dm_model = settings.dmModel,
+            dm_confidence_threshold = settings.dmConfidenceThreshold.toDouble(),
+            dm_target_batch_size = settings.dmTargetBatchSize.toLong()
         )
     }
 
@@ -42,9 +44,11 @@ class MainRepository(
             .executeAsOneOrNull()
             ?.let {
                 UserSettings(
-                    llmUrl = it.llm_url,
-                    llmApiKey = it.llm_api_key,
-                    llmModel = it.llm_model
+                    dmUrl = it.dm_url,
+                    dmApiKey = it.dm_api_key,
+                    dmModel = it.dm_model,
+                    dmConfidenceThreshold = it.dm_confidence_threshold.toFloat(),
+                    dmTargetBatchSize = it.dm_target_batch_size.toInt()
                 )
             }
     }

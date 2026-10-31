@@ -53,20 +53,30 @@ data class ViewState(
     val consoleText: String = "",
     val isConsoleFrozen: Boolean = false,
 
-    // LLM settings
-    val llmUrl: String = "",
-    val llmApiKey: String = "",
-    val llmModel: String = "",
-    val availableLlmModels: List<String> = emptyList(),
-    val isLlmModelsLoading: Boolean = false,
-    val llmConnectionStatus: LlmConnectionStatus = LlmConnectionStatus.None,
-    val isGenerationInProgress: Boolean = false,
-    val isLlmAdded: Boolean = false
+    // DM settings
+    val dmUrl: String = "",
+    val dmApiKey: String = "",
+    val dmModel: String = "",
+    val dmConfidenceThreshold: Float = 0.5f,
+    val dmTargetBatchSize: Int = 5,
+    val availableDmModels: List<String> = emptyList(),
+    val isDmModelsLoading: Boolean = false,
+    val dmConnectionStatus: DmConnectionStatus = DmConnectionStatus.None,
+    val isAttackVectorSearchingInProgress: Boolean = false,
+    val hasDmProcessedConnections: Boolean = false,
+    val dmProcessedTechniques: Int = 0,
+    val dmTotalTechniques: Int = 0,
+    val dmRequestError: DmRequestError? = null,
+    val isDmAdded: Boolean = false
 ) {
     val selectedTechniquesIds = hosts.flatMap { it.techniquesIds }
+
+    val confidenceFilteredEdges: List<Edge>
+        get() = edges.filter { (it.dmConfidence ?: 1f) >= dmConfidenceThreshold }
+
 }
 
-enum class LlmConnectionStatus {
+enum class DmConnectionStatus {
     None,
     Connecting,
     Connected,
@@ -96,3 +106,9 @@ enum class Stage {
     EdgeValueCalculation, // Calculates the values of the edges
     PossibleAttackVectors, // Shows nodes that will be mitigated and edges that form a proven attack vector
 }
+
+data class DmRequestError(
+    val statusCode: Int?,
+    val errorCode: String?,
+    val message: String
+)

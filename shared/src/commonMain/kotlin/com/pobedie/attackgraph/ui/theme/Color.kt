@@ -20,6 +20,7 @@ data class AttackGraphColors(
     val mitigationIrrelevant: Color,
     val edgeLabelEnabled: Color,
     val infoIconColor: Color,
+    val infoIconInvertedColor: Color,
     val mainBackground: Color,
     val consoleTextColor: Color,
     val dialogBackground: Color,
@@ -51,6 +52,7 @@ data class AttackGraphColors(
     val statusFail: Color,
     val nodeBorderRoot: Color,
     val errorColor: Color,
+    val warning: Color,
     val onErrorColor: Color,
     val errorContainerColor: Color,
     val onErrorContainerColor: Color,
@@ -83,6 +85,7 @@ val DarkAppColors = AttackGraphColors(
     mitigationIrrelevant = Color(0xFFD3D3D3),
     edgeLabelEnabled = Color(0xA0D0D0D0),
     infoIconColor = Color(0x99FFFFFF),
+    infoIconInvertedColor = Color(0x99000000),
     mainBackground = Color(0xFF141414),
     consoleTextColor = Color(0xFFD3D3D3),
     dialogBackground = Color(0xFFD3D3D3),
@@ -114,6 +117,7 @@ val DarkAppColors = AttackGraphColors(
     statusFail = Color(0xFF862B0E),
     nodeBorderRoot = Color(0xFF81C709),
     errorColor = Color(0xFFF2B8B5),
+    warning = Color(0xFFEF6C00),
     onErrorColor = Color(0xFF601410),
     errorContainerColor = Color(0xFF8C1D18),
     onErrorContainerColor = Color(0xFFF9DEDC),
@@ -145,6 +149,7 @@ val LightAppColors = AttackGraphColors(
     mitigationIrrelevant = Color(0xFF444444),
     edgeLabelEnabled = Color(0xA0323232),
     infoIconColor = Color(0x99FFFFFF),
+    infoIconInvertedColor = Color(0x99000000),
     mainBackground = Color(0xFFCFCDCA),
     consoleTextColor = Color(0xFF000000),
     dialogBackground = Color(0xFFFFFFFF),
@@ -176,6 +181,7 @@ val LightAppColors = AttackGraphColors(
     statusFail = Color(0xFF862B0E),
     nodeBorderRoot = Color(0xFF689F38),
     errorColor = Color(0xFFB3261E),
+    warning = Color(0xFFEF6C00),
     onErrorColor = Color(0xFFFFFFFF),
     errorContainerColor = Color(0xFFF9DEDC),
     onErrorContainerColor = Color(0xFF410E0B),
@@ -265,6 +271,7 @@ val MitigationRelevantIcon: Color @Composable @ReadOnlyComposable get() = LocalA
 val MitigationIrrelevant: Color @Composable @ReadOnlyComposable get() = LocalAppColors.current.mitigationIrrelevant
 val EdgeLabelEnabled: Color @Composable @ReadOnlyComposable get() = LocalAppColors.current.edgeLabelEnabled
 val InfoIconColor: Color @Composable @ReadOnlyComposable get() = LocalAppColors.current.infoIconColor
+val InfoIconInvertedColor: Color @Composable @ReadOnlyComposable get() = LocalAppColors.current.infoIconInvertedColor
 val MainBackground: Color @Composable @ReadOnlyComposable get() = LocalAppColors.current.mainBackground
 val ConsoleTextColor: Color @Composable @ReadOnlyComposable get() = LocalAppColors.current.consoleTextColor
 val DialogBackground: Color @Composable @ReadOnlyComposable get() = LocalAppColors.current.dialogBackground
@@ -304,6 +311,7 @@ val StatusFail: Color @Composable @ReadOnlyComposable get() = LocalAppColors.cur
 
 // Theme colors
 val ErrorColor: Color @Composable @ReadOnlyComposable get() = LocalAppColors.current.errorColor
+val WarningColor: Color @Composable @ReadOnlyComposable get() = LocalAppColors.current.warning
 val OnErrorColor: Color @Composable @ReadOnlyComposable get() = LocalAppColors.current.onErrorColor
 val ErrorContainerColor: Color @Composable @ReadOnlyComposable get() = LocalAppColors.current.errorContainerColor
 val OnErrorContainerColor: Color @Composable @ReadOnlyComposable get() = LocalAppColors.current.onErrorContainerColor

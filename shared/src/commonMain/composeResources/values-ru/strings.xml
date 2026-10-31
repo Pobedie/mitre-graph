@@ -1,7 +1,7 @@
 <resources>
     <string name="import_tab">Импорт и настройки</string>
     <string name="import_button">Импорт</string>
-    <string name="import_hint">Импорт YAML файла с данными MITRE ATLAS и настройка параметров LLM.\n\nВы можете найти этот файл по адресу https://github.com/mitre-atlas/atlas-data/blob/main/dist/ или использовать включенный (он может быть неактуальным)</string>
+    <string name="import_hint">Импорт YAML файла с данными MITRE ATLAS и настройка параметров нейронной сети.\n\nВы можете найти этот файл по адресу https://github.com/mitre-atlas/atlas-data/blob/main/dist/ или использовать включенный (он может быть неактуальным)</string>
     <string name="select_techniques_button">Выбрать техники</string>
     <string name="select_techniques_hint">Выберите техники атак из каждой тактики</string>
     <string name="build_attack_vectors_button">Построить векторы атаки</string>
@@ -11,10 +11,10 @@
     <string name="import_from_file_title">Импорт из файла</string>
     <string name="firewall_mapping_title">Разрешенные маршруты</string>
     <string name="firewall_mapping_hint">Настройка разрешенных маршрутов между хостами</string>
-    <string name="llm_settings_title">Настройки LLM</string>
-    <string name="llm_url_label">URL</string>
-    <string name="llm_api_key_label">API Ключ</string>
-    <string name="llm_model_label">Название модели</string>
+    <string name="dm_settings_title">Настройки модели принятия решений</string>
+    <string name="dm_url_label">URL</string>
+    <string name="dm_api_key_label">API Ключ (оставьте пустым для локальной модели)</string>
+    <string name="dm_model_label">Название модели</string>
     <string name="connect_button">Подключиться</string>
     <string name="connecting_status">Подключение...</string>
     <string name="connection_success">Подключено</string>
@@ -40,6 +40,8 @@
     <string name="tactic_description_content_desc">Описание тактики</string>
     <string name="technique_description_content_desc">Описание техники</string>
     <string name="deselect_hint">Щелкните правой кнопкой мыши в любом месте, чтобы отменить выбор</string>
+    <string name="searching_attack_vectors">Поиск векторов атак</string>
+    <string name="techniques_processed_format">%1$d / %2$d техник обработано</string>
     <string name="set_as_irrelevant">Пометить как нерелевантное</string>
     <string name="set_as_relevant">Пометить как релевантное</string>
     <string name="show_mitigation_info_content_desc">Показать информацию о мерах защиты</string>
@@ -86,4 +88,16 @@
     <string name="maturity_feasible">Возможна</string>
     <string name="maturity_realized">Реализована</string>
     <string name="maturity_unknown">Неизвестно</string>
+    <string name="dm_confidence_threshold">Минимальная уверенность модели: %1$d% (включительно)</string>
+    <string name="dm_model_hint">Введите ID модели вручную или выберите из списка.</string>
+    <string name="dm_model_warning">Выбранная модель должна быть моделью принятия решений (Decision Model). Совместимость модели не проверяется автоматически.</string>
+    <string name="dm_find_vectors">Найти векторы атак с моделью принятия решений</string>
+    <string name="dm_error_title">Ошибка запроса к DM</string>
+    <string name="dm_error_code">Код ошибки: %1$s</string>
+    <string name="dm_error_no_status">HTTP-ответ не получен</string>
+    <string name="dm_error_retry">Повторить</string>
+    <string name="dm_error_cancel">Отмена</string>
+    <string name="dm_advanced_settings">Дополнительные настройки</string>
+    <string name="dm_target_batch_size">Размер пакета целевых техник: %1$d</string>
+    <string name="dm_target_batch_size_hint">Максимальное число возможных целевых техник в одном запросе к модели принятия решений для одной исходной техники. Большие пакеты содержат больше целевых техник в одном запросе, но потребляют больше вычислительных ресурсов и требуют большее контекстное окно; меньшие пакеты требуют больше запросов, но более эффективны и совместимы с контекстными окнами большинства моделей. По умолчанию: 5.</string>
 </resources>

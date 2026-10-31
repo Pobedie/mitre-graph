@@ -17,9 +17,11 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -29,10 +31,11 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material3.Button
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.PlainTooltip
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TooltipAnchorPosition
 import androidx.compose.material3.TooltipBox
@@ -88,10 +91,13 @@ import attackgraph.shared.generated.resources.maturity_realized
 import attackgraph.shared.generated.resources.maturity_unknown
 import attackgraph.shared.generated.resources.mitigation_full_description_format
 import attackgraph.shared.generated.resources.p_label
+import attackgraph.shared.generated.resources.dm_find_vectors
+import attackgraph.shared.generated.resources.searching_attack_vectors
 import attackgraph.shared.generated.resources.set_as_irrelevant
 import attackgraph.shared.generated.resources.set_as_relevant
 import attackgraph.shared.generated.resources.show_mitigation_info_content_desc
 import attackgraph.shared.generated.resources.technique_description_content_desc
+import attackgraph.shared.generated.resources.techniques_processed_format
 import attackgraph.shared.generated.resources.unknown_value
 import com.pobedie.attackgraph.ui.theme.*
 import com.dk.kuiver.model.KuiverNode
@@ -106,15 +112,17 @@ import com.dk.kuiver.renderer.KuiverViewer
 import com.dk.kuiver.renderer.KuiverViewerConfig
 import com.dk.kuiver.ui.EdgeContentWithLabel
 import com.dk.kuiver.ui.LabelPlacement
+import com.dk.kuiver.util.calculatePositionBounds
 import com.pobedie.attackgraph.core.entity.EdgeState
 import com.pobedie.attackgraph.core.entity.Mitigation
 import com.pobedie.attackgraph.core.entity.Node
 import com.pobedie.attackgraph.core.entity.TechniqueMaturity
-import com.pobedie.attackgraph.ui.LlmConnectionStatus
+import com.pobedie.attackgraph.ui.DmConnectionStatus
 import com.pobedie.attackgraph.ui.Stage
 import com.pobedie.attackgraph.ui.ViewModel
 import com.pobedie.attackgraph.ui.ViewState
 import com.pobedie.attackgraph.ui.components.DeleteButton
+import com.pobedie.attackgraph.ui.components.DmConfidenceSlider
 import com.pobedie.attackgraph.ui.components.FloatInputField
 import kotlinx.coroutines.delay
 import org.jetbrains.compose.resources.painterResource
@@ -141,8 +149,11 @@ fun AttackGraph(
         }
     }
 
-    val edges = remember(state.edges) {
-        state.edges.map { _edge ->
+    val filteredEdges = remember(state.edges, state.dmConfidenceThreshold) {
+        state.confidenceFilteredEdges
+    }
+    val edges = remember(filteredEdges) {
+        filteredEdges.map { _edge ->
             _edge.startNode to _edge.endNode
         }
     }
@@ -175,12 +186,17 @@ fun AttackGraph(
 
                     hostNodes.forEach { nodeData ->
                         val libNode = kuiver.nodes[nodeData.id] ?: return@forEach
+                        val nodeHeight = libNode.dimensions?.height ?: DEFAULT_NODE_HEIGHT
                         updatedNodes.add(
                             libNode.copy(
-                                position = DpOffset(x + NODE_X_OFFSET, currentY)
+                                // Kuiver positions nodes by their center, not their top-left corner.
+                                position = DpOffset(
+                                    x + NODE_X_OFFSET + NODE_WIDTH / 2f,
+                                    currentY + nodeHeight / 2f
+                                )
                             )
                         )
-                        currentY += (libNode.dimensions?.height ?: DEFAULT_NODE_HEIGHT) + NODE_Y_SPACING
+                        currentY += nodeHeight + NODE_Y_SPACING
                     }
 
                     newHostContainers.add(
@@ -190,7 +206,7 @@ fun AttackGraph(
                                 left = x,
                                 top = hostStartY,
                                 right = x + NODE_WIDTH + HOST_CONTAINER_WIDTH_PADDING,
-                                bottom = currentY - HOST_CONTAINER_BOTTOM_PADDING
+                                bottom = currentY - NODE_Y_SPACING + HOST_CONTAINER_BOTTOM_PADDING
                             )
                         )
                     )
@@ -274,12 +290,10 @@ fun AttackGraph(
                     val vsScale = viewerState.scale
                     val vsOffset = viewerState.offset
 
-                    val minNodeY = (hostContainers.minOfOrNull { it.rect.top } ?: 0.dp) + HOST_TITLE_HEIGHT
-                    val maxNodeY = (hostContainers.maxOfOrNull { it.rect.bottom } ?: 0.dp) + HOST_CONTAINER_BOTTOM_PADDING - NODE_Y_SPACING
-                    val graphCenterY = (minNodeY + maxNodeY) / 2f
-
-                    val coordsOffsetX = COLUMN_X_SPACING * (tactics.size / 2f) - COLUMN_X_SPACING / 2f
-                    val graphCenterX = coordsOffsetX + (NODE_X_OFFSET + NODE_WIDTH / 2f)
+                    // Match the renderer's origin, including unequal technique heights.
+                    val graphBounds = viewerState.layoutedKuiver.nodes.values.calculatePositionBounds()
+                    val graphCenterX = graphBounds.centerX
+                    val graphCenterY = graphBounds.centerY
 
                     hostContainers.forEach { container ->
                         val nodeOffsetX = (container.rect.left - graphCenterX) * vsScale
@@ -341,7 +355,7 @@ fun AttackGraph(
                     isSelected = node.id == state.selectedNode,
                     isTarget = state.targetTechniques.any { it.first == node.techniqueId && it.second == node.hostId },
                     isRoot = state.rootTechniques.any { it.first == node.techniqueId && it.second == node.hostId },
-                    isEnabled = state.stage == Stage.AttackVectorsBuilding && !state.isGenerationInProgress,
+                    isEnabled = state.stage == Stage.AttackVectorsBuilding && !state.isAttackVectorSearchingInProgress,
                     onClick = {
                         viewModel.setNodeConnection(node.id)
                     },
@@ -399,7 +413,7 @@ fun AttackGraph(
                                         isSelected = isSelected,
                                         isEnabled = (state.stage == Stage.AttackVectorsBuilding ||
                                                 state.stage == Stage.EdgeValueCalculation) &&
-                                                !state.isGenerationInProgress,
+                                                !state.isAttackVectorSearchingInProgress,
                                         onClick = {
                                             viewModel.selectEdge(
                                                 _edge.startNode,
@@ -432,21 +446,40 @@ fun AttackGraph(
         Column(
             modifier = Modifier.align(Alignment.BottomStart)
         ) {
+            val dmUiWidth = 300.dp
+            if (state.stage == Stage.AttackVectorsBuilding &&
+                state.hasDmProcessedConnections &&
+                !state.isAttackVectorSearchingInProgress
+            ) {
+                Surface(
+                    modifier = Modifier.padding(8.dp).width(dmUiWidth),
+                    shape = RoundedCornerShape(8.dp),
+                    tonalElevation = 3.dp
+                ) {
+                    DmConfidenceSlider(
+                        value = state.dmConfidenceThreshold,
+                        onValueChange = { viewModel.updateDmConfidenceThreshold(it) },
+                        onValueChangeFinished = { viewModel.saveDmSettings() },
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                    )
+                }
+            }
+
             AnimatedVisibility(
-                visible = state.stage == Stage.AttackVectorsBuilding && state.llmConnectionStatus == LlmConnectionStatus.Connected,
+                visible = state.stage == Stage.AttackVectorsBuilding && state.dmConnectionStatus == DmConnectionStatus.Connected,
                 enter = fadeIn(),
                 exit = fadeOut()
             ) {
                 Button(
-                    enabled = state.llmConnectionStatus == LlmConnectionStatus.Connected && !state.isGenerationInProgress,
-                    modifier = Modifier.padding(horizontal = 4.dp),
-                    onClick = { viewModel.findAttackVectorsViaLLM() }
+                    enabled = state.dmConnectionStatus == DmConnectionStatus.Connected && !state.isAttackVectorSearchingInProgress,
+                    modifier = Modifier.padding(horizontal = 8.dp).width(dmUiWidth),
+                    onClick = { viewModel.findAttackVectorsViaDecisionModel() }
 
                 ) {
-                    if (state.isGenerationInProgress) {
-                        Text("Generating vector attacks")
+                    if (state.isAttackVectorSearchingInProgress) {
+                        Text(stringResource(Res.string.searching_attack_vectors))
                     } else {
-                        Text("Let LLM find vector attacks")
+                        Text(stringResource(Res.string.dm_find_vectors))
                     }
                 }
             }
@@ -465,23 +498,45 @@ fun AttackGraph(
         }
 
         AnimatedVisibility(
-            visible = state.isGenerationInProgress,
+            visible = state.isAttackVectorSearchingInProgress,
             enter = fadeIn(),
             exit = fadeOut()
         ) {
             Column (
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(Color.White.copy(alpha = 0.5f)),
+                    .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.85f)),
                 verticalArrangement = Arrangement.Center,
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text(
-                    text = "Generating vector attacks",
+                    text = stringResource(Res.string.searching_attack_vectors),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold
                 )
-                CircularProgressIndicator(modifier = Modifier.padding(16.dp))
+                Spacer(modifier = Modifier.height(16.dp))
+                val progress = if (state.dmTotalTechniques > 0) {
+                    (state.dmProcessedTechniques.toFloat() / state.dmTotalTechniques).coerceIn(0f, 1f)
+                } else {
+                    0f
+                }
+                LinearProgressIndicator(
+                    progress = { progress },
+                    modifier = Modifier
+                        .fillMaxWidth(0.5f)
+                        .height(8.dp)
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text =
+                        stringResource(
+                            Res.string.techniques_processed_format,
+                            state.dmProcessedTechniques,
+                            state.dmTotalTechniques
+                        ),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
         }
     }
